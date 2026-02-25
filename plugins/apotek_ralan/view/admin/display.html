@@ -1,0 +1,155 @@
+<div id="display">
+  <div style="margin-bottom:10px;">
+    <div class="btn-group" id="filter_apotek">
+      <button type="button" class="btn btn-sm btn-primary active" data-filter="belum_obat"><i class="fa fa-medkit"></i> Perlu Dilayani</button>
+      <button type="button" class="btn btn-sm btn-default" data-filter="sudah_obat"><i class="fa fa-check"></i> Sudah Dilayani</button>
+      <button type="button" class="btn btn-sm btn-default" data-filter="semua"><i class="fa fa-list"></i> Semua</button>
+    </div>
+    <span id="jumlah_filter" class="label label-info" style="font-size:13px;margin-left:10px;vertical-align:middle;"></span>
+  </div>
+  <div class="table-responsive no-margin">
+    <table class="table table-striped no-padding" id="tabel_apotek" width="100%">
+      <thead>
+        <tr>
+          <th style="white-space: nowrap;">No. RM</th>
+          <th style="white-space: nowrap;">Nama Pasien</th>
+          <th style="white-space: nowrap;">ID Kunjungan</th>
+          <th style="white-space: nowrap;">Antrian</th>
+          <th style="white-space: nowrap;">Poliklinik</th>
+          <th style="white-space: nowrap;">Dokter</th>
+          <th style="white-space: nowrap;">Penjamin</th>
+          <th style="white-space: nowrap;">Tgl. Kunjungan</th>
+          <th style="white-space: nowrap;">Stts. Periksa</th>
+          <th style="white-space: nowrap;">Stts. Obat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loop: $rawat_jalan.list}
+        <tr class="layanan_obat" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}" data-stts="{$value.stts}" data-status_obat="{$value.status_obat}">
+          <td style="white-space: nowrap;">{$value.no_rkm_medis}</td>
+          <td style="white-space: nowrap;"><b>{$value.nm_pasien}</b></td>
+          <td style="white-space: nowrap;"><b>{$value.no_rawat}</b></td>
+          <td style="white-space: nowrap;">{$value.no_reg}</td>
+          <td style="white-space: nowrap;">{$value.nm_poli}</td>
+          <td style="white-space: nowrap;">{$value.nm_dokter}</td>
+          <td style="white-space: nowrap;">{$value.png_jawab}</td>
+          <td style="white-space: nowrap;">{$value.tgl_registrasi} {$value.jam_reg}</td>
+          <td style="white-space: nowrap;">
+            {if: $value.stts == 'Sudah'}<span class="label label-success">{$value.stts}</span>
+            {elseif: $value.stts == 'Belum'}<span class="label label-warning">{$value.stts}</span>
+            {else}<span class="label label-default">{$value.stts}</span>{/if}
+          </td>
+          <td style="white-space: nowrap;">
+            {if: $value.status_obat == 'Sudah'}<span class="label label-success"><i class="fa fa-check"></i> Sudah</span>
+            {else}<span class="label label-warning"><i class="fa fa-clock-o"></i> Belum</span>{/if}
+          </td>
+        </tr>
+        {/loop}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="modal fade" id="asuransiModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            ...
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="riwayatModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-full" role="document">
+        <div class="modal-content">
+            ...
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+  $(".alert-dismissible").fadeTo(3000, 500).slideUp(500);
+
+  // Filter function
+  function applyFilter(filter) {
+    var count = 0;
+    $('#tabel_apotek tbody tr.layanan_obat').each(function() {
+      var stts = $(this).data('stts');
+      var statusObat = $(this).data('status_obat');
+      var show = false;
+
+      if(filter == 'belum_obat') {
+        // Sudah diperiksa tapi belum dilayani obatnya
+        show = (stts == 'Sudah' && statusObat == 'Belum');
+      } else if(filter == 'sudah_obat') {
+        // Sudah diperiksa dan sudah dilayani obatnya
+        show = (stts == 'Sudah' && statusObat == 'Sudah');
+      } else {
+        // Semua
+        show = true;
+      }
+
+      if(show) {
+        $(this).show();
+        count++;
+      } else {
+        $(this).hide();
+      }
+    });
+    $('#jumlah_filter').text(count + ' pasien');
+  }
+
+  // Filter button click
+  $('#display').on('click', '#filter_apotek .btn', function() {
+    $('#filter_apotek .btn').removeClass('btn-primary active').addClass('btn-default');
+    $(this).removeClass('btn-default').addClass('btn-primary active');
+    applyFilter($(this).data('filter'));
+  });
+
+  // Apply default filter on load
+  applyFilter('belum_obat');
+
+  // Search
+  var $searchInput = $('.datatable-search input, input[type="search"]');
+  if($searchInput.length == 0) {
+    // Buat search input sendiri
+    var searchHtml = '<div style="float:right;margin-bottom:10px;"><input type="text" id="cari_pasien_apotek" class="form-control input-sm" placeholder="Cari pasien..." style="width:250px;"></div>';
+    $('#tabel_apotek').before(searchHtml);
+  }
+
+  $('#display').on('input', '#cari_pasien_apotek', function() {
+    var keyword = $(this).val().toLowerCase();
+    var activeFilter = $('#filter_apotek .btn.active').data('filter');
+
+    $('#tabel_apotek tbody tr.layanan_obat').each(function() {
+      var stts = $(this).data('stts');
+      var statusObat = $(this).data('status_obat');
+      var text = $(this).text().toLowerCase();
+      var matchFilter = false;
+
+      if(activeFilter == 'belum_obat') {
+        matchFilter = (stts == 'Sudah' && statusObat == 'Belum');
+      } else if(activeFilter == 'sudah_obat') {
+        matchFilter = (stts == 'Sudah' && statusObat == 'Sudah');
+      } else {
+        matchFilter = true;
+      }
+
+      if(matchFilter && text.indexOf(keyword) > -1) {
+        $(this).show();
+      } else {
+        $(this).hide();
+      }
+    });
+  });
+</script>
+<script type="text/javascript">
+   $(function () {
+       $('.tanggal').datetimepicker({
+         format: 'YYYY-MM-DD',
+         locale: 'id'
+       });
+   });
+   $(function () {
+       $('.jam').datetimepicker({
+         format: 'HH:mm:ss',
+         locale: 'id'
+       });
+   });
+</script>

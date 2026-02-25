@@ -1,0 +1,385 @@
+<!-- Summary Cards -->
+<div class="row">
+  <div class="col-sm-2">
+    <div class="panel panel-primary">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700">{$total}</h1>
+        <small><i class="fa fa-users"></i> Total Pasien BPJS</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-2">
+    <div class="panel panel-info">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700">{$sudah_daftar}</h1>
+        <small><i class="fa fa-check-circle"></i> Sudah Daftar PCare</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-2">
+    <div class="panel" style="border-color:#17a2b8;">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700;color:#17a2b8;">{$sudah_periksa}</h1>
+        <small><i class="fa fa-stethoscope" style="color:#17a2b8;"></i> Sudah Periksa</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-2">
+    <div class="panel panel-success">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700">{$sudah_kunjungan}</h1>
+        <small><i class="fa fa-check-square"></i> Sudah Kirim Kunjungan</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-2">
+    <div class="panel panel-warning">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700">{$belum_kirim}</h1>
+        <small><i class="fa fa-exclamation-triangle"></i> Belum Kirim Kunjungan</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-2">
+    <div class="panel panel-danger">
+      <div class="panel-body text-center">
+        <h1 style="margin:0;font-weight:700">{$batal}</h1>
+        <small><i class="fa fa-ban"></i> Batal</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  <i class="fa fa-calendar"></i> Data kunjungan BPJS tanggal: <strong>{$date}</strong>
+  <span class="badge">{$total} pasien</span>
+</div>
+
+{if: $total > 0}
+
+<!-- Tombol Bulk Kirim Kunjungan -->
+{if: $siap_kirim > 0}
+<div class="row" style="margin-bottom:10px;">
+  <div class="col-sm-12">
+    <div class="panel panel-warning" id="panel-bulk-kirim">
+      <div class="panel-heading" style="padding:8px 15px;">
+        <div class="row">
+          <div class="col-sm-6">
+            <label style="margin:0;font-weight:normal;cursor:pointer;">
+              <input type="checkbox" id="chk-select-all-bulk" onclick="bulkToggleAll(this.checked)"> Pilih Semua yang Siap Kirim
+              <span class="badge" id="badge-terpilih">0</span> terpilih dari <span class="badge badge-info">{$siap_kirim}</span> siap kirim
+            </label>
+          </div>
+          <div class="col-sm-6 text-right">
+            <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-kirim-kunjungan" disabled onclick="bulkKirimKunjungan()">
+              <i class="fa fa-send"></i> Kirim Bulk Kunjungan (<span id="bulk-count">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bulk Kirim -->
+<div class="row" id="bulk-progress-container" style="display:none;margin-bottom:10px;">
+  <div class="col-sm-12">
+    <div class="panel panel-info">
+      <div class="panel-heading"><i class="fa fa-spinner fa-spin"></i> Proses Kirim Bulk Kunjungan</div>
+      <div class="panel-body">
+        <div class="progress" style="margin-bottom:5px;">
+          <div class="progress-bar progress-bar-striped active" id="bulk-progress-bar" role="progressbar" style="width:0%;min-width:2em;">0%</div>
+        </div>
+        <div id="bulk-progress-text" class="text-center">Memulai proses...</div>
+        <div id="bulk-progress-log" style="max-height:200px;overflow-y:auto;margin-top:10px;font-size:12px;"></div>
+      </div>
+      <div class="panel-footer text-right" id="bulk-progress-footer" style="display:none;">
+        <button type="button" class="btn btn-sm btn-primary" id="btn-bulk-selesai" onclick="if(typeof loadDashboardData==='function') loadDashboardData();">
+          <i class="fa fa-refresh"></i> Refresh Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{/if}
+
+<div class="table-responsive">
+  <table class="table table-bordered table-striped table-hover display nowrap" id="tbl_dashboard_pcare" width="100%">
+    <thead>
+      <tr class="bg-primary">
+        <th style="width:30px;"><input type="checkbox" id="chk-select-all-table" onclick="bulkToggleAll(this.checked)" title="Pilih semua yang siap kirim"></th>
+        <th>No</th>
+        <th>No. Rawat</th>
+        <th>No. RM</th>
+        <th>Nama Pasien</th>
+        <th>No. Kartu BPJS</th>
+        <th>Poli</th>
+        <th>Dokter</th>
+        <th>Status Periksa</th>
+        <th>No. Urut PCare</th>
+        <th>No. Kunjungan PCare</th>
+        <th>Status Pendaftaran</th>
+        <th>Status Kunjungan</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {loop: $rows}
+      <tr data-id="{$value.bridging_id}" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nomor_jaminan="{$value.no_peserta}"{if: $value.stts == 'Batal'} class="danger"{/if}>
+        <td>
+          {if: $value.nomor_urut && !$value.nomor_kunjungan && $value.stts == 'Sudah'}
+            <input type="checkbox" class="chk-bulk-kirim" onclick="bulkUpdateCount()"
+                   data-id="{$value.bridging_id}"
+                   data-no_rawat="{$value.no_rawat}"
+                   data-no_rkm_medis="{$value.no_rkm_medis}"
+                   data-nomor_jaminan="{$value.no_peserta}"
+                   data-nm_pasien="{$value.nm_pasien}">
+          {else}
+            {if: $value.stts == 'Batal' && $value.nomor_urut}
+              <i class="fa fa-ban text-danger" title="BATAL - Hapus manual pendaftaran di web PCare"></i>
+            {elseif: $value.nomor_kunjungan}
+              <i class="fa fa-check text-success" title="Sudah terkirim"></i>
+            {elseif: $value.nomor_urut && $value.stts != 'Sudah'}
+              <i class="fa fa-clock-o text-warning" title="Menunggu selesai periksa"></i>
+            {else}
+              <i class="fa fa-minus text-muted" title="Belum didaftarkan"></i>
+            {/if}
+          {/if}
+        </td>
+        <td>{?=$counter+1?}</td>
+        <td><span class="label label-primary">{$value.no_rawat}</span></td>
+        <td>{$value.no_rkm_medis}</td>
+        <td><strong>{$value.nm_pasien}</strong></td>
+        <td>{$value.no_peserta}</td>
+        <td>{$value.nm_poli}</td>
+        <td>{$value.nm_dokter}</td>
+        <td>
+          {if: $value.stts == 'Sudah'}
+            <span class="label label-success"><i class="fa fa-check"></i> Sudah</span>
+          {elseif: $value.stts == 'Belum'}
+            <span class="label label-warning"><i class="fa fa-clock-o"></i> Belum</span>
+          {elseif: $value.stts == 'Batal'}
+            <span class="label label-danger"><i class="fa fa-ban"></i> Batal</span>
+          {else}
+            <span class="label label-info"><i class="fa fa-info-circle"></i> {$value.stts}</span>
+          {/if}
+        </td>
+        <td>
+          {if: $value.nomor_urut}
+            <span class="label label-success">{$value.nomor_urut}</span>
+          {else}
+            <span class="label label-default">-</span>
+          {/if}
+        </td>
+        <td class="td-nomor-kunjungan">
+          {if: $value.nomor_kunjungan}
+            <span class="label label-info">{$value.nomor_kunjungan}</span>
+          {else}
+            <span class="label label-default">-</span>
+          {/if}
+        </td>
+        <td>
+          {if: $value.nomor_urut}
+            <span class="label label-success"><i class="fa fa-check"></i> Sudah</span>
+          {else}
+            <span class="label label-warning"><i class="fa fa-clock-o"></i> Belum</span>
+          {/if}
+        </td>
+        <td class="td-status-kunjungan">
+          {if: $value.nomor_kunjungan}
+            <span class="label label-success"><i class="fa fa-check"></i> Sudah</span>
+          {else}
+            <span class="label label-warning"><i class="fa fa-clock-o"></i> Belum</span>
+          {/if}
+        </td>
+        <td style="white-space:nowrap">
+          <a href="#" class="btn btn-xs btn-warning btn-pendaftaran-pcare"
+             data-no_rkm_medis="{$value.no_rkm_medis}"
+             data-tgl_registrasi="{$value.tgl_registrasi}"
+             title="Pendaftaran PCare">
+            <i class="fa fa-plus"></i> Daftar
+          </a>
+          <a href="#" class="btn btn-xs btn-info btn-bridging-pcare"
+             data-no_rkm_medis="{$value.no_rkm_medis}"
+             data-tgl_registrasi="{$value.tgl_registrasi}"
+             title="Bridging PCare - Kirim Kunjungan">
+            <i class="fa fa-send"></i> Kunjungan
+          </a>
+        </td>
+      </tr>
+      {/loop}
+    </tbody>
+  </table>
+</div>
+
+<!-- Bottom action bar -->
+{if: $siap_kirim > 0}
+<div class="row" id="bulk-bottom-bar" style="margin-top:10px;">
+  <div class="col-sm-12 text-right">
+    <span id="badge-terpilih-bottom" class="badge">0</span> terpilih |
+    <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-kirim-kunjungan-bottom" disabled onclick="bulkKirimKunjungan()">
+      <i class="fa fa-send"></i> Kirim Bulk Kunjungan (<span id="bulk-count-bottom">0</span>)
+    </button>
+  </div>
+</div>
+{/if}
+
+<script type="text/javascript">
+// === GLOBAL FUNCTIONS untuk bulk kirim (harus di luar document.ready) ===
+function bulkUpdateCount() {
+  var count = document.querySelectorAll('#tbl_dashboard_pcare .chk-bulk-kirim:checked').length;
+  var total = document.querySelectorAll('#tbl_dashboard_pcare .chk-bulk-kirim').length;
+  // Update semua counter
+  var els = document.querySelectorAll('#bulk-count, #bulk-count-bottom, #badge-terpilih, #badge-terpilih-bottom');
+  for (var i = 0; i < els.length; i++) els[i].textContent = count;
+  // Enable/disable tombol
+  var btns = document.querySelectorAll('#btn-bulk-kirim-kunjungan, #btn-bulk-kirim-kunjungan-bottom');
+  for (var i = 0; i < btns.length; i++) btns[i].disabled = (count === 0);
+  // Sync select-all
+  var allChecked = (count === total && total > 0);
+  var selAlls = document.querySelectorAll('#chk-select-all-bulk, #chk-select-all-table');
+  for (var i = 0; i < selAlls.length; i++) selAlls[i].checked = allChecked;
+}
+
+function bulkToggleAll(isChecked) {
+  var boxes = document.querySelectorAll('#tbl_dashboard_pcare .chk-bulk-kirim');
+  for (var i = 0; i < boxes.length; i++) boxes[i].checked = isChecked;
+  // Sync both select-all checkboxes
+  document.getElementById('chk-select-all-bulk').checked = isChecked;
+  document.getElementById('chk-select-all-table').checked = isChecked;
+  bulkUpdateCount();
+}
+
+function bulkKirimKunjungan() {
+  var checkboxes = document.querySelectorAll('#tbl_dashboard_pcare .chk-bulk-kirim:checked');
+  var items = [];
+  for (var i = 0; i < checkboxes.length; i++) {
+    var cb = checkboxes[i];
+    items.push({
+      id: cb.getAttribute('data-id'),
+      no_rawat: cb.getAttribute('data-no_rawat'),
+      no_rkm_medis: cb.getAttribute('data-no_rkm_medis'),
+      nomor_jaminan: cb.getAttribute('data-nomor_jaminan'),
+      nm_pasien: cb.getAttribute('data-nm_pasien')
+    });
+  }
+
+    if (items.length === 0) {
+      alert('Tidak ada data yang dipilih!');
+      return;
+    }
+
+  if (!confirm('Anda yakin akan mengirim ' + items.length + ' kunjungan sekaligus ke PCare?\n\nPastikan semua data pemeriksaan sudah lengkap.')) {
+    return;
+  }
+
+  // Disable tombol dan tampilkan progress
+  $('#btn-bulk-kirim-kunjungan, #btn-bulk-kirim-kunjungan-bottom').prop('disabled', true);
+  $('#panel-bulk-kirim').hide();
+  $('#bulk-bottom-bar').hide();
+  $('#bulk-progress-container').show();
+  $('#bulk-progress-footer').hide();
+  $('#bulk-progress-log').html('');
+
+  var total = items.length;
+  var processed = 0;
+  var sukses = 0;
+  var gagal = 0;
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  function kirimNext(index) {
+    if (index >= total) {
+      var pct = 100;
+      $('#bulk-progress-bar').css('width', pct + '%').text(pct + '%').removeClass('active');
+      if (gagal === 0) {
+        $('#bulk-progress-bar').removeClass('progress-bar-striped').addClass('progress-bar-success');
+      } else {
+        $('#bulk-progress-bar').removeClass('progress-bar-striped').addClass('progress-bar-warning');
+      }
+      $('#bulk-progress-text').html('<strong>Selesai!</strong> Berhasil: <span class="text-success">' + sukses + '</span> | Gagal: <span class="text-danger">' + gagal + '</span> dari ' + total + ' kunjungan');
+      $('#bulk-progress-footer').show();
+      return;
+    }
+
+    var item = items[index];
+    var pct = Math.round(((index) / total) * 100);
+    $('#bulk-progress-bar').css('width', pct + '%').text(pct + '%');
+    $('#bulk-progress-text').html('Mengirim <strong>' + item.nm_pasien + '</strong> (' + (index + 1) + '/' + total + ')...');
+
+    $.ajax({
+      url: baseURL + '/pcare/kirimkunjunganbpjs?t=' + mlite.token,
+      method: 'POST',
+      dataType: 'json',
+      data: {
+        id: item.id,
+        no_rawat: item.no_rawat,
+        no_rkm_medis: item.no_rkm_medis,
+        nomor_jaminan: item.nomor_jaminan
+      },
+      timeout: 60000,
+      success: function(resp) {
+        processed++;
+        if (resp.status === 'success') {
+          sukses++;
+          $('#bulk-progress-log').prepend(
+            '<div class="text-success"><i class="fa fa-check"></i> ' + item.nm_pasien + ' — OK: ' + (resp.nomor_kunjungan || '') + '</div>'
+          );
+          // Update row di tabel
+          var row = $('tr[data-id="' + item.id + '"]');
+          row.find('.chk-bulk-kirim').replaceWith('<i class="fa fa-check text-success"></i>');
+          row.find('.td-nomor-kunjungan').html('<span class="label label-info">' + (resp.nomor_kunjungan || '-') + '</span>');
+          row.find('.td-status-kunjungan').html('<span class="label label-success"><i class="fa fa-check"></i> Sudah</span>');
+        } else {
+          gagal++;
+          $('#bulk-progress-log').prepend(
+            '<div class="text-danger"><i class="fa fa-times"></i> ' + item.nm_pasien + ' — ' + (resp.message || 'Gagal') + '</div>'
+          );
+        }
+        setTimeout(function() { kirimNext(index + 1); }, 500);
+      },
+      error: function(xhr) {
+        processed++;
+        gagal++;
+        $('#bulk-progress-log').prepend(
+          '<div class="text-danger"><i class="fa fa-times"></i> ' + item.nm_pasien + ' — Error: ' + xhr.statusText + '</div>'
+        );
+        setTimeout(function() { kirimNext(index + 1); }, 500);
+      }
+    });
+  }
+
+  kirimNext(0);
+}
+
+$(document).ready(function() {
+  // DataTable init
+  $('#tbl_dashboard_pcare').DataTable({
+    "scrollX": true,
+    "pageLength": 100,
+    "order": [[1, 'asc']],
+    "columnDefs": [
+      { "orderable": false, "targets": 0 }
+    ],
+    "language": {
+      "lengthMenu": "Tampilkan _MENU_ data per halaman",
+      "zeroRecords": "Data tidak ditemukan",
+      "info": "Menampilkan halaman _PAGE_ dari _PAGES_",
+      "infoEmpty": "Tidak ada data tersedia",
+      "infoFiltered": "(difilter dari _MAX_ total data)",
+      "search": "Cari:",
+      "paginate": {
+        "first": "Pertama",
+        "last": "Terakhir",
+        "next": "Selanjutnya",
+        "previous": "Sebelumnya"
+      }
+    }
+  });
+});
+</script>
+
+{else}
+<div class="alert alert-warning">
+  <i class="fa fa-exclamation-triangle"></i> Tidak ada data pasien BPJS pada tanggal <strong>{$date}</strong>.
+</div>
+{/if}

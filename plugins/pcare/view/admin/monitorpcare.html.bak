@@ -1,0 +1,248 @@
+<div class="row">
+  <div class="col-sm-12">
+    {include: ../plugins/pcare/view/admin/menu.html}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-tv"></i> Monitor PCare — Dashboard & Sinkronisasi</h3>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info" style="margin-bottom:15px;">
+          <i class="fa fa-info-circle"></i> Halaman ini menggabungkan <strong>Dashboard Pengiriman PCare</strong> dan <strong>Cek Sinkronisasi</strong> dalam satu tampilan.
+        </div>
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label for="tanggal_monitor">Pilih Tanggal</label>
+              <div class="input-group date tanggal">
+                <input type="text" class="form-control" id="tanggal_monitor" name="tanggal_monitor" value="{?=date('d-m-Y')?}">
+                <span class="input-group-addon" id="btn-kalender-monitor" style="cursor:pointer">
+                  <span class="fa fa-calendar"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <div>
+                <button type="button" class="btn btn-primary" id="btn-cari-monitor">
+                  <i class="fa fa-search"></i> Cari
+                </button>
+                <button type="button" class="btn btn-default" id="btn-refresh-monitor">
+                  <i class="fa fa-refresh"></i> Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="monitorTab" role="tablist" style="margin-bottom:0;">
+          <li role="presentation" class="active">
+            <a href="#tab-dashboard" aria-controls="tab-dashboard" role="tab" data-toggle="tab">
+              <i class="fa fa-dashboard"></i> Dashboard Pengiriman
+            </a>
+          </li>
+          <li role="presentation">
+            <a href="#tab-sinkronisasi" aria-controls="tab-sinkronisasi" role="tab" data-toggle="tab">
+              <i class="fa fa-exchange"></i> Cek Sinkronisasi
+            </a>
+          </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" style="border:1px solid #ddd;border-top:none;padding:15px;background:#fff;">
+          <div role="tabpanel" class="tab-pane active" id="tab-dashboard">
+            <div id="display_monitor_dashboard">
+              <div class="text-center">
+                <p><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat data dashboard...</p>
+              </div>
+            </div>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="tab-sinkronisasi">
+            <div class="alert alert-info" style="margin-top:10px;">
+              <i class="fa fa-info-circle"></i> Fitur ini membandingkan data pendaftaran di <strong>server PCare BPJS</strong> dengan data bridging di <strong>mLITE</strong>.
+              Berguna untuk mendeteksi pendaftaran yang ada di PCare tapi tidak tercatat di mLITE (misal: duplikat/manual), atau sebaliknya.
+            </div>
+            <div id="display_monitor_sinkronisasi">
+              <div class="text-center text-muted">
+                <p><i class="fa fa-exchange fa-2x"></i><br>Klik tab ini untuk memuat data sinkronisasi.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bridging PCare -->
+<div class="modal fade" id="bridgingpcareModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            ...
+        </div>
+    </div>
+</div>
+
+<!-- Modal Pendaftaran PCare -->
+<div class="modal fade" id="pendaftaranpcareModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            ...
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tindakan & Obat PCare -->
+<div class="modal fade" id="bridgingpcaretindakanobatModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            ...
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+var monitorSinkronisasiLoaded = false;
+
+function loadMonitorData() {
+  var tanggal = $('#tanggal_monitor').val();
+  if (!tanggal) {
+    tanggal = '{?=date('d-m-Y')?}';
+  }
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  // Reset sinkronisasi state
+  monitorSinkronisasiLoaded = false;
+
+  // Load combined display
+  $('#display_monitor_dashboard').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-3x"></i><br>Memuat data...</div>');
+  $('#display_monitor_sinkronisasi').html('<div class="text-center text-muted"><p><i class="fa fa-exchange fa-2x"></i><br>Klik tab "Cek Sinkronisasi" untuk memuat data.</p></div>');
+
+  var loadURL = baseURL + '/pcare/monitorpcaredisplay?date=' + encodeURIComponent(tanggal) + '&t=' + mlite.token;
+
+  $.ajax({
+    url: loadURL,
+    type: 'GET',
+    success: function(response) {
+      // Parse response — split dashboard and sinkronisasi parts
+      var parts = response.split('<!-- SPLIT_SINKRONISASI -->');
+      if (parts.length >= 2) {
+        $('#display_monitor_dashboard').html(parts[0]);
+        // Store sinkronisasi HTML for lazy-load
+        window._sinkronisasiHtml = parts[1];
+        // If user is already on sinkronisasi tab, load it
+        if ($('#tab-sinkronisasi').hasClass('active')) {
+          loadSinkronisasiTab();
+        }
+      } else {
+        $('#display_monitor_dashboard').html(response);
+      }
+    },
+    error: function(xhr) {
+      $('#display_monitor_dashboard').html('<div class="alert alert-danger">Terjadi kesalahan saat memuat data: ' + xhr.statusText + '</div>');
+    }
+  });
+}
+
+function loadSinkronisasiTab() {
+  if (monitorSinkronisasiLoaded) return;
+  monitorSinkronisasiLoaded = true;
+  if (window._sinkronisasiHtml) {
+    $('#display_monitor_sinkronisasi').html(window._sinkronisasiHtml);
+  } else {
+    $('#display_monitor_sinkronisasi').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Menunggu data...</div>');
+  }
+}
+
+$(document).ready(function () {
+  try {
+    $('.tanggal').datetimepicker({
+      format: 'DD-MM-YYYY',
+      locale: 'id',
+      showTodayButton: true,
+      showClear: true,
+      allowInputToggle: true,
+      useCurrent: true
+    });
+  } catch(e) {
+    console.log('Datetimepicker init error:', e);
+  }
+
+  $(document).on('click', '#btn-kalender-monitor', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('#tanggal_monitor').focus();
+    var picker = $('.tanggal').data('DateTimePicker');
+    if (picker) {
+      picker.toggle();
+    }
+  });
+
+  $(document).on('click', '#btn-cari-monitor, #btn-refresh-monitor', function() {
+    loadMonitorData();
+  });
+
+  $(document).on('keypress', '#tanggal_monitor', function(e) {
+    if (e.which == 13) {
+      loadMonitorData();
+    }
+  });
+
+  // Lazy-load sinkronisasi tab
+  $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    if ($(e.target).attr('href') === '#tab-sinkronisasi') {
+      loadSinkronisasiTab();
+    }
+  });
+
+  // Auto-load data hari ini
+  setTimeout(function() {
+    loadMonitorData();
+  }, 300);
+});
+
+// Auto-refresh dashboard saat modal ditutup
+$('#bridgingpcareModal, #pendaftaranpcareModal, #bridgingpcaretindakanobatModal').on('hidden.bs.modal', function () {
+  loadMonitorData();
+});
+
+// Handle Bridging PCare button (Kirim Kunjungan)
+$(document).on("click", ".btn-bridging-pcare", function(event){
+  var baseURL = mlite.url + '/' + mlite.admin;
+  event.preventDefault();
+  var no_rkm_medis = $(this).attr("data-no_rkm_medis");
+  var tgl_registrasi = $(this).attr("data-tgl_registrasi");
+  var loadURL = baseURL + '/pcare/bridgingpcare/' + no_rkm_medis + '/' + tgl_registrasi + '?t=' + mlite.token;
+
+  var modal = $('#bridgingpcareModal');
+  var modalContent = $('#bridgingpcareModal .modal-content');
+
+  modal.off('show.bs.modal');
+  modal.on('show.bs.modal', function () {
+      modalContent.load(loadURL);
+  }).modal();
+  return false;
+});
+
+// Handle Pendaftaran PCare button
+$(document).on("click", ".btn-pendaftaran-pcare", function(event){
+  var baseURL = mlite.url + '/' + mlite.admin;
+  event.preventDefault();
+  var no_rkm_medis = $(this).attr("data-no_rkm_medis");
+  var tgl_registrasi = $(this).attr("data-tgl_registrasi");
+  var loadURL = baseURL + '/pcare/pendaftaranpcare/' + no_rkm_medis + '/' + tgl_registrasi + '?t=' + mlite.token;
+
+  var modal = $('#pendaftaranpcareModal');
+  var modalContent = $('#pendaftaranpcareModal .modal-content');
+
+  modal.off('show.bs.modal');
+  modal.on('show.bs.modal', function () {
+      modalContent.load(loadURL);
+  }).modal();
+  return false;
+});
+</script>

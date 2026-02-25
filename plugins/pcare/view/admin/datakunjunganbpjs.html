@@ -1,0 +1,1080 @@
+<div class="row">
+  <div class="col-sm-12">
+    {include: ../plugins/pcare/view/admin/menu.html}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Data Kunjungan BPJS Kesehatan</h3>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label for="tanggal">Pilih Tanggal</label>
+              <div class="input-group date tanggal">
+                <input type="text" class="form-control" id="tanggal" name="tanggal" value="{?=date('d-m-Y')?}">
+                <span class="input-group-addon" id="btn-kalender" style="cursor:pointer">
+                  <span class="fa fa-calendar"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-primary btn-block" id="btn-cari">
+                <i class="fa fa-search"></i> Cari
+              </button>
+            </div>
+          </div>
+        </div>
+        <hr>
+        <div id="display_kunjungan_bpjs">
+          <div class="text-center">
+            <p><i class="fa fa-info-circle"></i> Silakan pilih tanggal dan klik tombol Cari untuk menampilkan data kunjungan BPJS.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal untuk Detail -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="detailModalLabel">Detail Kunjungan</h4>
+      </div>
+      <div class="modal-body">
+        <!-- Content will be loaded here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Kirim Kunjungan ke PCare -->
+<div class="modal fade" id="kirimKunjunganModal" tabindex="-1" role="dialog" aria-labelledby="kirimKunjunganModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true" style="color:#fff">&times;</span></button>
+        <h4 class="modal-title" id="kirimKunjunganModalLabel"><i class="fa fa-send"></i> Bridging PCare - Kirim Kunjungan</h4>
+      </div>
+      <div class="modal-body">
+        <form id="formKirimKunjungan">
+          <input type="hidden" name="id_bridging" id="id_bridging">
+          <input type="hidden" name="kdDokter" id="kdDokter">
+          <input type="hidden" name="kdKesadaran" id="kdKesadaran">
+          <input type="hidden" name="kdStatusPulang" id="kdStatusPulang">
+          <input type="hidden" name="kdDiagnosa1" id="kdDiagnosa1">
+          <input type="hidden" name="kdDiagnosa2" id="kdDiagnosa2">
+          <input type="hidden" name="kdDiagnosa3" id="kdDiagnosa3">
+          <input type="hidden" name="kdPoli" id="kdPoli">
+          <input type="hidden" name="kdPrognosa" id="kdPrognosa">
+          <input type="hidden" name="kdAlergiMakan" id="kdAlergiMakan">
+          <input type="hidden" name="kdAlergiUdara" id="kdAlergiUdara">
+          <input type="hidden" name="kdAlergiObat" id="kdAlergiObat">
+          
+          <div class="row">
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>No. Rekam Medis</label>
+                <input type="text" class="form-control" name="no_rkm_medis" id="modal_no_rkm_medis" readonly>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>No. Pendaftaran</label>
+                <input type="text" class="form-control" name="no_rawat" id="modal_no_rawat" readonly>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>No. Kartu BPJS</label>
+                <input type="text" class="form-control" name="nomor_jaminan" id="modal_nomor_jaminan" readonly>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label>Kode Provider</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" name="kode_provider" id="modal_kode_provider" readonly>
+                  <span class="input-group-btn">
+                    <button type="button" class="btn btn-info" id="btnAmbilProvider"><i class="fa fa-search"></i></button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Nama Pasien</label>
+                <input type="text" class="form-control" name="nm_pasien" id="modal_nm_pasien" readonly>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Tanggal Daftar</label>
+                <div class="input-group date tanggal-form">
+                  <input type="text" class="form-control" name="tgl_daftar" id="modal_tgl_daftar">
+                  <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Poliklinik</label>
+                <input type="text" class="form-control" name="getPoli" id="modal_getPoli">
+                <ul class="list-group" id="modal_poliList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Jenis Kunjungan</label>
+                <select class="form-control" name="kunjungan_sakit" id="modal_kunjungan_sakit">
+                  <option value="true">Kunjungan Sakit</option>
+                  <option value="false">Kunjungan Sehat</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Jenis Layanan</label>
+                <select class="form-control" name="jenis_layanan" id="modal_jenis_layanan">
+                  <option value="1">Rawat Jalan</option>
+                  <option value="2">Rawat Inap</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Keluhan</label>
+                <input type="text" class="form-control" name="subyektif" id="modal_subyektif">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Sistole</label>
+                <input type="text" class="form-control" name="sistole" id="modal_sistole" value="0">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Diastole</label>
+                <input type="text" class="form-control" name="diastole" id="modal_diastole" value="0">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Nadi(/menit)</label>
+                <input type="text" class="form-control" name="nadi" id="modal_nadi" value="0">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>RR(/menit)</label>
+                <input type="text" class="form-control" name="respirasi" id="modal_respirasi" value="0">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Suhu(C)</label>
+                <input type="text" class="form-control" name="suhu" id="modal_suhu" value="36">
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="form-group">
+                <label>Tinggi(cm)</label>
+                <input type="text" class="form-control" name="tinggi" id="modal_tinggi" value="0">
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Berat(Kg)</label>
+                <input type="text" class="form-control" name="berat" id="modal_berat" value="0">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Lingkar Perut</label>
+                <input type="text" class="form-control" name="lingkar_perut" id="modal_lingkar_perut" value="0">
+              </div>
+            </div>
+          </div>
+
+          <hr style="margin: 10px 0;">
+          <h5><input type="checkbox" name="chk_kunjungan" id="chk_kunjungan" checked> <i class="fa fa-stethoscope"></i> Kunjungan</h5>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Tanggal Kunjungan</label>
+                <div class="input-group date tanggal-form">
+                  <input type="text" class="form-control" name="tgl_kunjungan" id="modal_tgl_kunjungan">
+                  <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Tanggal Pulang</label>
+                <div class="input-group date tanggal-form">
+                  <input type="text" class="form-control" name="tgl_pulang" id="modal_tgl_pulang">
+                  <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Dokter</label>
+                <input type="text" class="form-control" name="getDokter" id="modal_getDokter">
+                <ul class="list-group" id="modal_dokterList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Pemeriksaan/Anamnesa</label>
+                <textarea class="form-control" name="anamnesa" id="modal_anamnesa" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Terapi/RTL</label>
+                <textarea class="form-control" name="terapi" id="modal_terapi" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Terapi Obat</label>
+                <input type="text" class="form-control" name="terapiObat" id="modal_terapiObat" value="tidak ada">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Terapi Non Obat</label>
+                <input type="text" class="form-control" name="terapiNonObat" id="modal_terapiNonObat" value="tidak ada">
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Status Pulang</label>
+                <input type="text" class="form-control" name="getStatusPulang" id="modal_getStatusPulang">
+                <ul class="list-group" id="modal_statuspulangList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Kesadaran</label>
+                <input type="text" class="form-control" name="getKesadaran" id="modal_getKesadaran">
+                <ul class="list-group" id="modal_kesadaranList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Prognosa</label>
+                <input type="text" class="form-control" name="getPrognosa" id="modal_getPrognosa">
+                <ul class="list-group" id="modal_prognosaList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Diagnosa 1</label>
+                <input type="text" class="form-control" name="getDiagnosa1" id="modal_getDiagnosa1">
+                <ul class="list-group" id="modal_diagnosaList1" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Diagnosa 2</label>
+                <input type="text" class="form-control" name="getDiagnosa2" id="modal_getDiagnosa2">
+                <ul class="list-group" id="modal_diagnosaList2" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Diagnosa 3</label>
+                <input type="text" class="form-control" name="getDiagnosa3" id="modal_getDiagnosa3">
+                <ul class="list-group" id="modal_diagnosaList3" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Alergi Makan</label>
+                <input type="text" class="form-control" name="getAlergiMakan" id="modal_getAlergiMakan">
+                <ul class="list-group" id="modal_alergiMakanList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Alergi Udara</label>
+                <input type="text" class="form-control" name="getAlergiUdara" id="modal_getAlergiUdara">
+                <ul class="list-group" id="modal_alergiUdaraList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label>Alergi Obat</label>
+                <input type="text" class="form-control" name="getAlergiObat" id="modal_getAlergiObat">
+                <ul class="list-group" id="modal_alergiObatList" style="z-index:1000;position:absolute;width:93%;"></ul>
+              </div>
+            </div>
+          </div>
+          
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Batal</button>
+        <button type="button" class="btn btn-success" id="btn-kirim-submit"><i class="fa fa-send"></i> Kirim ke PCare</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+$(function () {
+  // Initialize datetimepicker dengan opsi lengkap
+  $('.tanggal').datetimepicker({
+    format: 'DD-MM-YYYY',
+    locale: 'id',
+    showTodayButton: true,
+    showClear: true,
+    allowInputToggle: true,
+    useCurrent: true
+  });
+  
+  // Klik tombol kalender untuk memunculkan date picker
+  $(document).on('click', '#btn-kalender', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('#tanggal').focus();
+    var picker = $('.tanggal').data('DateTimePicker');
+    if (picker) {
+      picker.toggle();
+    }
+  });
+  
+  // Initialize modal datetimepickers
+  $('.tanggal-form').datetimepicker({
+    format: 'DD-MM-YYYY',
+    locale: 'id',
+    allowInputToggle: true
+  });
+});
+</script>
+
+<script type="text/javascript">
+$('#btn-cari').on('click', function() {
+  loadDataKunjunganBpjs();
+});
+
+$('#tanggal').on('keypress', function(e) {
+  if (e.which == 13) {
+    loadDataKunjunganBpjs();
+  }
+});
+
+function loadDataKunjunganBpjs() {
+  var tanggal = $('#tanggal').val();
+  var baseURL = mlite.url + '/' + mlite.admin;
+  
+  $('#display_kunjungan_bpjs').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-3x"></i><br>Memuat data...</div>');
+  
+  var loadURL = baseURL + '/pcare/datakunjunganbpjsdisplay?date=' + encodeURIComponent(tanggal) + '&t=' + mlite.token;
+  
+  $('#display_kunjungan_bpjs').load(loadURL, function(response, status, xhr) {
+    if (status == "error") {
+      $('#display_kunjungan_bpjs').html('<div class="alert alert-danger">Terjadi kesalahan saat memuat data: ' + xhr.statusText + '</div>');
+    }
+  });
+}
+
+// Handle kirim kunjungan button click - Open Modal Form (event delegation)
+$(document).on('click', '.btn-kirim-kunjungan', function(e) {
+  e.preventDefault();
+  var btn = $(this);
+  
+  // Ambil data dari button attributes
+  var id = btn.data('id');
+  var no_rawat = btn.data('no_rawat');
+  var no_rkm_medis = btn.data('no_rkm_medis');
+  var nomor_jaminan = btn.data('nomor_jaminan');
+  var nm_pasien = btn.data('nm_pasien');
+  var nama_poli = btn.data('nama_poli');
+  var kd_poli = btn.data('kd_poli');
+  var nama_dokter = btn.data('nama_dokter');
+  var kd_dokter = btn.data('kd_dokter');
+  var tgl_kunjungan = btn.data('tgl_kunjungan');
+  var tgl_daftar = btn.data('tgl_daftar');
+  var kunjungan_sakit = btn.data('kunjungan_sakit');
+  var subyektif = btn.data('subyektif');
+  var sistole = btn.data('sistole');
+  var diastole = btn.data('diastole');
+  var berat = btn.data('berat');
+  var tinggi = btn.data('tinggi');
+  var nadi = btn.data('nadi');
+  var respirasi = btn.data('respirasi');
+  var lingkar_perut = btn.data('lingkar_perut');
+  var kd_kesadaran = btn.data('kd_kesadaran');
+  var nama_kesadaran = btn.data('nama_kesadaran');
+  var kd_status_pulang = btn.data('kd_status_pulang');
+  var nama_status_pulang = btn.data('nama_status_pulang');
+  var kd_diagnosa1 = btn.data('kd_diagnosa1');
+  var nama_diagnosa1 = btn.data('nama_diagnosa1');
+  var kd_diagnosa2 = btn.data('kd_diagnosa2');
+  var nama_diagnosa2 = btn.data('nama_diagnosa2');
+  var kd_diagnosa3 = btn.data('kd_diagnosa3');
+  var nama_diagnosa3 = btn.data('nama_diagnosa3');
+  var terapi = btn.data('terapi');
+  var tgl_pulang = btn.data('tgl_pulang');
+  var kode_provider = btn.data('kode_provider');
+  var anamnesa = btn.data('anamnesa');
+  var kd_prognosa = btn.data('kd_prognosa');
+  var nama_prognosa = btn.data('nama_prognosa');
+  var kd_alergi_makan = btn.data('kd_alergi_makan');
+  var nama_alergi_makan = btn.data('nama_alergi_makan');
+  var kd_alergi_udara = btn.data('kd_alergi_udara');
+  var nama_alergi_udara = btn.data('nama_alergi_udara');
+  var kd_alergi_obat = btn.data('kd_alergi_obat');
+  var nama_alergi_obat = btn.data('nama_alergi_obat');
+  
+  // Konversi format tanggal dari YYYY-MM-DD ke DD-MM-YYYY untuk ditampilkan
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === 'undefined' || dateStr === 'null' || dateStr === '') return '';
+    if (String(dateStr).indexOf('-') === 2) return dateStr; // Sudah format DD-MM-YYYY
+    var parts = String(dateStr).split('-');
+    if (parts.length !== 3) return dateStr;
+    return parts[2] + '-' + parts[1] + '-' + parts[0];
+  }
+  
+  // Helper untuk nilai default
+  function safeVal(val, def) {
+    if (val === undefined || val === null || val === '' || val === 'undefined' || val === 'null') return def || '';
+    return val;
+  }
+  
+  // Isi form modal dengan data
+  $('#id_bridging').val(id);
+  $('#modal_no_rawat').val(safeVal(no_rawat));
+  $('#modal_no_rkm_medis').val(safeVal(no_rkm_medis));
+  $('#modal_nomor_jaminan').val(safeVal(nomor_jaminan));
+  $('#modal_nm_pasien').val(safeVal(nm_pasien));
+  $('#modal_kode_provider').val(safeVal(kode_provider));
+  
+  // Tanggal Daftar
+  $('#modal_tgl_daftar').val(formatDate(tgl_daftar) || formatDate(tgl_kunjungan));
+  
+  // Poliklinik
+  $('#modal_getPoli').val(safeVal(nama_poli));
+  $('#kdPoli').val(safeVal(kd_poli));
+  
+  // Jenis Kunjungan & Layanan
+  $('#modal_kunjungan_sakit').val(kunjungan_sakit === 'true' || kunjungan_sakit === true ? 'true' : 'false');
+  $('#modal_jenis_layanan').val('1'); // Default Rawat Jalan
+  
+  // Keluhan
+  $('#modal_subyektif').val(safeVal(subyektif));
+  
+  // Vital Sign
+  $('#modal_sistole').val(safeVal(sistole, '0'));
+  $('#modal_diastole').val(safeVal(diastole, '0'));
+  $('#modal_nadi').val(safeVal(nadi, '0'));
+  $('#modal_respirasi').val(safeVal(respirasi, '0'));
+  $('#modal_suhu').val('36');
+  $('#modal_tinggi').val(safeVal(tinggi, '0'));
+  $('#modal_berat').val(safeVal(berat, '0'));
+  $('#modal_lingkar_perut').val(safeVal(lingkar_perut, '0'));
+  
+  // Tanggal Kunjungan & Pulang
+  var tglKunj = formatDate(tgl_kunjungan) || formatDate(tgl_daftar);
+  $('#modal_tgl_kunjungan').val(tglKunj);
+  $('#modal_tgl_pulang').val(formatDate(tgl_pulang) || tglKunj);
+  
+  // Dokter
+  $('#modal_getDokter').val(safeVal(nama_dokter));
+  $('#kdDokter').val(safeVal(kd_dokter));
+  
+  // Pemeriksaan / Anamnesa
+  $('#modal_anamnesa').val(safeVal(anamnesa));
+  
+  // Terapi
+  $('#modal_terapi').val(safeVal(terapi));
+  
+  // Status Pulang
+  $('#modal_getStatusPulang').val(safeVal(nama_status_pulang));
+  $('#kdStatusPulang').val(safeVal(kd_status_pulang));
+  
+  // Kesadaran
+  $('#modal_getKesadaran').val(safeVal(nama_kesadaran));
+  $('#kdKesadaran').val(safeVal(kd_kesadaran));
+  
+  // Prognosa
+  $('#modal_getPrognosa').val(safeVal(nama_prognosa));
+  $('#kdPrognosa').val(safeVal(kd_prognosa));
+  
+  // Diagnosa 1
+  if (kd_diagnosa1 && kd_diagnosa1 !== 'undefined') {
+    $('#modal_getDiagnosa1').val(kd_diagnosa1 + (nama_diagnosa1 && nama_diagnosa1 !== 'undefined' ? ' - ' + nama_diagnosa1 : ''));
+    $('#kdDiagnosa1').val(kd_diagnosa1);
+  } else {
+    $('#modal_getDiagnosa1').val('');
+    $('#kdDiagnosa1').val('');
+  }
+  
+  // Diagnosa 2
+  if (kd_diagnosa2 && kd_diagnosa2 !== 'undefined') {
+    $('#modal_getDiagnosa2').val(kd_diagnosa2 + (nama_diagnosa2 && nama_diagnosa2 !== 'undefined' ? ' - ' + nama_diagnosa2 : ''));
+    $('#kdDiagnosa2').val(kd_diagnosa2);
+  } else {
+    $('#modal_getDiagnosa2').val('');
+    $('#kdDiagnosa2').val('');
+  }
+  
+  // Diagnosa 3
+  if (kd_diagnosa3 && kd_diagnosa3 !== 'undefined') {
+    $('#modal_getDiagnosa3').val(kd_diagnosa3 + (nama_diagnosa3 && nama_diagnosa3 !== 'undefined' ? ' - ' + nama_diagnosa3 : ''));
+    $('#kdDiagnosa3').val(kd_diagnosa3);
+  } else {
+    $('#modal_getDiagnosa3').val('');
+    $('#kdDiagnosa3').val('');
+  }
+  
+  // Alergi Makan
+  $('#modal_getAlergiMakan').val(safeVal(nama_alergi_makan));
+  $('#kdAlergiMakan').val(safeVal(kd_alergi_makan));
+  
+  // Alergi Udara
+  $('#modal_getAlergiUdara').val(safeVal(nama_alergi_udara));
+  $('#kdAlergiUdara').val(safeVal(kd_alergi_udara));
+  
+  // Alergi Obat
+  $('#modal_getAlergiObat').val(safeVal(nama_alergi_obat));
+  $('#kdAlergiObat').val(safeVal(kd_alergi_obat));
+  
+  // Ambil kode provider otomatis jika belum ada
+  if (!kode_provider || kode_provider === 'undefined') {
+    ambilKodeProvider(nomor_jaminan);
+  }
+  
+  // Tampilkan modal
+  $('#kirimKunjunganModal').modal('show');
+});
+
+// Fungsi ambil kode provider dari BPJS
+function ambilKodeProvider(nomor_jaminan) {
+  if (!nomor_jaminan) return;
+  var baseURL = mlite.url + '/' + mlite.admin;
+  $.get(baseURL + '/pcare/peserta/' + nomor_jaminan + '?t=' + mlite.token, function(data){
+    try {
+      var json_obj = JSON.parse(data);
+      if(json_obj && json_obj.metaData && json_obj.metaData.code == 200) {
+        $('#modal_kode_provider').val(json_obj.response.kdProviderPst.kdProvider);
+      }
+    } catch(e) {}
+  });
+}
+
+// Button Ambil Provider
+$(document).on('click', '#btnAmbilProvider', function() {
+  var nomor_jaminan = $('#modal_nomor_jaminan').val();
+  ambilKodeProvider(nomor_jaminan);
+});
+
+// Handle detail button click (event delegation)
+$(document).on('click', '.btn-detail', function(e) {
+  e.preventDefault();
+  var no_rawat = $(this).data('no_rawat');
+  var nomor_kunjungan = $(this).data('nomor_kunjungan');
+  var id = $(this).data('id');
+  
+  var detailHtml = '<div class="row">' +
+    '<div class="col-md-12">' +
+    '<h4><i class="fa fa-user"></i> Detail Kunjungan</h4>' +
+    '<table class="table table-bordered">' +
+    '<tr><th width="30%">No. Rawat</th><td>' + no_rawat + '</td></tr>' +
+    '<tr><th>No. Kunjungan PCare</th><td>' + nomor_kunjungan + '</td></tr>' +
+    '</table>' +
+    '</div>' +
+    '</div>';
+  
+  $('#detailModal .modal-body').html(detailHtml);
+  $('#detailModal').modal('show');
+});
+</script>
+
+<!-- Script Autocomplete untuk Modal -->
+<script type="text/javascript">
+var baseURL = mlite.url + '/' + mlite.admin;
+
+// Autocomplete Dokter
+$('#modal_getDokter').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_dokterList').empty(); return; }
+  $.get(baseURL + '/pcare/dokter/' + keyword + '?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_dokterList').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_dokterList').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdDokter+'" data-nama="'+val.nmDokter+'">'+val.nmDokter+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_dokterList li', function() {
+  $('#modal_getDokter').val($(this).data('nama'));
+  $('#kdDokter').val($(this).data('kode'));
+  $('#modal_dokterList').empty();
+});
+
+// Autocomplete Kesadaran
+$('#modal_getKesadaran').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_kesadaranList').empty(); return; }
+  $.get(baseURL + '/pcare/kesadaran/' + keyword + '?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_kesadaranList').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_kesadaranList').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdSadar+'" data-nama="'+val.nmSadar+'">'+val.nmSadar+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_kesadaranList li', function() {
+  $('#modal_getKesadaran').val($(this).data('nama'));
+  $('#kdKesadaran').val($(this).data('kode'));
+  $('#modal_kesadaranList').empty();
+});
+
+// Autocomplete Status Pulang
+$('#modal_getStatusPulang').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_statuspulangList').empty(); return; }
+  $.get(baseURL + '/pcare/statuspulang/' + keyword + '?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_statuspulangList').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_statuspulangList').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdStatusPulang+'" data-nama="'+val.nmStatusPulang+'">'+val.nmStatusPulang+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_statuspulangList li', function() {
+  $('#modal_getStatusPulang').val($(this).data('nama'));
+  $('#kdStatusPulang').val($(this).data('kode'));
+  $('#modal_statuspulangList').empty();
+});
+
+// Autocomplete Diagnosa 1
+$('#modal_getDiagnosa1').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_diagnosaList1').empty(); return; }
+  $.get(baseURL + '/pcare/diagnosa/' + keyword + '/0/10?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_diagnosaList1').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_diagnosaList1').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdDiag+'" data-nama="'+val.nmDiag+'">'+val.kdDiag+' - '+val.nmDiag+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_diagnosaList1 li', function() {
+  $('#modal_getDiagnosa1').val($(this).data('kode') + ' - ' + $(this).data('nama'));
+  $('#kdDiagnosa1').val($(this).data('kode'));
+  $('#modal_diagnosaList1').empty();
+});
+
+// Autocomplete Diagnosa 2
+$('#modal_getDiagnosa2').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_diagnosaList2').empty(); return; }
+  $.get(baseURL + '/pcare/diagnosa/' + keyword + '/0/10?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_diagnosaList2').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_diagnosaList2').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdDiag+'" data-nama="'+val.nmDiag+'">'+val.kdDiag+' - '+val.nmDiag+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_diagnosaList2 li', function() {
+  $('#modal_getDiagnosa2').val($(this).data('kode') + ' - ' + $(this).data('nama'));
+  $('#kdDiagnosa2').val($(this).data('kode'));
+  $('#modal_diagnosaList2').empty();
+});
+
+// Autocomplete Diagnosa 3
+$('#modal_getDiagnosa3').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_diagnosaList3').empty(); return; }
+  $.get(baseURL + '/pcare/diagnosa/' + keyword + '/0/10?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_diagnosaList3').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_diagnosaList3').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdDiag+'" data-nama="'+val.nmDiag+'">'+val.kdDiag+' - '+val.nmDiag+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_diagnosaList3 li', function() {
+  $('#modal_getDiagnosa3').val($(this).data('kode') + ' - ' + $(this).data('nama'));
+  $('#kdDiagnosa3').val($(this).data('kode'));
+  $('#modal_diagnosaList3').empty();
+});
+
+// Autocomplete Poliklinik
+$('#modal_getPoli').on('input', function() {
+  var keyword = $(this).val();
+  if(keyword.length < 2) { $('#modal_poliList').empty(); return; }
+  $.get(baseURL + '/pcare/poliklinik/' + keyword + '/0/20?t=' + mlite.token, function(data) {
+    var json_obj = JSON.parse(data);
+    $('#modal_poliList').empty();
+    if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+      $.each(json_obj.response.list, function(i, val) {
+        $('#modal_poliList').append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val.kdPoli+'" data-nama="'+val.nmPoli+'">'+val.nmPoli+'</li>');
+      });
+    }
+  });
+});
+
+$(document).on('click', '#modal_poliList li', function() {
+  $('#modal_getPoli').val($(this).data('nama'));
+  $('#kdPoli').val($(this).data('kode'));
+  $('#modal_poliList').empty();
+});
+
+// Cache untuk data referensi PCare
+var pcareCache = {
+  prognosa: null,
+  alergiMakan: null,
+  alergiUdara: null,
+  alergiObat: null
+};
+
+// Helper function untuk filter dan render list
+function renderFilteredList(data, keyword, listEl, kodeField, namaField, kodeAttr, namaAttr) {
+  listEl.empty();
+  if (!data) return;
+  var filtered = data.filter(function(item) {
+    if (!keyword) return true;
+    return item[namaField].toLowerCase().indexOf(keyword.toLowerCase()) !== -1 ||
+           String(item[kodeField]).toLowerCase().indexOf(keyword.toLowerCase()) !== -1;
+  });
+  $.each(filtered, function(i, val) {
+    listEl.append('<li class="list-group-item" style="cursor:pointer" data-kode="'+val[kodeField]+'" data-nama="'+val[namaField]+'">'+val[namaField]+'</li>');
+  });
+}
+
+// Autocomplete Prognosa dengan cache dan filter
+function loadPrognosaList(keyword) {
+  var listEl = $('#modal_prognosaList');
+  if (pcareCache.prognosa) {
+    renderFilteredList(pcareCache.prognosa, keyword, listEl, 'kdPrognosa', 'nmPrognosa');
+  } else {
+    listEl.html('<li class="list-group-item"><i class="fa fa-spinner fa-spin"></i> Memuat...</li>');
+    $.get(baseURL + '/pcare/prognosa?t=' + mlite.token, function(data) {
+      var json_obj = JSON.parse(data);
+      if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+        pcareCache.prognosa = json_obj.response.list;
+        renderFilteredList(pcareCache.prognosa, keyword, listEl, 'kdPrognosa', 'nmPrognosa');
+      } else {
+        listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+      }
+    }).fail(function() {
+      listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+    });
+  }
+}
+
+$('#modal_getPrognosa').on('focus', function() {
+  loadPrognosaList($(this).val());
+});
+
+$('#modal_getPrognosa').on('input', function() {
+  loadPrognosaList($(this).val());
+});
+
+$(document).on('click', '#modal_prognosaList li', function() {
+  if ($(this).data('kode')) {
+    $('#modal_getPrognosa').val($(this).data('nama'));
+    $('#kdPrognosa').val($(this).data('kode'));
+  }
+  $('#modal_prognosaList').empty();
+});
+
+// Autocomplete Alergi Makan (jenis 01) dengan cache dan filter
+function loadAlergiMakanList(keyword) {
+  var listEl = $('#modal_alergiMakanList');
+  if (pcareCache.alergiMakan) {
+    renderFilteredList(pcareCache.alergiMakan, keyword, listEl, 'kdAlergi', 'nmAlergi');
+  } else {
+    listEl.html('<li class="list-group-item"><i class="fa fa-spinner fa-spin"></i> Memuat...</li>');
+    $.get(baseURL + '/pcare/alergi/01?t=' + mlite.token, function(data) {
+      var json_obj = JSON.parse(data);
+      if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+        pcareCache.alergiMakan = json_obj.response.list;
+        renderFilteredList(pcareCache.alergiMakan, keyword, listEl, 'kdAlergi', 'nmAlergi');
+      } else {
+        listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+      }
+    }).fail(function() {
+      listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+    });
+  }
+}
+
+$('#modal_getAlergiMakan').on('focus', function() {
+  loadAlergiMakanList($(this).val());
+});
+
+$('#modal_getAlergiMakan').on('input', function() {
+  loadAlergiMakanList($(this).val());
+});
+
+$(document).on('click', '#modal_alergiMakanList li', function() {
+  if ($(this).data('kode')) {
+    $('#modal_getAlergiMakan').val($(this).data('nama'));
+    $('#kdAlergiMakan').val($(this).data('kode'));
+  }
+  $('#modal_alergiMakanList').empty();
+});
+
+// Autocomplete Alergi Udara (jenis 02) dengan cache dan filter
+function loadAlergiUdaraList(keyword) {
+  var listEl = $('#modal_alergiUdaraList');
+  if (pcareCache.alergiUdara) {
+    renderFilteredList(pcareCache.alergiUdara, keyword, listEl, 'kdAlergi', 'nmAlergi');
+  } else {
+    listEl.html('<li class="list-group-item"><i class="fa fa-spinner fa-spin"></i> Memuat...</li>');
+    $.get(baseURL + '/pcare/alergi/02?t=' + mlite.token, function(data) {
+      var json_obj = JSON.parse(data);
+      if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+        pcareCache.alergiUdara = json_obj.response.list;
+        renderFilteredList(pcareCache.alergiUdara, keyword, listEl, 'kdAlergi', 'nmAlergi');
+      } else {
+        listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+      }
+    }).fail(function() {
+      listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+    });
+  }
+}
+
+$('#modal_getAlergiUdara').on('focus', function() {
+  loadAlergiUdaraList($(this).val());
+});
+
+$('#modal_getAlergiUdara').on('input', function() {
+  loadAlergiUdaraList($(this).val());
+});
+
+$(document).on('click', '#modal_alergiUdaraList li', function() {
+  if ($(this).data('kode')) {
+    $('#modal_getAlergiUdara').val($(this).data('nama'));
+    $('#kdAlergiUdara').val($(this).data('kode'));
+  }
+  $('#modal_alergiUdaraList').empty();
+});
+
+// Autocomplete Alergi Obat (jenis 03) dengan cache dan filter
+function loadAlergiObatList(keyword) {
+  var listEl = $('#modal_alergiObatList');
+  if (pcareCache.alergiObat) {
+    renderFilteredList(pcareCache.alergiObat, keyword, listEl, 'kdAlergi', 'nmAlergi');
+  } else {
+    listEl.html('<li class="list-group-item"><i class="fa fa-spinner fa-spin"></i> Memuat...</li>');
+    $.get(baseURL + '/pcare/alergi/03?t=' + mlite.token, function(data) {
+      var json_obj = JSON.parse(data);
+      if(json_obj.metaData && json_obj.metaData.code == 200 && json_obj.response && json_obj.response.list) {
+        pcareCache.alergiObat = json_obj.response.list;
+        renderFilteredList(pcareCache.alergiObat, keyword, listEl, 'kdAlergi', 'nmAlergi');
+      } else {
+        listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+      }
+    }).fail(function() {
+      listEl.html('<li class="list-group-item text-danger">Gagal memuat data</li>');
+    });
+  }
+}
+
+$('#modal_getAlergiObat').on('focus', function() {
+  loadAlergiObatList($(this).val());
+});
+
+$('#modal_getAlergiObat').on('input', function() {
+  loadAlergiObatList($(this).val());
+});
+
+$(document).on('click', '#modal_alergiObatList li', function() {
+  if ($(this).data('kode')) {
+    $('#modal_getAlergiObat').val($(this).data('nama'));
+    $('#kdAlergiObat').val($(this).data('kode'));
+  }
+  $('#modal_alergiObatList').empty();
+});
+
+// Hide dropdown when clicking outside
+$(document).on('click', function(e) {
+  if (!$(e.target).closest('#modal_getPrognosa, #modal_prognosaList').length) {
+    $('#modal_prognosaList').empty();
+  }
+  if (!$(e.target).closest('#modal_getAlergiMakan, #modal_alergiMakanList').length) {
+    $('#modal_alergiMakanList').empty();
+  }
+  if (!$(e.target).closest('#modal_getAlergiUdara, #modal_alergiUdaraList').length) {
+    $('#modal_alergiUdaraList').empty();
+  }
+  if (!$(e.target).closest('#modal_getAlergiObat, #modal_alergiObatList').length) {
+    $('#modal_alergiObatList').empty();
+  }
+});
+
+// Submit Kirim Kunjungan
+$('#btn-kirim-submit').on('click', function() {
+  var btn = $(this);
+  var id = $('#id_bridging').val();
+  
+  // Validasi field wajib
+  if (!$('#kdDiagnosa1').val()) {
+    alert('Diagnosa 1 wajib diisi!');
+    $('#modal_getDiagnosa1').focus();
+    return;
+  }
+  if (!$('#kdDokter').val()) {
+    alert('Dokter wajib diisi!');
+    $('#modal_getDokter').focus();
+    return;
+  }
+  if (!$('#kdKesadaran').val()) {
+    alert('Kesadaran wajib diisi!');
+    $('#modal_getKesadaran').focus();
+    return;
+  }
+  if (!$('#kdStatusPulang').val()) {
+    alert('Status Pulang wajib diisi!');
+    $('#modal_getStatusPulang').focus();
+    return;
+  }
+  
+  btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim...');
+  
+  // Konversi tanggal dari DD-MM-YYYY ke YYYY-MM-DD untuk API
+  function convertDate(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return parts[2] + '-' + parts[1] + '-' + parts[0];
+  }
+  
+  var formData = {
+    id: id,
+    no_rawat: $('#modal_no_rawat').val(),
+    no_rkm_medis: $('#modal_no_rkm_medis').val(),
+    nomor_jaminan: $('#modal_nomor_jaminan').val(),
+    kode_provider: $('#modal_kode_provider').val(),
+    tgl_daftar: convertDate($('#modal_tgl_daftar').val()),
+    tgl_kunjungan: convertDate($('#modal_tgl_kunjungan').val()),
+    tgl_pulang: convertDate($('#modal_tgl_pulang').val()),
+    kunjungan_sakit: $('#modal_kunjungan_sakit').val(),
+    jenis_layanan: $('#modal_jenis_layanan').val(),
+    subyektif: $('#modal_subyektif').val(),
+    sistole: $('#modal_sistole').val(),
+    diastole: $('#modal_diastole').val(),
+    berat: $('#modal_berat').val(),
+    tinggi: $('#modal_tinggi').val(),
+    nadi: $('#modal_nadi').val(),
+    respirasi: $('#modal_respirasi').val(),
+    suhu: $('#modal_suhu').val(),
+    lingkar_perut: $('#modal_lingkar_perut').val(),
+    kdDokter: $('#kdDokter').val(),
+    kdKesadaran: $('#kdKesadaran').val(),
+    kdStatusPulang: $('#kdStatusPulang').val(),
+    kdPrognosa: $('#kdPrognosa').val(),
+    kdDiagnosa1: $('#kdDiagnosa1').val(),
+    kdDiagnosa2: $('#kdDiagnosa2').val(),
+    kdDiagnosa3: $('#kdDiagnosa3').val(),
+    kdPoli: $('#kdPoli').val(),
+    anamnesa: $('#modal_anamnesa').val(),
+    terapi: $('#modal_terapi').val(),
+    terapiObat: $('#modal_terapiObat').val(),
+    terapiNonObat: $('#modal_terapiNonObat').val(),
+    kdAlergiMakan: $('#kdAlergiMakan').val(),
+    kdAlergiUdara: $('#kdAlergiUdara').val(),
+    kdAlergiObat: $('#kdAlergiObat').val(),
+    t: mlite.token
+  };
+  
+  $.ajax({
+    url: baseURL + '/pcare/kirimkunjunganbpjs',
+    type: 'POST',
+    data: formData,
+    success: function(response) {
+      try {
+        var result = JSON.parse(response);
+        if (result.status === 'success') {
+          alert('Berhasil! No. Kunjungan: ' + result.nomor_kunjungan);
+          $('#kirimKunjunganModal').modal('hide');
+          // Reload data
+          loadDataKunjunganBpjs();
+        } else {
+          alert('Gagal: ' + result.message);
+          btn.prop('disabled', false).html('<i class="fa fa-send"></i> Kirim ke PCare');
+        }
+      } catch(e) {
+        alert('Response: ' + response);
+        btn.prop('disabled', false).html('<i class="fa fa-send"></i> Kirim ke PCare');
+      }
+    },
+    error: function(xhr, status, error) {
+      alert('Error: ' + error);
+      btn.prop('disabled', false).html('<i class="fa fa-send"></i> Kirim ke PCare');
+    }
+  });
+});
+
+// Reset form saat modal ditutup
+$('#kirimKunjunganModal').on('hidden.bs.modal', function() {
+  $('#formKirimKunjungan')[0].reset();
+  $('#kdDokter, #kdKesadaran, #kdStatusPulang, #kdPrognosa, #kdDiagnosa1, #kdDiagnosa2, #kdDiagnosa3, #kdPoli, #kdAlergiMakan, #kdAlergiUdara, #kdAlergiObat').val('');
+  $('#btn-kirim-submit').prop('disabled', false).html('<i class="fa fa-send"></i> Kirim ke PCare');
+});
+</script>

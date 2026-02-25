@@ -1,0 +1,76 @@
+# ===========================================
+# mLITE .gitignore
+# ===========================================
+
+# --- OS & Editor ---
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# --- Sensitive / Config ---
+config.php
+.env
+.env.*
+
+# --- Database dumps ---
+*.sql
+
+# --- Dependencies ---
+vendor/
+__vendor/
+composer.lock
+
+# --- Temporary & Cache ---
+tmp/
+admin/tmp/
+logs/
+backups/
+backup/
+.phpunit.result.cache
+
+# --- Uploads (user data) ---
+uploads/
+
+# --- System data ---
+systems/data/database.sdb
+webapps/
+websocket/
+
+# --- Excluded plugins ---
+plugins/anjungan/
+plugins/anjungan_old/
+plugins/apotek_online/
+plugins/simrsp/
+plugins/apam/
+plugins/utd/www/
+plugins/utd/Site.php
+plugins/utd/view/adonan.html
+plugins/lisensi/
+plugins/desktop/
+plugins/crud_generator/
+plugins/kasir/
+plugins/dokter_radiologi/
+plugins/dokter_ulun/
+plugins/reg_periksa/
+plugins/khanza/
+plugins/khanza.zip
+plugins/___siap_insulin/
+plugins/siap_insulin/
+plugins/pasien_galleries/
+plugins/cssd/
+plugins/website_ausy/
+plugins/jasper/
+# plugins/log_antrian_taskid
+
+# --- Excluded themes ---
+themes/mlite/
+themes/atilamedika/
+
+# --- Other ---
+admin/pla.php
+assets/easyui/
+jasperphp/
+systems/lib/jasperphp/

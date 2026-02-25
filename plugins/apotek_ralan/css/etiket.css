@@ -1,0 +1,19 @@
+body {
+  font-family: sans-serif;
+}
+.etiket-body {
+  text-align: center;
+  margin-top: 2mm;
+}
+.etiket-body .info {
+  font-size: 6pt;
+}
+.etiket-body .obat {
+  font-size: 7pt;
+  font-weight: bold;
+  margin-top: 2mm;
+}
+.etiket-body .aturan {
+  font-size: 9pt;
+  font-weight: bold;
+}

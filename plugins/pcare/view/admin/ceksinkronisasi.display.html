@@ -1,0 +1,567 @@
+<!-- Info Data mLITE -->
+<div class="row">
+  <div class="col-sm-4">
+    <div class="panel panel-info">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700">{$total_mlite}</h2>
+        <small><i class="fa fa-database"></i> Total Bridging di mLITE</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-primary">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700" id="count-pcare-found">-</h2>
+        <small><i class="fa fa-cloud"></i> Ditemukan di PCare</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="panel panel-danger">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700" id="count-hanya-pcare">-</h2>
+        <small><i class="fa fa-exclamation-triangle"></i> Hanya di PCare (tidak ada di mLITE)</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info">
+  <i class="fa fa-calendar"></i> Sinkronisasi tanggal: <strong>{$date}</strong>
+  — Prefix yang ditemukan di mLITE:
+  {loop: $prefix_max}
+    <span class="label label-primary">{$key}: 1 s/d {$value}</span>
+  {/loop}
+  {if: count($prefix_max) == 0}
+    <span class="label label-warning">Tidak ada data bridging</span>
+  {/if}
+</div>
+
+<!-- Progress Bar -->
+<div class="panel panel-default" id="panel-progress">
+  <div class="panel-heading">
+    <i class="fa fa-spinner fa-spin"></i> <strong>Proses Pengecekan Nomor Urut ke Server PCare</strong>
+  </div>
+  <div class="panel-body">
+    <div class="progress" style="margin-bottom:5px;">
+      <div class="progress-bar progress-bar-striped active" id="sync-progress-bar" role="progressbar" style="width:0%;min-width:2em;">0%</div>
+    </div>
+    <div id="sync-progress-text" class="text-center">Memulai pengecekan...</div>
+  </div>
+</div>
+
+<!-- Hasil: Hanya di PCare -->
+<div class="panel panel-danger" id="panel-hanya-pcare" style="display:none;">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> Pendaftaran Ada di PCare tapi TIDAK Ada di mLITE (<span id="count-hanya-pcare-title">0</span> data)</h3>
+  </div>
+  <div class="panel-body">
+    <p class="text-danger"><strong>Perhatian:</strong> Data berikut terdaftar di server PCare BPJS tapi tidak memiliki pasangan di database mLITE. Kemungkinan: pendaftaran duplikat, pendaftaran manual via web PCare, atau data bridging gagal tersimpan.</p>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped table-hover" id="tbl_hanya_pcare">
+        <thead>
+          <tr class="bg-danger" style="color:#fff;">
+            <th>No</th>
+            <th>No. Urut</th>
+            <th>No. Kartu BPJS</th>
+            <th>Nama Peserta</th>
+            <th>Poli</th>
+            <th>Provider</th>
+            <th>Status Layanan</th>
+            <th>Pelayanan</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-hanya-pcare">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Log Pengecekan -->
+<div class="panel panel-default" id="panel-log">
+  <div class="panel-heading" style="cursor:pointer;" onclick="$('#sync-log').toggle();">
+    <h3 class="panel-title"><i class="fa fa-list"></i> Log Pengecekan <small class="text-muted">(klik untuk tampilkan/sembunyikan)</small></h3>
+  </div>
+  <div id="sync-log" style="max-height:300px;overflow-y:auto;padding:10px;font-size:12px;display:none;">
+  </div>
+</div>
+
+<!-- Data mLITE Bridging -->
+{if: $total_mlite > 0}
+<div class="panel panel-info">
+  <div class="panel-heading" style="cursor:pointer;" onclick="$('#panel-mlite-body').toggle();">
+    <h3 class="panel-title"><i class="fa fa-database"></i> Data Bridging mLITE ({$total_mlite} data) <small class="text-muted">(klik untuk tampilkan/sembunyikan)</small></h3>
+  </div>
+  <div class="panel-body" id="panel-mlite-body" style="display:none;">
+    <div style="margin-bottom:10px;">
+      <button type="button" class="btn btn-warning btn-sm" id="btn-sync-all" onclick="syncAllKunjungan()">
+        <i class="fa fa-refresh"></i> Sinkronisasi Semua No. Kunjungan Kosong dari PCare
+      </button>
+      <span id="sync-all-status" class="text-muted" style="margin-left:10px;"></span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped table-hover table-condensed" id="tbl_mlite_data">
+        <thead>
+          <tr class="bg-info" style="color:#fff;">
+            <th>No</th>
+            <th>No. Urut</th>
+            <th>No. Rawat</th>
+            <th>No. RM</th>
+            <th>Nama Pasien</th>
+            <th>No. Kartu BPJS</th>
+            <th>Poli</th>
+            <th>Status Periksa</th>
+            <th>No. Kunjungan</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loop: $mlite_rows}
+          <tr>
+            <td>{?=$counter+1?}</td>
+            <td><span class="label label-info">{$value.nomor_urut}</span></td>
+            <td><span class="label label-primary">{$value.no_rawat}</span></td>
+            <td>{$value.no_rkm_medis}</td>
+            <td><strong>{$value.nm_pasien}</strong></td>
+            <td>{$value.no_peserta}</td>
+            <td>{$value.nm_poli}</td>
+            <td>
+              {if: $value.stts == 'Sudah'}
+                <span class="label label-success">{$value.stts}</span>
+              {elseif: $value.stts == 'Batal'}
+                <span class="label label-danger">{$value.stts}</span>
+              {else}
+                <span class="label label-warning">{$value.stts}</span>
+              {/if}
+            </td>
+            <td>
+              {if: $value.nomor_kunjungan}
+                <span class="label label-info">{$value.nomor_kunjungan}</span>
+              {else}
+                <span class="label label-default" data-norawat="{$value.no_rawat}">-</span>
+              {/if}
+            </td>
+            <td>
+              {if: $value.nomor_kunjungan}
+                <span class="text-success"><i class="fa fa-check"></i></span>
+              {elseif: $value.stts == 'Batal' && $value.nomor_urut}
+                <button type="button" class="btn btn-xs btn-danger btn-del-pcare"
+                  data-norawat="{$value.no_rawat}"
+                  data-nokartu="{$value.no_peserta}"
+                  data-nourut="{$value.nomor_urut}"
+                  data-kdpoli="{$value.kode_poli_pcare}"
+                  onclick="hapusPendaftaranPcare(this)"
+                  title="Hapus pendaftaran di PCare">
+                  <i class="fa fa-trash"></i> Hapus
+                </button>
+              {elseif: !$value.nomor_kunjungan && $value.nomor_urut}
+                <button type="button" class="btn btn-xs btn-warning btn-sync-single"
+                  data-norawat="{$value.no_rawat}"
+                  data-nokartu="{$value.no_peserta}"
+                  onclick="syncSingleKunjungan(this)"
+                  title="Sinkronisasi dari PCare">
+                  <i class="fa fa-refresh"></i> Sync
+                </button>
+              {else}
+                <span class="text-muted">-</span>
+              {/if}
+            </td>
+          </tr>
+          {/loop}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{/if}
+
+<script>
+$(document).ready(function(){
+  // Data dari server
+  var mliteUrutList = {?=json_encode($mlite_urut_list)?};
+  var prefixMax = {?=json_encode($prefix_max)?};
+  var tglDaftar = '{$tglDaftar}';
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  // Set mlite urut sebagai lookup
+  var mliteSet = {};
+  for (var i = 0; i < mliteUrutList.length; i++) {
+    mliteSet[mliteUrutList[i].toUpperCase()] = true;
+  }
+
+  // Bangun daftar prefix yang harus dicek
+  var prefixes = [];
+  for (var prefix in prefixMax) {
+    prefixes.push(prefix);
+  }
+
+  if (prefixes.length === 0) {
+    $('#panel-progress .panel-heading').html('<i class="fa fa-info-circle"></i> <strong>Tidak Ada Data</strong>');
+    $('#sync-progress-bar').css('width', '100%').text('100%').removeClass('active progress-bar-striped').addClass('progress-bar-warning');
+    $('#sync-progress-text').text('Tidak ada data bridging di mLITE untuk tanggal ini. Tidak ada yang bisa dicek.');
+    return;
+  }
+
+  var totalChecked = 0;
+  var pcareFound = 0;
+  var hanyaPcare = 0;
+  var errors = 0;
+
+  function updateCounters() {
+    $('#count-pcare-found').text(pcareFound);
+    $('#count-hanya-pcare').text(hanyaPcare);
+    $('#count-hanya-pcare-title').text(hanyaPcare);
+  }
+
+  function finishAll() {
+    $('#sync-progress-bar').css('width', '100%').text('100%').removeClass('active progress-bar-striped');
+    if (hanyaPcare > 0) {
+      $('#sync-progress-bar').addClass('progress-bar-warning');
+      $('#sync-progress-text').html('<strong>Selesai!</strong> Ditemukan <span class="text-danger"><strong>' + hanyaPcare + '</strong> pendaftaran di PCare yang tidak ada di mLITE</span>. Total dicek: ' + totalChecked + ' nomor urut.');
+    } else {
+      $('#sync-progress-bar').addClass('progress-bar-success');
+      $('#sync-progress-text').html('<strong>Selesai! Sinkronisasi sempurna.</strong> Semua ' + pcareFound + ' pendaftaran di PCare cocok dengan mLITE.');
+    }
+    if (errors > 0) {
+      $('#sync-progress-text').append(' <span class="text-muted">(' + errors + ' error API)</span>');
+    }
+    $('#panel-progress .panel-heading').html('<i class="fa fa-check-circle"></i> <strong>Pengecekan Selesai</strong>');
+    updateCounters();
+  }
+
+  // Proses per prefix, lalu lanjut prefix berikutnya
+  function checkPrefix(prefixIdx) {
+    if (prefixIdx >= prefixes.length) {
+      finishAll();
+      return;
+    }
+    var prefix = prefixes[prefixIdx];
+    var consecutiveNotFound = 0;
+    var num = 1;
+
+    function checkNum() {
+      var noUrut = prefix + num;
+      totalChecked++;
+      $('#sync-progress-text').text('Mengecek ' + noUrut + ' (total dicek: ' + totalChecked + ')...');
+
+      $.ajax({
+        url: baseURL + '/pcare/ceknomorurut?t=' + mlite.token + '&noUrut=' + encodeURIComponent(noUrut) + '&tglDaftar=' + encodeURIComponent(tglDaftar),
+        type: 'GET',
+        dataType: 'json',
+        timeout: 30000,
+        success: function(resp) {
+          if (resp.status === 'found') {
+            consecutiveNotFound = 0;
+            pcareFound++;
+            var inMlite = mliteSet[noUrut.toUpperCase()] ? true : false;
+            if (!inMlite) {
+              hanyaPcare++;
+              var d = resp.data || {};
+              var peserta = d.peserta || {};
+              var provider = d.providerPelayanan || {};
+              var poli = d.poli || {};
+              var statusPcare = d.status || '';
+              var sudahDilayani = (statusPcare.toLowerCase().indexOf('sudah') !== -1);
+              var rowIdx = hanyaPcare;
+              var statusHtml = '<span class="label label-warning"><i class="fa fa-clock-o"></i> ' + (statusPcare || 'Belum Dilayani') + '</span>';
+              if (sudahDilayani) {
+                statusHtml = '<span class="label label-success"><i class="fa fa-check-circle"></i> ' + statusPcare + '</span>';
+              }
+              var delBtnHtml = '';
+              if (!sudahDilayani) {
+                delBtnHtml = '<button type="button" class="btn btn-xs btn-danger" ' +
+                  'onclick="hapusPendaftaranPcareByData(\'' + (peserta.noKartu || '') + '\', \'' + tglDaftar + '\', \'' + (d.noUrut || noUrut) + '\', \'' + (poli.kdPoli || '') + '\', this)" ' +
+                  'title="Hapus pendaftaran ini dari PCare">' +
+                  '<i class="fa fa-trash"></i> Hapus</button>';
+              }
+              var row = '<tr id="row-pcare-' + rowIdx + '">' +
+                '<td>' + rowIdx + '</td>' +
+                '<td><span class="label label-danger">' + (d.noUrut || noUrut) + '</span></td>' +
+                '<td>' + (peserta.noKartu || '-') + '</td>' +
+                '<td><strong>' + (peserta.nama || '-') + '</strong></td>' +
+                '<td>' + (poli.nmPoli || d.kdPoli || '-') + '</td>' +
+                '<td>' + (provider.kdProvider || '-') + ' ' + (provider.nmProvider || '') + '</td>' +
+                '<td>' + statusHtml + '</td>' +
+                '<td id="pelayanan-' + rowIdx + '">' + (sudahDilayani ? '<i class="fa fa-spinner fa-spin"></i> Mengambil data...' : '<span class="text-muted">-</span>') + '</td>' +
+                '<td>' + delBtnHtml + '</td>' +
+                '</tr>';
+              $('#tbody-hanya-pcare').append(row);
+              $('#panel-hanya-pcare').show();
+              $('#sync-log').prepend('<div class="text-danger"><i class="fa fa-exclamation-circle"></i> <strong>' + noUrut + '</strong> — ' + (peserta.nama || '?') + ' — ADA di PCare tapi TIDAK di mLITE!' + (sudahDilayani ? ' (Status: ' + statusPcare + ')' : '') + '</div>');
+
+              // Jika sudah dilayani, ambil detail kunjungan + tindakan via noKartu
+              if (sudahDilayani && peserta.noKartu) {
+                (function(idx, nk, tgl) {
+                  $.ajax({
+                    url: baseURL + '/pcare/cekkunjungandetail?t=' + mlite.token + '&noKartu=' + encodeURIComponent(nk) + '&tglDaftar=' + encodeURIComponent(tgl),
+                    type: 'GET',
+                    dataType: 'json',
+                    timeout: 30000,
+                    success: function(detResp) {
+                      var html = '';
+                      if (detResp.status === 'ok') {
+                        var kunj = detResp.kunjungan || {};
+                        var tindakan = detResp.tindakan || [];
+                        // No Kunjungan
+                        if (kunj.noKunjungan) html += '<strong>No. Kunjungan:</strong> ' + kunj.noKunjungan + '<br>';
+                        // Diagnosa - from kunjungan response structure
+                        var diag = [];
+                        if (kunj.diagnosa1 && kunj.diagnosa1.kdDiag) diag.push(kunj.diagnosa1.kdDiag + ' - ' + (kunj.diagnosa1.nmDiag || ''));
+                        if (kunj.diagnosa2 && kunj.diagnosa2.kdDiag) diag.push(kunj.diagnosa2.kdDiag + ' - ' + (kunj.diagnosa2.nmDiag || ''));
+                        if (kunj.diagnosa3 && kunj.diagnosa3.kdDiag) diag.push(kunj.diagnosa3.kdDiag + ' - ' + (kunj.diagnosa3.nmDiag || ''));
+                        // Fallback ke kdDiag1/2/3 format lama
+                        if (diag.length === 0) {
+                          if (kunj.kdDiag1) diag.push(kunj.kdDiag1);
+                          if (kunj.kdDiag2) diag.push(kunj.kdDiag2);
+                          if (kunj.kdDiag3) diag.push(kunj.kdDiag3);
+                        }
+                        if (diag.length > 0) html += '<strong>Diagnosa:</strong> ' + diag.join('; ') + '<br>';
+                        if (kunj.keluhan) html += '<strong>Keluhan:</strong> ' + kunj.keluhan + '<br>';
+                        if (kunj.terapiObat && kunj.terapiObat !== 'tidak ada') html += '<strong>Terapi Obat:</strong> ' + kunj.terapiObat + '<br>';
+                        if (kunj.terapiNonObat && kunj.terapiNonObat !== 'tidak ada') html += '<strong>Terapi Non-Obat:</strong> ' + kunj.terapiNonObat + '<br>';
+                        // Status Pulang
+                        if (kunj.statusPulang && kunj.statusPulang.nmStatusPulang) html += '<strong>Status Pulang:</strong> ' + kunj.statusPulang.nmStatusPulang + '<br>';
+                        // Tindakan
+                        if (tindakan.length > 0) {
+                          html += '<strong>Tindakan:</strong><ul style="margin:2px 0;padding-left:18px;">';
+                          for (var t = 0; t < tindakan.length; t++) {
+                            var ti = tindakan[t];
+                            html += '<li>' + (ti.nmTindakan || ti.kdTindakan || '-') + '</li>';
+                          }
+                          html += '</ul>';
+                        }
+                        if (!html) html = '<span class="text-muted">Data kunjungan kosong</span>';
+                      } else {
+                        html = '<span class="text-warning"><i class="fa fa-warning"></i> ' + (detResp.message || 'Gagal ambil detail') + '</span>';
+                      }
+                      $('#pelayanan-' + idx).html(html);
+                    },
+                    error: function() {
+                      $('#pelayanan-' + idx).html('<span class="text-danger"><i class="fa fa-times"></i> Error request</span>');
+                    }
+                  });
+                })(rowIdx, peserta.noKartu, tglDaftar);
+              }
+            } else {
+              $('#sync-log').prepend('<div class="text-success"><i class="fa fa-check"></i> ' + noUrut + ' — cocok</div>');
+            }
+          } else if (resp.status === 'not_found') {
+            consecutiveNotFound++;
+            $('#sync-log').prepend('<div class="text-muted"><i class="fa fa-minus"></i> ' + noUrut + ' — tidak ada di PCare</div>');
+          } else {
+            errors++;
+            $('#sync-log').prepend('<div class="text-warning"><i class="fa fa-warning"></i> ' + noUrut + ' — Error: ' + (resp.message || 'Unknown') + '</div>');
+          }
+          updateCounters();
+
+          // Stop prefix ini jika 2x berturut-turut tidak ditemukan
+          if (consecutiveNotFound >= 2) {
+            $('#sync-log').prepend('<div class="text-info"><i class="fa fa-stop-circle"></i> Prefix <strong>' + prefix + '</strong> selesai — 2x berturut-turut tidak ditemukan di PCare</div>');
+            setTimeout(function(){ checkPrefix(prefixIdx + 1); }, 100);
+          } else {
+            num++;
+            setTimeout(checkNum, 100);
+          }
+        },
+        error: function(xhr) {
+          errors++;
+          $('#sync-log').prepend('<div class="text-danger"><i class="fa fa-times"></i> ' + noUrut + ' — Request error: ' + xhr.statusText + '</div>');
+          updateCounters();
+          num++;
+          setTimeout(checkNum, 100);
+        }
+      });
+    }
+
+    checkNum();
+  }
+
+  // Mulai pengecekan dari prefix pertama
+  checkPrefix(0);
+
+  // Init DataTable untuk tabel mLITE
+  if ($('#tbl_mlite_data').length) {
+    $('#tbl_mlite_data').DataTable({
+      "pageLength": 50,
+      "order": [[1, 'asc']],
+      "language": {
+        "search": "Cari:", "lengthMenu": "Tampilkan _MENU_ data",
+        "zeroRecords": "Data tidak ditemukan",
+        "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        "paginate": { "next": "&raquo;", "previous": "&laquo;" }
+      }
+    });
+  }
+});
+
+// Fungsi hapus pendaftaran di PCare (dari tabel hanya di PCare)
+function hapusPendaftaranPcareByData(noKartu, tglDaftar, noUrut, kdPoli, btn) {
+  var $btn = $(btn);
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  if (!confirm('Hapus pendaftaran ' + noUrut + ' (No. Kartu: ' + noKartu + ') dari PCare?\n\nData pendaftaran di server PCare BPJS akan dihapus permanen!')) {
+    return;
+  }
+
+  $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+  $.ajax({
+    url: baseURL + '/pcare/hapuspendaftaranpcare?t=' + mlite.token,
+    type: 'POST',
+    dataType: 'json',
+    data: { noKartu: noKartu, tglDaftar: tglDaftar, noUrut: noUrut, kdPoli: kdPoli, no_rawat: '' },
+    timeout: 30000,
+    success: function(resp) {
+      if (resp.status === 'success') {
+        $btn.closest('tr').fadeOut(300, function(){ $(this).remove(); });
+      } else {
+        $btn.prop('disabled', false).html('<i class="fa fa-trash"></i> Hapus');
+        alert('Gagal hapus: ' + (resp.message || 'Error'));
+      }
+    },
+    error: function() {
+      $btn.prop('disabled', false).html('<i class="fa fa-trash"></i> Hapus');
+      alert('Error request hapus pendaftaran');
+    }
+  });
+}
+
+// Fungsi hapus pendaftaran di PCare (dari tabel mLITE)
+function hapusPendaftaranPcare(btn) {
+  var $btn = $(btn);
+  var noRawat = $btn.data('norawat');
+  var noKartu = $btn.data('nokartu');
+  var noUrut = $btn.data('nourut');
+  var kdPoli = $btn.data('kdpoli');
+  var tglDaftar = '{$tglDaftar}';
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  if (!confirm('Hapus pendaftaran ' + noUrut + ' (No. Kartu: ' + noKartu + ') dari PCare?\n\nData pendaftaran di server PCare BPJS akan dihapus permanen!')) {
+    return;
+  }
+
+  $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+  $.ajax({
+    url: baseURL + '/pcare/hapuspendaftaranpcare?t=' + mlite.token,
+    type: 'POST',
+    dataType: 'json',
+    data: { noKartu: noKartu, tglDaftar: tglDaftar, noUrut: noUrut, kdPoli: kdPoli, no_rawat: noRawat },
+    timeout: 30000,
+    success: function(resp) {
+      if (resp.status === 'success') {
+        $btn.closest('tr').fadeOut(300, function(){ $(this).remove(); });
+      } else {
+        $btn.prop('disabled', false).html('<i class="fa fa-trash"></i> Hapus');
+        alert('Gagal hapus: ' + (resp.message || 'Error'));
+      }
+    },
+    error: function() {
+      $btn.prop('disabled', false).html('<i class="fa fa-trash"></i> Hapus');
+      alert('Error request hapus pendaftaran');
+    }
+  });
+}
+
+// Fungsi sync satu record
+function syncSingleKunjungan(btn) {
+  var $btn = $(btn);
+  var noRawat = $btn.data('norawat');
+  var noKartu = $btn.data('nokartu');
+  var tglDaftar = '{$tglDaftar}';
+  var baseURL = mlite.url + '/' + mlite.admin;
+
+  $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+  $.ajax({
+    url: baseURL + '/pcare/sinkronkunjungan?t=' + mlite.token,
+    type: 'POST',
+    dataType: 'json',
+    data: { no_rawat: noRawat, noKartu: noKartu, tglDaftar: tglDaftar },
+    timeout: 30000,
+    success: function(resp) {
+      if (resp.status === 'success' || resp.status === 'skip') {
+        $btn.replaceWith('<span class="text-success"><i class="fa fa-check"></i> OK</span>');
+        var $kunjLabel = $('span[data-norawat="' + noRawat + '"]');
+        if ($kunjLabel.length) {
+          $kunjLabel.replaceWith('<span class="label label-success">' + resp.nomor_kunjungan + '</span>');
+        }
+      } else {
+        $btn.prop('disabled', false).html('<i class="fa fa-refresh"></i> Sync');
+        alert('Gagal sync ' + noRawat + ': ' + (resp.message || 'Error'));
+      }
+    },
+    error: function() {
+      $btn.prop('disabled', false).html('<i class="fa fa-refresh"></i> Sync');
+      alert('Error request untuk ' + noRawat);
+    }
+  });
+}
+
+// Fungsi sync semua yang kosong
+function syncAllKunjungan() {
+  var buttons = $('.btn-sync-single');
+  if (buttons.length === 0) {
+    $('#sync-all-status').html('<span class="text-success"><i class="fa fa-check"></i> Semua data sudah memiliki nomor kunjungan.</span>');
+    return;
+  }
+
+  var $btnAll = $('#btn-sync-all');
+  $btnAll.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Proses sinkronisasi...');
+
+  var total = buttons.length;
+  var processed = 0;
+  var sukses = 0;
+  var gagal = 0;
+
+  function processNext(idx) {
+    var remaining = $('.btn-sync-single');
+    if (idx >= total || remaining.length === 0) {
+      $btnAll.prop('disabled', false).html('<i class="fa fa-refresh"></i> Sinkronisasi Semua No. Kunjungan Kosong dari PCare');
+      $('#sync-all-status').html('<span class="text-info"><strong>Selesai!</strong> Berhasil: ' + sukses + ', Gagal: ' + gagal + ' dari ' + total + ' data.</span>');
+      return;
+    }
+
+    var btn = remaining.first();
+    var noRawat = btn.data('norawat');
+    var noKartu = btn.data('nokartu');
+    var tglDaftar = '{$tglDaftar}';
+    var baseURL = mlite.url + '/' + mlite.admin;
+
+    processed++;
+    $('#sync-all-status').text('Proses ' + processed + '/' + total + ' - ' + noRawat + '...');
+    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+    $.ajax({
+      url: baseURL + '/pcare/sinkronkunjungan?t=' + mlite.token,
+      type: 'POST',
+      dataType: 'json',
+      data: { no_rawat: noRawat, noKartu: noKartu, tglDaftar: tglDaftar },
+      timeout: 30000,
+      success: function(resp) {
+        if (resp.status === 'success' || resp.status === 'skip') {
+          sukses++;
+          btn.replaceWith('<span class="text-success"><i class="fa fa-check"></i> OK</span>');
+          var $kunjLabel = $('span[data-norawat="' + noRawat + '"]');
+          if ($kunjLabel.length) {
+            $kunjLabel.replaceWith('<span class="label label-success">' + resp.nomor_kunjungan + '</span>');
+          }
+        } else {
+          gagal++;
+          btn.prop('disabled', false).html('<i class="fa fa-refresh"></i> Sync');
+        }
+        setTimeout(function(){ processNext(idx + 1); }, 200);
+      },
+      error: function() {
+        gagal++;
+        btn.prop('disabled', false).html('<i class="fa fa-refresh"></i> Sync');
+        setTimeout(function(){ processNext(idx + 1); }, 200);
+      }
+    });
+  }
+
+  processNext(0);
+}
+</script>

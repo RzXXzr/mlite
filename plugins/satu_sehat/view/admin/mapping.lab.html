@@ -1,0 +1,284 @@
+<style>
+    .nowrap th, .nowrap td {
+      white-space: nowrap;
+    }
+    .selected {
+        background-color: #d0ebff !important;
+    }    
+</style>
+<h4>Mapping Laboratorium Satu Sehat</h4>
+<form action="{?=url(ADMIN.'/satu_sehat/savelab')?}" method="POST">
+    <input type="hidden" name="id_organisasi_satusehat">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label>Pilih Perawatan</label>
+                        <select name="id_template" id="id_template" class="form-control" data-use-search="true">
+                            {loop: $template_laboratorium}
+                            <option value="{$value.id_template} : {$value.kd_jenis_prw}">[{$value.id_template}] - {$value.kd_jenis_prw} - {$value.Pemeriksaan}</option>
+                            {/loop}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <p>
+                            <label>Terminologi Loinc Laboratorium</label>
+                            <select id="select_lab" name="select_lab" class="form-control" placeholder="Silahkan cari terminologi..."></select>
+                        </p>
+                        <div id="detail_lab"></div>
+                    </div>
+                </div>
+                <div class="col-md-12" style="padding-top: 20px;">
+                    <input type="submit" name="simpan" class="btn btn-success" value="Simpan" />
+                    <input type="submit" name="hapus" class="btn btn-danger" value="Hapus" />
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="row">
+<div class="col-md-12">
+    <div class="table-responsive no-margin" id="mapping_lab_satu_sehat">
+    <table class="table table-striped table-bordered no-padding nowrap dataTables" width="100%">
+        <thead>
+        <tr>
+            <th>ID Template</th>
+            <th>Kode Perawatan</th>
+            <th>Nama Perawatan</th>
+            <th>Code</th>
+            <th>Display</th>
+            <th>Sample Code</th>
+            <th>Sample System</th>
+            <th>Sample Display</th>
+        </tr>
+        </thead>
+        <tbody>
+        {loop: $mapping_lab_satu_sehat}
+        <tr class="mapping_lab_satu_sehat"
+        data-id_template="{$value.id_template}"
+        >
+            <td>{$value.id_template}</td>
+            <td>{$value.kd_jenis_prw}</td>
+            <td>{$value.Pemeriksaan}</td>
+            <td>{$value.code}</td>
+            <td>{$value.display}</td>
+            <td>{?=isset_or($value.sampel_code, '-')?}</td>
+            <td>{?=isset_or($value.sampel_system, '-')?}</td>
+            <td>{?=isset_or($value.sampel_display, '-')?}</td>
+        </tr>
+        {/loop}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+<script type="text/javascript">
+$('.dataTables').DataTable();
+
+$('#mapping_lab_satu_sehat table tbody').on('click', 'tr.mapping_lab_satu_sehat', function() {
+    // Remove selection from other rows
+    $('#mapping_lab_satu_sehat table tbody tr').removeClass('selected');
+
+    // Add selected class to clicked row
+    $(this).addClass('selected');
+
+    // Example: Get data attribute
+    var id_template = $(this).data('id_template');
+    $('#id_template').val(id_template).change();
+    console.log('Selected ID Template:', id_template);
+});
+
+$('input[name="hapus"]').on('click', function (e) {
+    const confirmDelete = confirm('Apakah Anda yakin ingin menghapus data ini?');
+    if (!confirmDelete) {
+        e.preventDefault(); // Batalkan submit jika tidak disetujui
+    }
+});
+
+var strip_tags = function(str) {
+    return (str + '').replace(/<\/?[^>]+(>|$)/g, '')
+};
+var truncate_string = function(str, chars) {
+    if ($.trim(str).length <= chars) {
+        return str;
+    } else {
+        return $.trim(str.substr(0, chars)) + '…';
+    }
+};
+var $select = $('#select_lab');
+const url = 'https://basoro.id/downloads/LoincLaboratorium.json';
+$select.selectator({
+    labels: {
+        search: 'Search here...'
+    },
+    load: function (search, callback) {
+      if (search.length < 3) {
+        callback([{ value: '', text: 'Ketik minimal 3 huruf...' }]);
+        return;
+      }
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          dataLab = data; // Simpan data di variabel global
+          console.log(dataLab);
+          const filtered = data.filter(item =>
+            item.Nama_Pemeriksaan && item.Nama_Pemeriksaan.toLowerCase().includes(search.toLowerCase())
+          );
+
+          const options = filtered.map(item => ({
+            value: item.Code,
+            text: item.Nama_Pemeriksaan
+          }));
+
+          callback(options.slice(0, 100)); // Batasi maksimal 100 hasil
+        })
+        .catch(err => {
+          console.error('Gagal mengambil data:', err);
+          callback([]);
+        });
+    },
+    delay: 300,
+    minSearchLength: 3,
+    valueField: 'value',
+    textField: 'text',
+    render: {
+        option: function (_item, escape) {
+            var html = '';
+            html += '<div class="selectator_option_title">' + ((typeof _item.text !== 'undefined') ? _item.text : '') + '</div>';
+            return html;
+        }
+    }
+
+});
+
+$('#select_lab').on('change', function () {
+    const kodeLab = $(this).val();
+    if (!kodeLab) return;
+
+    // Cari detail di dataKFA berdasarkan kodeKFA
+    const detail = dataLab.find(item => item.Code.toString() === kodeLab.toString());
+
+    if (detail) {
+        console.log('Detail lengkap lab:', detail);
+        $('#detail_lab').html(`
+        <p><label>Kode</label><input type="text" name="code" class="form-control" value="${detail.Code}"></p>
+        <p><label>Nama Pemeriksaan</label><input type="text" name="display" class="form-control" value="${detail.Nama_Pemeriksaan}"></p>
+        <p><label>Code System</label><input type="text" name="code_system" class="form-control" value="${detail.Code_System}"></p>
+        <p><label>Sample Code</label>
+            <div class="input-group">
+                <input type="text" name="sample_code" id="sample_code" class="form-control" value="">
+                <span class="input-group-btn">
+                    <button type="button" id="AIGenerateSampleCode" class="btn btn-primary" title="Generate Sample Code dengan AI">
+                        <i class="fas fa-robot"></i> AI Generate
+                    </button>
+                </span>
+            </div>
+        </p>
+        <p><label>Sample Display</label><input type="text" name="sample_display" class="form-control" value=""></p>
+        <p><label>Sample System</label><input type="text" name="sample_system" class="form-control" value=""></p>
+        `);
+        
+        // Setup button AI Generate setelah elemen dibuat
+        setupAIGenerateButton();
+    }
+});
+
+// Fungsi untuk setup button AI Generate
+function setupAIGenerateButton() {
+    $('#AIGenerateSampleCode').off('click').on('click', function() {
+        const displayName = $('input[name="display"]').val();
+        const code = $('input[name="code"]').val();
+        
+        if (!displayName) {
+            alert('Nama pemeriksaan tidak ditemukan');
+            return;
+        }
+        
+        // Tambahkan loading indicator
+        const originalText = $(this).html();
+        $(this).html('<i class="fa fa-spinner fa-spin"></i> Generating...').prop('disabled', true);
+        
+        // API Key
+        const apiKey = "{?=$this->core->settings->get('satu_sehat.api_openai')?}";
+        
+        const requestData = {
+            model: "openai/gpt-4o",
+            messages: [
+                {
+                    role: "user", 
+                    content: `Buatkan resource FHIR Specimen (JSON) untuk pemeriksaan laboratorium "${displayName}" dengan kode LOINC ${code}. Struktur WAJIB: resourceType="Specimen", id="{specimen_id}", type.coding (array) dengan system="http://snomed.info/sct", code, dan display; subject.reference="Patient/{patient_id}"; collection.collectedDateTime dalam format ISO8601 (contoh: "2025-10-06T07:45:00+08:00"). Isi code dan display sesuai sampel yang relevan. Balas HANYA dengan objek JSON mentah tanpa backticks/label/teks tambahan.`
+                }
+            ]
+        };
+        
+        fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                const responseContent = (data.choices[0].message.content || '').trim();
+
+                const extractJSONBlock = (text) => {
+                    // Jika dibungkus kode fence, ambil isi di dalamnya
+                    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+                    const raw = fenced ? fenced[1].trim() : text;
+                    // Ambil substring dari { pertama sampai } terakhir
+                    const start = raw.indexOf('{');
+                    const end = raw.lastIndexOf('}');
+                    if (start !== -1 && end !== -1 && end > start) {
+                        const candidate = raw.slice(start, end + 1);
+                        try { return JSON.parse(candidate); } catch (e) {}
+                    }
+                    // Coba parse langsung
+                    try { return JSON.parse(raw); } catch (e) { return null; }
+                };
+
+                const specimenData = extractJSONBlock(responseContent);
+
+                if (specimenData && specimenData.type && specimenData.type.coding && specimenData.type.coding[0]) {
+                    const coding = specimenData.type.coding[0];
+                    const sanitize = (s) => (typeof s === 'string' ? s.replace(/`/g, '').trim() : s);
+                    $('input[name="sample_code"]').val(coding.code || '');
+                    $('input[name="sample_display"]').val(coding.display || '');
+                    $('input[name="sample_system"]').val(sanitize(coding.system) || '');
+                    alert('Data Specimen berhasil di-generate!');
+                } else {
+                    throw new Error('Struktur JSON Specimen tidak valid atau field coding tidak ditemukan');
+                }
+            } else {
+                throw new Error('Invalid response format from API');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating sample code:', error);
+            alert('Gagal generate sample code: ' + error.message);
+        })
+        .finally(() => {
+            // Kembalikan button ke state semula
+            $(this).html(originalText).prop('disabled', false);
+        });
+    });
+}
+
+// Setup button saat halaman pertama kali load (jika detail sudah ada)
+$(document).ready(function() {
+    if ($('#AIGenerateSampleCode').length) {
+        setupAIGenerateButton();
+    }
+});
+
+</script>
+  

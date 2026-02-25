@@ -1,0 +1,213 @@
+<div class="alert alert-info">
+  <i class="fa fa-calendar"></i> Menampilkan data kunjungan BPJS Kesehatan tanggal: <strong>{$date}</strong>
+  <span class="badge">{?=count($kunjungan_bpjs)?} data</span>
+</div>
+
+{if: count($kunjungan_bpjs) > 0}
+<div class="table-responsive">
+  <table class="table table-bordered table-striped table-hover display nowrap" id="tbl_kunjungan_bpjs" width="100%">
+    <thead>
+      <tr class="bg-primary">
+        <th>No</th>
+        <th>No. Antrian PCare</th>
+        <th>No. Kunjungan</th>
+        <th>No. Rawat</th>
+        <th>No. RM</th>
+        <th>Nama Pasien</th>
+        <th>No. Kartu BPJS</th>
+        <th>Tgl. Daftar</th>
+        <th>Tgl. Kunjungan</th>
+        <th>Poli</th>
+        <th>Dokter</th>
+        <th>Jenis Kunjungan</th>
+        <th>Keluhan</th>
+        <th>TD (mmHg)</th>
+        <th>BB (Kg)</th>
+        <th>TB (cm)</th>
+        <th>Nadi</th>
+        <th>RR</th>
+        <th>LP (cm)</th>
+        <th>Kesadaran</th>
+        <th>Diagnosa 1</th>
+        <th>Diagnosa 2</th>
+        <th>Diagnosa 3</th>
+        <th>Terapi</th>
+        <th>Status Pulang</th>
+        <th>Tgl. Pulang</th>
+        <th>Rujuk Balik</th>
+        <th>PPK Rujukan</th>
+        <th>Spesialis</th>
+        <th>Status Kirim</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {loop: $kunjungan_bpjs}
+      <tr>
+        <td>{?=$counter+1?}</td>
+        <td><span class="label label-success">{$value.nomor_urut}</span></td>
+        <td>
+          {if: $value.nomor_kunjungan}
+            <span class="label label-info">{$value.nomor_kunjungan}</span>
+          {else}
+            <button type="button" class="btn btn-xs btn-warning btn-kirim-kunjungan" 
+                    data-id="{$value.id}"
+                    data-no_rawat="{$value.no_rawat}"
+                    data-no_rkm_medis="{$value.no_rkm_medis}"
+                    data-nomor_jaminan="{$value.nomor_jaminan}"
+                    data-nm_pasien="{$value.nm_pasien}"
+                    data-nama_poli="{$value.nama_poli}"
+                    data-kd_poli="{$value.kode_poli}"
+                    data-nama_dokter="{$value.nama_dokter}"
+                    data-kd_dokter="{$value.kode_dokter}"
+                    data-tgl_kunjungan="{$value.tgl_kunjungan}"
+                    data-tgl_daftar="{$value.tgl_daftar}"
+                    data-kunjungan_sakit="{$value.kunjungan_sakit}"
+                    data-subyektif="{$value.subyektif}"
+                    data-sistole="{$value.sistole}"
+                    data-diastole="{$value.diastole}"
+                    data-berat="{$value.berat}"
+                    data-tinggi="{$value.tinggi}"
+                    data-nadi="{$value.nadi}"
+                    data-respirasi="{$value.respirasi}"
+                    data-lingkar_perut="{$value.lingkar_perut}"
+                    data-kd_kesadaran="{$value.kode_kesadaran}"
+                    data-nama_kesadaran="{$value.nama_kesadaran}"
+                    data-kd_status_pulang="{$value.kode_status_pulang}"
+                    data-nama_status_pulang="{$value.nama_status_pulang}"
+                    data-kd_diagnosa1="{$value.kode_diagnosa1}"
+                    data-nama_diagnosa1="{$value.nama_diagnosa1}"
+                    data-kd_diagnosa2="{$value.kode_diagnosa2}"
+                    data-nama_diagnosa2="{$value.nama_diagnosa2}"
+                    data-kd_diagnosa3="{$value.kode_diagnosa3}"
+                    data-nama_diagnosa3="{$value.nama_diagnosa3}"
+                    data-terapi="{$value.terapi}"
+                    data-tgl_pulang="{$value.tgl_pulang}"
+                    data-kode_provider="{$value.kode_provider_peserta}"
+                    data-anamnesa="{$value.anamnesa}"
+                    data-kd_prognosa="{$value.kode_prognosa}"
+                    data-nama_prognosa="{$value.nama_prognosa}"
+                    data-kd_alergi_makan="{$value.kode_alergi_makan}"
+                    data-nama_alergi_makan="{$value.nama_alergi_makan}"
+                    data-kd_alergi_udara="{$value.kode_alergi_udara}"
+                    data-nama_alergi_udara="{$value.nama_alergi_udara}"
+                    data-kd_alergi_obat="{$value.kode_alergi_obat}"
+                    data-nama_alergi_obat="{$value.nama_alergi_obat}"
+                    title="Kirim Kunjungan ke PCare">
+              <i class="fa fa-send"></i> Kirim
+            </button>
+          {/if}
+        </td>
+        <td><span class="label label-primary">{$value.no_rawat}</span></td>
+        <td>{$value.no_rkm_medis}</td>
+        <td><strong>{$value.nm_pasien}</strong></td>
+        <td>{$value.nomor_jaminan}</td>
+        <td>{$value.tgl_daftar}</td>
+        <td>{$value.tgl_kunjungan}</td>
+        <td>{$value.nama_poli}</td>
+        <td>{$value.nama_dokter}</td>
+        <td>
+          {if: $value.kunjungan_sakit === 'true'}
+            <span class="label label-warning">Kunjungan Sakit</span>
+          {else}
+            <span class="label label-success">Kunjungan Sehat</span>
+          {/if}
+        </td>
+        <td>{$value.subyektif}</td>
+        <td>{$value.sistole}/{$value.diastole}</td>
+        <td>{$value.berat}</td>
+        <td>{$value.tinggi}</td>
+        <td>{$value.nadi}</td>
+        <td>{$value.respirasi}</td>
+        <td>{$value.lingkar_perut}</td>
+        <td>{$value.nama_kesadaran}</td>
+        <td>
+          {if: $value.kode_diagnosa1}
+            <span class="text-primary" title="{$value.nama_diagnosa1}">{$value.kode_diagnosa1}</span>
+          {/if}
+        </td>
+        <td>
+          {if: $value.kode_diagnosa2}
+            <span class="text-info" title="{$value.nama_diagnosa2}">{$value.kode_diagnosa2}</span>
+          {/if}
+        </td>
+        <td>
+          {if: $value.kode_diagnosa3}
+            <span class="text-warning" title="{$value.nama_diagnosa3}">{$value.kode_diagnosa3}</span>
+          {/if}
+        </td>
+        <td>{$value.terapi}</td>
+        <td>{$value.nama_status_pulang}</td>
+        <td>{$value.tgl_pulang}</td>
+        <td>
+          {if: $value.rujuk_balik === 'true'}
+            <span class="label label-info">Ya</span>
+          {else}
+            <span class="label label-default">Tidak</span>
+          {/if}
+        </td>
+        <td>
+          {if: $value.nama_ppk}
+            {$value.nama_ppk}
+          {else}
+            -
+          {/if}
+        </td>
+        <td>
+          {if: $value.nama_spesialis}
+            {$value.nama_spesialis}
+          {else}
+            -
+          {/if}
+        </td>
+        <td>
+          {if: $value.status_kirim === 'Sudah'}
+            <span class="label label-success">Sudah</span>
+          {else}
+            <span class="label label-warning">Belum</span>
+          {/if}
+        </td>
+        <td>
+          <button type="button" class="btn btn-xs btn-info btn-detail" 
+                  data-id="{$value.id}"
+                  data-no_rawat="{$value.no_rawat}"
+                  data-nomor_kunjungan="{$value.nomor_kunjungan}"
+                  title="Lihat Detail">
+            <i class="fa fa-eye"></i>
+          </button>
+        </td>
+      </tr>
+      {/loop}
+    </tbody>
+  </table>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#tbl_kunjungan_bpjs').DataTable({
+    "scrollX": true,
+    "pageLength": 25,
+    "order": [[1, 'asc']],
+    "language": {
+      "lengthMenu": "Tampilkan _MENU_ data per halaman",
+      "zeroRecords": "Data tidak ditemukan",
+      "info": "Menampilkan halaman _PAGE_ dari _PAGES_",
+      "infoEmpty": "Tidak ada data tersedia",
+      "infoFiltered": "(difilter dari _MAX_ total data)",
+      "search": "Cari:",
+      "paginate": {
+        "first": "Pertama",
+        "last": "Terakhir",
+        "next": "Selanjutnya",
+        "previous": "Sebelumnya"
+      }
+    }
+  });
+});
+</script>
+
+{else}
+<div class="alert alert-warning">
+  <i class="fa fa-exclamation-triangle"></i> Tidak ada data kunjungan BPJS pada tanggal <strong>{$date}</strong>.
+</div>
+{/if}

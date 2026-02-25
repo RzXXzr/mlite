@@ -1,0 +1,221 @@
+<div id="form_alergi_container" style="display:none;">
+  <div class="panel panel-warning" style="border-color:#f0ad4e;">
+    <div class="panel-heading" style="background:#fcf8e3;border-color:#f0ad4e;padding:8px 15px;">
+      <h4 class="panel-title" style="margin:0;color:#8a6d3b;">
+        <i class="fa fa-exclamation-triangle"></i> Data Alergi Pasien
+        <span id="alergi_status_badge" style="margin-left:10px;font-size:12px;"></span>
+      </h4>
+    </div>
+    <div class="panel-body" style="padding:15px;">
+      <div class="row">
+        <!-- Alergi Makanan -->
+        <div class="col-md-4">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-weight:bold;color:#333;font-size:12px;">
+              <i class="fa fa-cutlery"></i> Alergi Makanan
+            </label>
+            <select id="alergi_makanan" name="alergi_makanan" class="form-control input-sm">
+              <option value="00">00 - Tidak Ada</option>
+              <option value="01">01 - Seafood</option>
+              <option value="02">02 - Gandum</option>
+              <option value="03">03 - Susu Sapi</option>
+              <option value="04">04 - Kacang-Kacangan</option>
+              <option value="05">05 - Makanan Lain</option>
+            </select>
+            <input type="text" id="alergi_makanan_lainnya" name="alergi_makanan_lainnya" class="form-control input-sm" placeholder="Sebutkan makanan lainnya..." style="display:none;margin-top:5px;">
+          </div>
+        </div>
+        <!-- Alergi Udara -->
+        <div class="col-md-4">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-weight:bold;color:#333;font-size:12px;">
+              <i class="fa fa-cloud"></i> Alergi Udara
+            </label>
+            <select id="alergi_udara" name="alergi_udara" class="form-control input-sm">
+              <option value="00">00 - Tidak Ada</option>
+              <option value="01">01 - Udara Panas</option>
+              <option value="02">02 - Udara Dingin</option>
+              <option value="03">03 - Udara Kotor</option>
+            </select>
+            <input type="text" id="alergi_udara_lainnya" name="alergi_udara_lainnya" class="form-control input-sm" placeholder="Sebutkan alergi udara lainnya..." style="display:none;margin-top:5px;">
+          </div>
+        </div>
+        <!-- Alergi Obat -->
+        <div class="col-md-4">
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-weight:bold;color:#333;font-size:12px;">
+              <i class="fa fa-medkit"></i> Alergi Obat
+            </label>
+            <select id="alergi_obat" name="alergi_obat" class="form-control input-sm">
+              <option value="00">00 - Tidak Ada</option>
+              <option value="01">01 - Antibiotik</option>
+              <option value="02">02 - Antiinflamasi</option>
+              <option value="03">03 - Non Steroid</option>
+              <option value="04">04 - Aspirin</option>
+              <option value="05">05 - Kortikosteroid</option>
+              <option value="06">06 - Insulin</option>
+              <option value="07">07 - Obat-Obatan Lain</option>
+            </select>
+            <input type="text" id="alergi_obat_lainnya" name="alergi_obat_lainnya" class="form-control input-sm" placeholder="Sebutkan obat lainnya..." style="display:none;margin-top:5px;">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12" style="text-align:right;margin-top:5px;">
+          <button type="button" id="simpan_alergi" class="btn btn-sm btn-warning">
+            <i class="fa fa-save"></i> Simpan Alergi
+          </button>
+          <span id="alergi_save_status" style="margin-left:10px;font-size:12px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  // Toggle field "lainnya" berdasarkan pilihan dropdown
+  $(document).on('change', '#alergi_makanan', function() {
+    if($(this).val() == '05') {
+      $(this).closest('.col-md-4').find('#alergi_makanan_lainnya').show().focus();
+    } else {
+      $(this).closest('.col-md-4').find('#alergi_makanan_lainnya').hide().val('');
+    }
+  });
+
+  $(document).on('change', '#alergi_obat', function() {
+    if($(this).val() == '07') {
+      $(this).closest('.col-md-4').find('#alergi_obat_lainnya').show().focus();
+    } else {
+      $(this).closest('.col-md-4').find('#alergi_obat_lainnya').hide().val('');
+    }
+  });
+
+  // Helper function untuk set nilai select dengan lebih reliable
+  function setSelectValue($select, value) {
+    // Reset semua opsi
+    $select.find('option').prop('selected', false);
+    // Set opsi yang sesuai
+    var $option = $select.find('option[value="' + value + '"]');
+    if($option.length > 0) {
+      $option.prop('selected', true);
+    } else {
+      // Fallback ke default
+      $select.find('option[value="00"]').prop('selected', true);
+    }
+    // Trigger change event
+    $select.trigger('change');
+  }
+
+  // Fungsi load data alergi pasien
+  function loadAlergiPasien(no_rkm_medis) {
+    var baseURL = mlite.url + '/' + mlite.admin;
+    var url = baseURL + '/dokter_ralan/getalergi?t=' + mlite.token;
+    var $container = $('#form_alergi_container');
+
+    // Reset form
+    setSelectValue($container.find('#alergi_makanan'), '00');
+    setSelectValue($container.find('#alergi_udara'), '00');
+    setSelectValue($container.find('#alergi_obat'), '00');
+    $container.find('#alergi_makanan_lainnya').val('').hide();
+    $container.find('#alergi_udara_lainnya').val('').hide();
+    $container.find('#alergi_obat_lainnya').val('').hide();
+    $container.find('#alergi_status_badge').html('');
+    $container.find('#alergi_save_status').html('');
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      dataType: 'json',
+      data: { no_rkm_medis: no_rkm_medis },
+      success: function(response) {
+        if(response.status == 'success' && response.data) {
+          var d = response.data;
+          // Pastikan nilai di-trim dan di-set dengan benar
+          var makanan = String(d.alergi_makanan || '00').trim();
+          var udara = String(d.alergi_udara || '00').trim();
+          var obat = String(d.alergi_obat || '00').trim();
+          
+          // Use setTimeout to ensure DOM is ready
+          setTimeout(function() {
+            setSelectValue($container.find('#alergi_makanan'), makanan);
+            setSelectValue($container.find('#alergi_udara'), udara);
+            setSelectValue($container.find('#alergi_obat'), obat);
+
+            if(makanan == '05' && d.alergi_makanan_lainnya) {
+              $container.find('#alergi_makanan_lainnya').val(d.alergi_makanan_lainnya).show();
+            }
+            if(d.alergi_udara_lainnya) {
+              $container.find('#alergi_udara_lainnya').val(d.alergi_udara_lainnya).show();
+            }
+            if(obat == '07' && d.alergi_obat_lainnya) {
+              $container.find('#alergi_obat_lainnya').val(d.alergi_obat_lainnya).show();
+            }
+          }, 100);
+
+          // Tampilkan badge status
+          var hasAlergi = (makanan != '00' || udara != '00' || obat != '00');
+          if(hasAlergi) {
+            $container.find('#alergi_status_badge').html('<span class="label label-danger"><i class="fa fa-warning"></i> Ada Alergi</span>');
+          } else {
+            $container.find('#alergi_status_badge').html('<span class="label label-success"><i class="fa fa-check"></i> Tidak Ada Alergi</span>');
+          }
+        } else {
+          $container.find('#alergi_status_badge').html('<span class="label label-info"><i class="fa fa-info-circle"></i> Belum Ada Data</span>');
+        }
+      },
+      error: function() {
+        $('#form_alergi_container #alergi_status_badge').html('<span class="label label-default">Gagal memuat data alergi</span>');
+      }
+    });
+  }
+
+  // Simpan alergi
+  $(document).on('click', '#simpan_alergi', function() {
+    var baseURL = mlite.url + '/' + mlite.admin;
+    var no_rkm_medis = $('input:text[name=no_rkm_medis]').val();
+    var $container = $('#form_alergi_container');
+
+    if(!no_rkm_medis) {
+      bootbox.alert('Nomor RM pasien belum dipilih!');
+      return;
+    }
+
+    var url = baseURL + '/dokter_ralan/savealergi?t=' + mlite.token;
+    var makanan = $container.find('#alergi_makanan').val();
+    var udara = $container.find('#alergi_udara').val();
+    var obat = $container.find('#alergi_obat').val();
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        no_rkm_medis: no_rkm_medis,
+        alergi_makanan: makanan,
+        alergi_makanan_lainnya: $container.find('#alergi_makanan_lainnya').val(),
+        alergi_udara: udara,
+        alergi_udara_lainnya: $container.find('#alergi_udara_lainnya').val(),
+        alergi_obat: obat,
+        alergi_obat_lainnya: $container.find('#alergi_obat_lainnya').val()
+      },
+      success: function(response) {
+        if(response.status == 'success') {
+          $container.find('#alergi_save_status').html('<span class="text-success"><i class="fa fa-check"></i> ' + response.message + '</span>');
+          // Update badge
+          var hasAlergi = (makanan != '00' || udara != '00' || obat != '00');
+          if(hasAlergi) {
+            $container.find('#alergi_status_badge').html('<span class="label label-danger"><i class="fa fa-warning"></i> Ada Alergi</span>');
+          } else {
+            $container.find('#alergi_status_badge').html('<span class="label label-success"><i class="fa fa-check"></i> Tidak Ada Alergi</span>');
+          }
+          setTimeout(function() { $container.find('#alergi_save_status').html(''); }, 3000);
+        } else {
+          $container.find('#alergi_save_status').html('<span class="text-danger"><i class="fa fa-times"></i> ' + response.message + '</span>');
+        }
+      },
+      error: function() {
+        $container.find('#alergi_save_status').html('<span class="text-danger"><i class="fa fa-times"></i> Gagal menyimpan data alergi</span>');
+      }
+    });
+  });
+</script>

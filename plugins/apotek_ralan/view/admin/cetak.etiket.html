@@ -1,0 +1,29 @@
+{loop: $detail}
+<htmlpageheader name="etiketheader">
+<div style="text-align:center;font-family:sans-serif;font-size:5.5pt;line-height:1.2;border-bottom:0.5pt solid #000;padding-bottom:1mm;">
+  <b style="font-size:6.5pt;">{$settings.nama_instansi}</b><br>
+  {$settings.alamat} - {$settings.nomor_telepon}<br>
+  {if: isset($farmasi.keterangan_etiket)}<b>{$farmasi.keterangan_etiket}</b>{/if}
+</div>
+<table style="width:100%;font-family:sans-serif;font-size:8pt;margin-top:1mm;" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="text-align:left;">a/n : <b>{$pasien} - {$no_rm}</b></td>
+    <td style="text-align:right;">{$tanggal}</td>
+  </tr>
+  <br>
+</table>
+<div style="text-align:center;font-family:sans-serif;font-size:12pt;font-weight:bold;margin-top:1mm;">{$value.nama_brng}</div>
+</htmlpageheader>
+
+<htmlpagefooter name="etiketfooter">
+<div style="text-align:center;font-family:sans-serif;font-size:12pt;font-weight:bold;margin-bottom:1mm;">{?= isset($value.aturan_pakai) ? $value.aturan_pakai : '' ?}</div>
+<div style="text-align:center;font-family:sans-serif;font-size:10pt;line-height:1.2;border-top:0.5pt solid #000;padding-top:1mm;">
+  Pagi / Siang / Sore / Malam<br>
+  Sebelum Makan / Sesudah Makan / Habiskan
+</div>
+</htmlpagefooter>
+
+<sethtmlpageheader name="etiketheader" value="on" show-this-page="1" />
+<sethtmlpagefooter name="etiketfooter" value="on" />
+<pagebreak />
+{/loop}

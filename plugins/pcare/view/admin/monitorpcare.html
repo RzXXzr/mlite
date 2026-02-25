@@ -1,0 +1,221 @@
+<style>
+.monitor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.monitor-header .monitor-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+.monitor-header .monitor-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.monitor-header .monitor-controls .form-control {
+  width: 160px;
+  height: 34px;
+}
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.stat-card {
+  flex: 1;
+  min-width: 120px;
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  transition: transform .15s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card .stat-num { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.stat-card .stat-label { font-size: 11px; opacity: .9; margin-top: 2px; }
+.stat-card.bg-total { background: linear-gradient(135deg,#3498db,#2980b9); }
+.stat-card.bg-daftar { background: linear-gradient(135deg,#00b894,#00a884); }
+.stat-card.bg-periksa { background: linear-gradient(135deg,#0984e3,#6c5ce7); }
+.stat-card.bg-kunjungan { background: linear-gradient(135deg,#27ae60,#2ecc71); }
+.stat-card.bg-belum { background: linear-gradient(135deg,#f39c12,#e67e22); }
+.stat-card.bg-batal { background: linear-gradient(135deg,#e74c3c,#c0392b); }
+.stat-card.bg-sync { background: linear-gradient(135deg,#6c5ce7,#a29bfe); }
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 18px 0 10px;
+  padding: 8px 12px;
+  border-left: 4px solid #3498db;
+  background: #f8f9fa;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title .badge { font-size: 12px; }
+
+#tbl_monitor .label { font-size: 11px; }
+#tbl_monitor td { vertical-align: middle; }
+
+.sync-panel {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 8px;
+  background: #fff;
+}
+.sync-panel .sync-header {
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sync-panel .sync-body { padding: 12px 15px; }
+
+.anomali-badge {
+  display: inline-block;
+  background: #e74c3c;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+.anomali-badge.zero { background: #27ae60; }
+
+.progress-inline {
+  height: 20px;
+  border-radius: 10px;
+  margin-bottom: 0;
+}
+.progress-inline .progress-bar { line-height: 20px; font-size: 11px; }
+
+.bulk-bar {
+  background: linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%);
+  border-radius: 6px;
+  padding: 10px 15px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .stat-card { min-width: 100px; }
+  .stat-card .stat-num { font-size: 22px; }
+  .monitor-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+
+<div class="row">
+  <div class="col-sm-12">
+    {include: ../plugins/pcare/view/admin/menu.html}
+
+    <!-- Header Bar -->
+    <div class="monitor-header">
+      <h4 class="monitor-title"><i class="fa fa-tv"></i> Monitor PCare</h4>
+      <div class="monitor-controls">
+        <div class="input-group date tanggal" style="width:200px;">
+          <input type="text" class="form-control" id="tanggal_monitor" value="{?=date('d-m-Y')?}" placeholder="Pilih tanggal">
+          <span class="input-group-addon" id="btn-kalender-monitor" style="cursor:pointer"><i class="fa fa-calendar"></i></span>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-cari-monitor"><i class="fa fa-search"></i> Tampilkan</button>
+        <button type="button" class="btn btn-default btn-sm" id="btn-refresh-monitor" title="Refresh"><i class="fa fa-refresh"></i></button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="monitor-content">
+      <div class="text-center" style="padding:40px 0;">
+        <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
+        <p class="text-muted" style="margin-top:10px;">Memuat data hari ini...</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Bridging PCare -->
+<div class="modal fade" id="bridgingpcareModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content"></div>
+  </div>
+</div>
+<!-- Modal Pendaftaran PCare -->
+<div class="modal fade" id="pendaftaranpcareModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content"></div>
+  </div>
+</div>
+<!-- Modal Tindakan & Obat PCare -->
+<div class="modal fade" id="bridgingpcaretindakanobatModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content"></div>
+  </div>
+</div>
+
+<script>
+function loadMonitorData() {
+  var tanggal = $('#tanggal_monitor').val() || '{?=date("d-m-Y")?}';
+  var baseURL = mlite.url + '/' + mlite.admin;
+  $('#monitor-content').html('<div class="text-center" style="padding:40px 0;"><i class="fa fa-spinner fa-spin fa-2x text-primary"></i><p class="text-muted" style="margin-top:10px;">Memuat data...</p></div>');
+  $.ajax({
+    url: baseURL + '/pcare/monitorpcaredisplay?date=' + encodeURIComponent(tanggal) + '&t=' + mlite.token,
+    type: 'GET',
+    success: function(r) { $('#monitor-content').html(r); },
+    error: function(xhr) { $('#monitor-content').html('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> Gagal memuat data: ' + xhr.statusText + '</div>'); }
+  });
+}
+
+$(document).ready(function() {
+  try {
+    $('.tanggal').datetimepicker({ format:'DD-MM-YYYY', locale:'id', showTodayButton:true, showClear:true, allowInputToggle:true, useCurrent:true });
+  } catch(e) {}
+
+  $(document).on('click','#btn-kalender-monitor', function(e) {
+    e.preventDefault(); $('#tanggal_monitor').focus();
+    var p = $('.tanggal').data('DateTimePicker'); if(p) p.toggle();
+  });
+  $(document).on('click','#btn-cari-monitor, #btn-refresh-monitor', function(){ loadMonitorData(); });
+  $(document).on('keypress','#tanggal_monitor', function(e){ if(e.which==13) loadMonitorData(); });
+  setTimeout(loadMonitorData, 200);
+});
+
+// Modal handlers
+$('#bridgingpcareModal,#pendaftaranpcareModal,#bridgingpcaretindakanobatModal').on('hidden.bs.modal', function(){ loadMonitorData(); });
+
+$(document).on("click",".btn-bridging-pcare", function(e){
+  e.preventDefault();
+  var baseURL = mlite.url+'/'+mlite.admin;
+  var url = baseURL+'/pcare/bridgingpcare/'+$(this).data('no_rkm_medis')+'/'+$(this).data('tgl_registrasi')+'?t='+mlite.token;
+  var m=$('#bridgingpcareModal'); m.off('show.bs.modal').on('show.bs.modal',function(){ m.find('.modal-content').load(url); }).modal();
+});
+
+$(document).on("click",".btn-pendaftaran-pcare", function(e){
+  e.preventDefault();
+  var baseURL = mlite.url+'/'+mlite.admin;
+  var url = baseURL+'/pcare/pendaftaranpcare/'+$(this).data('no_rkm_medis')+'/'+$(this).data('tgl_registrasi')+'?t='+mlite.token;
+  var m=$('#pendaftaranpcareModal'); m.off('show.bs.modal').on('show.bs.modal',function(){ m.find('.modal-content').load(url); }).modal();
+});
+</script>

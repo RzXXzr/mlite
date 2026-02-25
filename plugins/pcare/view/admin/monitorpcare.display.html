@@ -1,0 +1,656 @@
+<!-- ====== SUMMARY STATS ====== -->
+<div class="stat-row">
+  <div class="stat-card bg-total">
+    <div class="stat-num">{$total}</div>
+    <div class="stat-label"><i class="fa fa-users"></i> Total BPJS</div>
+  </div>
+  <div class="stat-card bg-daftar">
+    <div class="stat-num">{$sudah_daftar}</div>
+    <div class="stat-label"><i class="fa fa-check-circle"></i> Daftar PCare</div>
+  </div>
+  <div class="stat-card bg-periksa">
+    <div class="stat-num">{$sudah_periksa}</div>
+    <div class="stat-label"><i class="fa fa-stethoscope"></i> Sudah Periksa</div>
+  </div>
+  <div class="stat-card bg-kunjungan">
+    <div class="stat-num">{$sudah_kunjungan}</div>
+    <div class="stat-label"><i class="fa fa-check-square"></i> Kirim Kunjungan</div>
+  </div>
+  <div class="stat-card bg-belum">
+    <div class="stat-num">{$belum_kirim}</div>
+    <div class="stat-label"><i class="fa fa-exclamation-triangle"></i> Belum Kirim</div>
+  </div>
+  <div class="stat-card bg-batal">
+    <div class="stat-num">{$batal}</div>
+    <div class="stat-label"><i class="fa fa-ban"></i> Batal</div>
+  </div>
+  <div class="stat-card bg-sync">
+    <div class="stat-num">{$total_mlite}</div>
+    <div class="stat-label"><i class="fa fa-database"></i> Bridging mLITE</div>
+  </div>
+</div>
+
+{if: $total > 0}
+
+<!-- ====== BULK KIRIM BAR ====== -->
+{if: $siap_kirim > 0}
+<div class="bulk-bar" id="panel-bulk-kirim">
+  <div>
+    <label style="margin:0;cursor:pointer;font-weight:500;">
+      <input type="checkbox" id="chk-select-all-bulk" onclick="bulkToggleAll(this.checked)">
+      Pilih Semua Siap Kirim
+      <span class="badge" id="badge-terpilih" style="background:#e74c3c;">0</span> / <span class="badge" style="background:#f39c12;">{$siap_kirim}</span>
+    </label>
+  </div>
+  <button type="button" class="btn btn-danger btn-sm" id="btn-bulk-kirim-kunjungan" disabled onclick="bulkKirimKunjungan()">
+    <i class="fa fa-send"></i> Kirim Bulk (<span id="bulk-count">0</span>)
+  </button>
+</div>
+
+<div id="bulk-progress-container" style="display:none;margin-bottom:12px;">
+  <div class="sync-panel">
+    <div class="sync-header"><strong><i class="fa fa-spinner fa-spin"></i> Proses Kirim Kunjungan</strong></div>
+    <div class="sync-body">
+      <div class="progress progress-inline" style="margin-bottom:5px;">
+        <div class="progress-bar progress-bar-striped active" id="bulk-progress-bar" role="progressbar" style="width:0%;min-width:2em;">0%</div>
+      </div>
+      <div id="bulk-progress-text" class="text-center text-muted" style="font-size:12px;">Memulai...</div>
+      <div id="bulk-progress-log" style="max-height:160px;overflow-y:auto;margin-top:8px;font-size:11px;"></div>
+      <div id="bulk-progress-footer" class="text-right" style="display:none;margin-top:8px;">
+        <button class="btn btn-sm btn-primary" onclick="if(typeof loadMonitorData==='function') loadMonitorData();"><i class="fa fa-refresh"></i> Refresh</button>
+      </div>
+    </div>
+  </div>
+</div>
+{/if}
+
+<!-- ====== TABEL UTAMA ====== -->
+<div class="section-title">
+  <span><i class="fa fa-list"></i> Data Pasien BPJS — {$date} <span class="badge" style="background:#3498db;">{$total} pasien</span></span>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-striped table-hover table-condensed display nowrap" id="tbl_monitor" width="100%">
+    <thead>
+      <tr style="background:#2c3e50;color:#fff;font-size:12px;">
+        <th style="width:28px;"><input type="checkbox" id="chk-select-all-table" onclick="bulkToggleAll(this.checked)" title="Pilih semua siap kirim"></th>
+        <th>No</th>
+        <th>No. Rawat</th>
+        <th>No. RM</th>
+        <th>Nama Pasien</th>
+        <th>No. BPJS</th>
+        <th>Poli</th>
+        <th>Dokter</th>
+        <th>Periksa</th>
+        <th>No. Urut</th>
+        <th>No. Kunjungan</th>
+        <th style="width:70px;">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {loop: $rows}
+      <tr data-id="{$value.bridging_id}" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nomor_jaminan="{$value.no_peserta}"{if: $value.stts == 'Batal'} class="danger"{/if}>
+        <td class="text-center">
+          {if: $value.nomor_urut && !$value.nomor_kunjungan && $value.stts == 'Sudah'}
+            <input type="checkbox" class="chk-bulk-kirim" onclick="bulkUpdateCount()"
+                   data-id="{$value.bridging_id}"
+                   data-no_rawat="{$value.no_rawat}"
+                   data-no_rkm_medis="{$value.no_rkm_medis}"
+                   data-nomor_jaminan="{$value.no_peserta}"
+                   data-nm_pasien="{$value.nm_pasien}">
+          {else}
+            {if: $value.stts == 'Batal' && $value.nomor_urut}
+              <i class="fa fa-ban text-danger" title="BATAL"></i>
+            {elseif: $value.nomor_kunjungan}
+              <i class="fa fa-check text-success" title="Selesai"></i>
+            {elseif: $value.nomor_urut && $value.stts != 'Sudah'}
+              <i class="fa fa-clock-o text-warning" title="Menunggu periksa"></i>
+            {else}
+              <i class="fa fa-minus text-muted" title="Belum daftar"></i>
+            {/if}
+          {/if}
+        </td>
+        <td>{?=$counter+1?}</td>
+        <td><span class="label label-primary" style="font-size:10px;">{$value.no_rawat}</span></td>
+        <td>{$value.no_rkm_medis}</td>
+        <td><strong>{$value.nm_pasien}</strong></td>
+        <td style="font-size:11px;">{$value.no_peserta}</td>
+        <td>{$value.nm_poli}</td>
+        <td style="font-size:11px;">{$value.nm_dokter}</td>
+        <td class="text-center">
+          {if: $value.stts == 'Sudah'}
+            <span class="label label-success" style="font-size:10px;"><i class="fa fa-check"></i></span>
+          {elseif: $value.stts == 'Batal'}
+            <span class="label label-danger" style="font-size:10px;"><i class="fa fa-ban"></i></span>
+          {else}
+            <span class="label label-warning" style="font-size:10px;"><i class="fa fa-clock-o"></i></span>
+          {/if}
+        </td>
+        <td class="text-center">
+          {if: $value.nomor_urut}
+            <span class="label label-info">{$value.nomor_urut}</span>
+          {else}
+            <span class="label label-default">—</span>
+          {/if}
+        </td>
+        <td class="td-nomor-kunjungan text-center">
+          {if: $value.nomor_kunjungan}
+            <span class="label label-success" style="font-size:10px;">{$value.nomor_kunjungan}</span>
+          {else}
+            <span class="label label-default">—</span>
+          {/if}
+        </td>
+        <td class="text-center" style="white-space:nowrap;">
+          {if: !$value.nomor_urut}
+            <a href="#" class="btn btn-xs btn-warning btn-pendaftaran-pcare"
+               data-no_rkm_medis="{$value.no_rkm_medis}" data-tgl_registrasi="{$value.tgl_registrasi}"
+               title="Daftarkan ke PCare"><i class="fa fa-plus"></i></a>
+          {/if}
+          {if: $value.nomor_urut && !$value.nomor_kunjungan && $value.stts == 'Sudah'}
+            <a href="#" class="btn btn-xs btn-info btn-bridging-pcare"
+               data-no_rkm_medis="{$value.no_rkm_medis}" data-tgl_registrasi="{$value.tgl_registrasi}"
+               title="Kirim Kunjungan"><i class="fa fa-send"></i></a>
+          {elseif: $value.nomor_kunjungan}
+            <span class="text-success" title="Sudah terkirim"><i class="fa fa-check-circle"></i></span>
+          {/if}
+        </td>
+      </tr>
+      {/loop}
+    </tbody>
+  </table>
+</div>
+
+{else}
+<div class="text-center" style="padding:30px 0;">
+  <i class="fa fa-inbox fa-3x text-muted"></i>
+  <p class="text-muted" style="margin-top:10px;">Tidak ada data pasien BPJS pada tanggal <strong>{$date}</strong></p>
+</div>
+{/if}
+
+<!-- ====== SINKRONISASI SECTION ====== -->
+<div class="section-title" id="section-sync-title">
+  <span><i class="fa fa-exchange"></i> Sinkronisasi PCare vs mLITE <span class="anomali-badge zero" id="anomali-count" title="Anomali ditemukan">0</span></span>
+  <button type="button" class="btn btn-sm btn-primary" id="btn-start-sync" onclick="startSyncCheck()">
+    <i class="fa fa-play"></i> Mulai Cek Sinkronisasi
+  </button>
+</div>
+
+<div class="sync-panel" id="sync-panel">
+  <div class="sync-body">
+
+    <!-- Pre-check info -->
+    <div id="sync-precheck">
+      <div class="row">
+        <div class="col-sm-4">
+          <div class="text-center" style="padding:10px;">
+            <span style="font-size:28px;font-weight:700;color:#0984e3;">{$total_mlite}</span><br>
+            <small class="text-muted"><i class="fa fa-database"></i> Total Bridging mLITE</small>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="text-center" style="padding:10px;">
+            <span style="font-size:28px;font-weight:700;color:#6c5ce7;" id="sync-pcare-count">—</span><br>
+            <small class="text-muted"><i class="fa fa-cloud"></i> Ditemukan di PCare</small>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="text-center" style="padding:10px;">
+            <span style="font-size:28px;font-weight:700;color:#e74c3c;" id="sync-anomali-count">—</span><br>
+            <small class="text-muted"><i class="fa fa-exclamation-triangle"></i> Hanya di PCare</small>
+          </div>
+        </div>
+      </div>
+
+      {if: count($prefix_max) > 0}
+      <div style="font-size:12px;color:#7f8c8d;padding:4px 0;">
+        <i class="fa fa-info-circle"></i> Prefix: 
+        {loop: $prefix_max}
+          <span class="label label-primary" style="font-size:11px;">{$key}: 1–{$value}</span>
+        {/loop}
+      </div>
+      {else}
+      <div class="text-center text-muted" style="padding:8px 0;font-size:12px;">
+        <i class="fa fa-info-circle"></i> Tidak ada data bridging — klik "Mulai Cek" untuk scan.
+      </div>
+      {/if}
+    </div>
+
+    <!-- Progress -->
+    <div id="sync-progress-wrap" style="display:none;margin-top:10px;">
+      <div class="progress progress-inline">
+        <div class="progress-bar progress-bar-striped active" id="sync-progress-bar" role="progressbar" style="width:0%;min-width:2em;">0%</div>
+      </div>
+      <div id="sync-progress-text" class="text-center text-muted" style="font-size:11px;margin-top:3px;">Memulai pengecekan...</div>
+    </div>
+
+    <!-- Anomali Table (hidden until found) -->
+    <div id="sync-anomali-wrap" style="display:none;margin-top:12px;">
+      <div style="font-weight:600;color:#e74c3c;font-size:13px;margin-bottom:6px;">
+        <i class="fa fa-exclamation-triangle"></i> Pendaftaran di PCare yang tidak ada di mLITE (<span id="anomali-count-title">0</span> data)
+      </div>
+      <p style="font-size:11px;color:#95a5a6;margin-bottom:8px;">Data berikut terdaftar di server PCare BPJS tapi tidak ada di database mLITE. Kemungkinan: duplikat, manual via web PCare, atau bridging gagal tersimpan.</p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-condensed" id="tbl_anomali" style="font-size:12px;">
+          <thead>
+            <tr style="background:#e74c3c;color:#fff;">
+              <th>No</th>
+              <th>No. Urut</th>
+              <th>No. Kartu BPJS</th>
+              <th>Nama Peserta</th>
+              <th>Poli</th>
+              <th>Provider</th>
+              <th>Status</th>
+              <th>Detail Pelayanan</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-anomali"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Log (collapsed) -->
+    <div id="sync-log-wrap" style="display:none;margin-top:8px;">
+      <div style="font-size:12px;color:#7f8c8d;cursor:pointer;margin-bottom:4px;" onclick="$('#sync-log').toggle();">
+        <i class="fa fa-list"></i> Log Pengecekan <small>(klik untuk buka/tutup)</small>
+      </div>
+      <div id="sync-log" style="max-height:200px;overflow-y:auto;font-size:11px;display:none;background:#f8f9fa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ====== DATA BRIDGING MLITE (collapsible) ====== -->
+{if: $total_mlite > 0}
+<div class="section-title" style="cursor:pointer;margin-top:15px;" onclick="$('#mlite-bridging-body').toggle();">
+  <span><i class="fa fa-database"></i> Data Bridging mLITE ({$total_mlite} data) <small class="text-muted">— klik untuk buka/tutup</small></span>
+  <button type="button" class="btn btn-warning btn-xs" id="btn-sync-all" onclick="event.stopPropagation(); syncAllKunjungan();" title="Sinkronisasi semua no. kunjungan kosong">
+    <i class="fa fa-refresh"></i> Sync Semua Kosong
+  </button>
+</div>
+<div id="mlite-bridging-body" style="display:none;">
+  <span id="sync-all-status" class="text-muted" style="font-size:12px;display:block;margin-bottom:6px;"></span>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped table-hover table-condensed" id="tbl_mlite_data" style="font-size:12px;">
+      <thead>
+        <tr style="background:#0984e3;color:#fff;">
+          <th>No</th>
+          <th>No. Urut</th>
+          <th>No. Rawat</th>
+          <th>No. RM</th>
+          <th>Nama Pasien</th>
+          <th>No. BPJS</th>
+          <th>Poli</th>
+          <th>Periksa</th>
+          <th>No. Kunjungan</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loop: $mlite_rows}
+        <tr>
+          <td>{?=$counter+1?}</td>
+          <td><span class="label label-info">{$value.nomor_urut}</span></td>
+          <td><span class="label label-primary" style="font-size:10px;">{$value.no_rawat}</span></td>
+          <td>{$value.no_rkm_medis}</td>
+          <td><strong>{$value.nm_pasien}</strong></td>
+          <td>{$value.no_peserta}</td>
+          <td>{$value.nm_poli}</td>
+          <td>
+            {if: $value.stts == 'Sudah'}<span class="label label-success">{$value.stts}</span>
+            {elseif: $value.stts == 'Batal'}<span class="label label-danger">{$value.stts}</span>
+            {else}<span class="label label-warning">{$value.stts}</span>{/if}
+          </td>
+          <td>
+            {if: $value.nomor_kunjungan}<span class="label label-info">{$value.nomor_kunjungan}</span>
+            {else}<span class="label label-default" data-norawat="{$value.no_rawat}">—</span>{/if}
+          </td>
+          <td>
+            {if: $value.nomor_kunjungan}
+              <span class="text-success"><i class="fa fa-check"></i></span>
+            {elseif: $value.stts == 'Batal' && $value.nomor_urut}
+              <button type="button" class="btn btn-xs btn-danger btn-del-pcare"
+                data-norawat="{$value.no_rawat}" data-nokartu="{$value.no_peserta}"
+                data-nourut="{$value.nomor_urut}" data-kdpoli="{$value.kode_poli_pcare}"
+                onclick="hapusPendaftaranPcare(this)" title="Hapus di PCare">
+                <i class="fa fa-trash"></i>
+              </button>
+            {elseif: !$value.nomor_kunjungan && $value.nomor_urut}
+              <button type="button" class="btn btn-xs btn-warning btn-sync-single"
+                data-norawat="{$value.no_rawat}" data-nokartu="{$value.no_peserta}"
+                onclick="syncSingleKunjungan(this)" title="Sync dari PCare">
+                <i class="fa fa-refresh"></i>
+              </button>
+            {else}<span class="text-muted">—</span>{/if}
+          </td>
+        </tr>
+        {/loop}
+      </tbody>
+    </table>
+  </div>
+</div>
+{/if}
+
+<script>
+// =====================================================
+// BULK KIRIM KUNJUNGAN
+// =====================================================
+function bulkUpdateCount() {
+  var c = document.querySelectorAll('#tbl_monitor .chk-bulk-kirim:checked').length;
+  var t = document.querySelectorAll('#tbl_monitor .chk-bulk-kirim').length;
+  $('#bulk-count, #badge-terpilih').text(c);
+  $('#btn-bulk-kirim-kunjungan').prop('disabled', c===0);
+  var all = (c===t && t>0);
+  $('#chk-select-all-bulk, #chk-select-all-table').prop('checked', all);
+}
+function bulkToggleAll(v) {
+  $('#tbl_monitor .chk-bulk-kirim').prop('checked', v);
+  $('#chk-select-all-bulk, #chk-select-all-table').prop('checked', v);
+  bulkUpdateCount();
+}
+
+function bulkKirimKunjungan() {
+  var items = [];
+  $('#tbl_monitor .chk-bulk-kirim:checked').each(function(){
+    items.push({ id:$(this).data('id'), no_rawat:$(this).data('no_rawat'), no_rkm_medis:$(this).data('no_rkm_medis'), nomor_jaminan:$(this).data('nomor_jaminan'), nm_pasien:$(this).data('nm_pasien') });
+  });
+  if(!items.length){ alert('Tidak ada data dipilih!'); return; }
+  if(!confirm('Kirim '+items.length+' kunjungan ke PCare?\nPastikan data pemeriksaan sudah lengkap.')) return;
+
+  $('#btn-bulk-kirim-kunjungan').prop('disabled',true);
+  $('#panel-bulk-kirim').hide();
+  $('#bulk-progress-container').show();
+  $('#bulk-progress-footer').hide();
+  $('#bulk-progress-log').html('');
+
+  var total=items.length, sukses=0, gagal=0, baseURL=mlite.url+'/'+mlite.admin;
+
+  function go(i) {
+    if(i>=total) {
+      $('#bulk-progress-bar').css('width','100%').text('100%').removeClass('active');
+      $('#bulk-progress-bar').addClass(gagal===0?'progress-bar-success':'progress-bar-warning').removeClass('progress-bar-striped');
+      $('#bulk-progress-text').html('<strong>Selesai!</strong> <span class="text-success">'+sukses+' berhasil</span> | <span class="text-danger">'+gagal+' gagal</span>');
+      $('#bulk-progress-footer').show();
+      return;
+    }
+    var it=items[i], pct=Math.round(i/total*100);
+    $('#bulk-progress-bar').css('width',pct+'%').text(pct+'%');
+    $('#bulk-progress-text').html('Mengirim <strong>'+it.nm_pasien+'</strong> ('+(i+1)+'/'+total+')...');
+    $.ajax({
+      url:baseURL+'/pcare/kirimkunjunganbpjs?t='+mlite.token, method:'POST', dataType:'json', timeout:60000,
+      data:{ id:it.id, no_rawat:it.no_rawat, no_rkm_medis:it.no_rkm_medis, nomor_jaminan:it.nomor_jaminan },
+      success:function(r){
+        if(r.status==='success'){
+          sukses++;
+          $('#bulk-progress-log').prepend('<div class="text-success"><i class="fa fa-check"></i> '+it.nm_pasien+' — '+(r.nomor_kunjungan||'OK')+'</div>');
+          var row=$('tr[data-id="'+it.id+'"]');
+          row.find('.chk-bulk-kirim').replaceWith('<i class="fa fa-check text-success"></i>');
+          row.find('.td-nomor-kunjungan').html('<span class="label label-success" style="font-size:10px;">'+( r.nomor_kunjungan||'-')+'</span>');
+        } else {
+          gagal++;
+          $('#bulk-progress-log').prepend('<div class="text-danger"><i class="fa fa-times"></i> '+it.nm_pasien+' — '+(r.message||'Gagal')+'</div>');
+        }
+        setTimeout(function(){ go(i+1); }, 500);
+      },
+      error:function(xhr){ gagal++;
+        $('#bulk-progress-log').prepend('<div class="text-danger"><i class="fa fa-times"></i> '+it.nm_pasien+' — Error: '+xhr.statusText+'</div>');
+        setTimeout(function(){ go(i+1); }, 500);
+      }
+    });
+  }
+  go(0);
+}
+
+// =====================================================
+// SINKRONISASI CHECK
+// =====================================================
+var syncStarted = false;
+function startSyncCheck() {
+  if(syncStarted) return;
+  syncStarted = true;
+
+  var mliteUrutList = {?=json_encode($mlite_urut_list)?};
+  var prefixMax = {?=json_encode($prefix_max)?};
+  var tglDaftar = '{$tglDaftar}';
+  var baseURL = mlite.url+'/'+mlite.admin;
+
+  var mliteSet = {};
+  for(var i=0;i<mliteUrutList.length;i++) mliteSet[mliteUrutList[i].toUpperCase()] = true;
+
+  var prefixes = [];
+  for(var p in prefixMax) prefixes.push(p);
+
+  $('#btn-start-sync').prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> Mengecek...');
+  $('#sync-progress-wrap').show();
+  $('#sync-log-wrap').show();
+
+  if(prefixes.length===0) {
+    $('#sync-progress-bar').css('width','100%').text('100%').removeClass('active progress-bar-striped').addClass('progress-bar-warning');
+    $('#sync-progress-text').text('Tidak ada data bridging untuk dicek.');
+    $('#btn-start-sync').html('<i class="fa fa-check"></i> Selesai');
+    $('#sync-pcare-count').text('0'); $('#sync-anomali-count').text('0');
+    $('#anomali-count').text('0').addClass('zero');
+    return;
+  }
+
+  var totalChecked=0, pcareFound=0, hanyaPcare=0, errors=0;
+
+  function upd() {
+    $('#sync-pcare-count').text(pcareFound);
+    $('#sync-anomali-count').text(hanyaPcare);
+    $('#anomali-count').text(hanyaPcare);
+    if(hanyaPcare>0) $('#anomali-count').removeClass('zero'); else $('#anomali-count').addClass('zero');
+    $('#anomali-count-title').text(hanyaPcare);
+  }
+
+  function finish() {
+    $('#sync-progress-bar').css('width','100%').text('100%').removeClass('active progress-bar-striped');
+    if(hanyaPcare>0) {
+      $('#sync-progress-bar').addClass('progress-bar-warning');
+      $('#sync-progress-text').html('<strong>Selesai.</strong> <span class="text-danger">'+hanyaPcare+' anomali ditemukan</span> dari '+totalChecked+' dicek.');
+    } else {
+      $('#sync-progress-bar').addClass('progress-bar-success');
+      $('#sync-progress-text').html('<strong>Sinkronisasi sempurna!</strong> '+pcareFound+' data cocok.');
+    }
+    if(errors>0) $('#sync-progress-text').append(' <span class="text-muted">('+errors+' error)</span>');
+    $('#btn-start-sync').html('<i class="fa fa-check-circle"></i> Selesai').removeClass('btn-primary').addClass('btn-success');
+    upd();
+  }
+
+  function chkPfx(pi) {
+    if(pi >= prefixes.length){ finish(); return; }
+    var pfx=prefixes[pi], miss=0, n=1;
+    function chk() {
+      var nu=pfx+n;
+      totalChecked++;
+      $('#sync-progress-text').text('Cek '+nu+' ('+totalChecked+' dicek)...');
+      $.ajax({
+        url:baseURL+'/pcare/ceknomorurut?t='+mlite.token+'&noUrut='+encodeURIComponent(nu)+'&tglDaftar='+encodeURIComponent(tglDaftar),
+        type:'GET', dataType:'json', timeout:30000,
+        success:function(r){
+          if(r.status==='found'){
+            miss=0; pcareFound++;
+            var inM=mliteSet[nu.toUpperCase()]?true:false;
+            if(!inM){
+              hanyaPcare++;
+              var d=r.data||{}, pes=d.peserta||{}, prov=d.providerPelayanan||{}, pol=d.poli||{};
+              var st=d.status||'', done=(st.toLowerCase().indexOf('sudah')!==-1);
+              var ri=hanyaPcare;
+              var stH = done
+                ? '<span class="label label-success" style="font-size:10px;"><i class="fa fa-check"></i> '+st+'</span>'
+                : '<span class="label label-warning" style="font-size:10px;"><i class="fa fa-clock-o"></i> '+(st||'Belum')+'</span>';
+              var del='';
+              if(!done){
+                del='<button class="btn btn-xs btn-danger" onclick="hapusPendaftaranPcareByData(\''+
+                  (pes.noKartu||'')+'\',\''+tglDaftar+'\',\''+(d.noUrut||nu)+'\',\''+(pol.kdPoli||'')+'\',this)" title="Hapus dari PCare"><i class="fa fa-trash"></i></button>';
+              }
+              var row='<tr id="row-anom-'+ri+'">'+
+                '<td>'+ri+'</td>'+
+                '<td><span class="label label-danger">'+(d.noUrut||nu)+'</span></td>'+
+                '<td>'+(pes.noKartu||'-')+'</td>'+
+                '<td><strong>'+(pes.nama||'-')+'</strong></td>'+
+                '<td>'+(pol.nmPoli||d.kdPoli||'-')+'</td>'+
+                '<td style="font-size:11px;">'+(prov.kdProvider||'')+' '+(prov.nmProvider||'')+'</td>'+
+                '<td>'+stH+'</td>'+
+                '<td id="pel-'+ri+'">'+(done?'<i class="fa fa-spinner fa-spin"></i>':'<span class="text-muted">—</span>')+'</td>'+
+                '<td>'+del+'</td></tr>';
+              $('#tbody-anomali').append(row);
+              $('#sync-anomali-wrap').show();
+              $('#sync-log').prepend('<div class="text-danger"><i class="fa fa-exclamation-circle"></i> <strong>'+nu+'</strong> — '+(pes.nama||'?')+' — hanya di PCare!</div>');
+
+              if(done && pes.noKartu){
+                (function(idx,nk,tg){
+                  $.ajax({
+                    url:baseURL+'/pcare/cekkunjungandetail?t='+mlite.token+'&noKartu='+encodeURIComponent(nk)+'&tglDaftar='+encodeURIComponent(tg),
+                    type:'GET', dataType:'json', timeout:30000,
+                    success:function(dr){
+                      var h='';
+                      if(dr.status==='ok'){
+                        var k=dr.kunjungan||{}, ti=dr.tindakan||[];
+                        if(k.noKunjungan) h+='<strong>'+k.noKunjungan+'</strong><br>';
+                        var dg=[];
+                        if(k.diagnosa1&&k.diagnosa1.kdDiag) dg.push(k.diagnosa1.kdDiag);
+                        if(k.diagnosa2&&k.diagnosa2.kdDiag) dg.push(k.diagnosa2.kdDiag);
+                        if(k.diagnosa3&&k.diagnosa3.kdDiag) dg.push(k.diagnosa3.kdDiag);
+                        if(!dg.length){ if(k.kdDiag1) dg.push(k.kdDiag1); if(k.kdDiag2) dg.push(k.kdDiag2); }
+                        if(dg.length) h+='Dx: '+dg.join(', ')+'<br>';
+                        if(k.keluhan) h+='S: '+k.keluhan+'<br>';
+                        if(ti.length){ h+='T: '; for(var t=0;t<ti.length;t++) h+=(ti[t].nmTindakan||ti[t].kdTindakan)+'; '; }
+                        if(!h) h='<span class="text-muted">Kosong</span>';
+                      } else { h='<span class="text-warning"><i class="fa fa-warning"></i> '+(dr.message||'Gagal')+'</span>'; }
+                      $('#pel-'+idx).html(h);
+                    },
+                    error:function(){ $('#pel-'+idx).html('<span class="text-danger">Error</span>'); }
+                  });
+                })(ri,pes.noKartu,tglDaftar);
+              }
+            } else {
+              $('#sync-log').prepend('<div class="text-success"><i class="fa fa-check"></i> '+nu+' — cocok</div>');
+            }
+          } else if(r.status==='not_found'){
+            miss++;
+            $('#sync-log').prepend('<div class="text-muted"><i class="fa fa-minus"></i> '+nu+' — tidak ada</div>');
+          } else {
+            errors++;
+            $('#sync-log').prepend('<div class="text-warning"><i class="fa fa-warning"></i> '+nu+' — '+(r.message||'Error')+'</div>');
+          }
+          upd();
+          if(miss>=2){
+            $('#sync-log').prepend('<div class="text-info"><i class="fa fa-stop-circle"></i> Prefix '+pfx+' selesai</div>');
+            setTimeout(function(){ chkPfx(pi+1); },100);
+          } else { n++; setTimeout(chk,100); }
+        },
+        error:function(xhr){
+          errors++;
+          $('#sync-log').prepend('<div class="text-danger"><i class="fa fa-times"></i> '+nu+' — '+xhr.statusText+'</div>');
+          upd(); n++; setTimeout(chk,100);
+        }
+      });
+    }
+    chk();
+  }
+  chkPfx(0);
+}
+
+// =====================================================
+// HAPUS PENDAFTARAN PCARE
+// =====================================================
+function hapusPendaftaranPcareByData(noKartu,tglDaftar,noUrut,kdPoli,btn){
+  var $b=$(btn), baseURL=mlite.url+'/'+mlite.admin;
+  if(!confirm('Hapus pendaftaran '+noUrut+' ('+noKartu+') dari PCare?\nData akan dihapus permanen!')) return;
+  $b.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+  $.ajax({
+    url:baseURL+'/pcare/hapuspendaftaranpcare?t='+mlite.token, type:'POST', dataType:'json', timeout:30000,
+    data:{ noKartu:noKartu, tglDaftar:tglDaftar, noUrut:noUrut, kdPoli:kdPoli, no_rawat:'' },
+    success:function(r){ if(r.status==='success') $b.closest('tr').fadeOut(300,function(){$(this).remove();}); else { $b.prop('disabled',false).html('<i class="fa fa-trash"></i>'); alert('Gagal: '+(r.message||'Error')); }},
+    error:function(){ $b.prop('disabled',false).html('<i class="fa fa-trash"></i>'); alert('Error request'); }
+  });
+}
+
+function hapusPendaftaranPcare(btn){
+  var $b=$(btn), nr=$b.data('norawat'), nk=$b.data('nokartu'), nu=$b.data('nourut'), kp=$b.data('kdpoli');
+  var tglDaftar='{$tglDaftar}', baseURL=mlite.url+'/'+mlite.admin;
+  if(!confirm('Hapus pendaftaran '+nu+' ('+nk+') dari PCare?')) return;
+  $b.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+  $.ajax({
+    url:baseURL+'/pcare/hapuspendaftaranpcare?t='+mlite.token, type:'POST', dataType:'json', timeout:30000,
+    data:{ noKartu:nk, tglDaftar:tglDaftar, noUrut:nu, kdPoli:kp, no_rawat:nr },
+    success:function(r){ if(r.status==='success') $b.closest('tr').fadeOut(300,function(){$(this).remove();}); else { $b.prop('disabled',false).html('<i class="fa fa-trash"></i>'); alert('Gagal: '+(r.message||'Error')); }},
+    error:function(){ $b.prop('disabled',false).html('<i class="fa fa-trash"></i>'); alert('Error request'); }
+  });
+}
+
+// =====================================================
+// SYNC KUNJUNGAN
+// =====================================================
+function syncSingleKunjungan(btn){
+  var $b=$(btn), nr=$b.data('norawat'), nk=$b.data('nokartu');
+  var tglDaftar='{$tglDaftar}', baseURL=mlite.url+'/'+mlite.admin;
+  $b.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+  $.ajax({
+    url:baseURL+'/pcare/sinkronkunjungan?t='+mlite.token, type:'POST', dataType:'json', timeout:30000,
+    data:{ no_rawat:nr, noKartu:nk, tglDaftar:tglDaftar },
+    success:function(r){
+      if(r.status==='success'||r.status==='skip'){
+        $b.replaceWith('<span class="text-success"><i class="fa fa-check"></i></span>');
+        $('span[data-norawat="'+nr+'"]').replaceWith('<span class="label label-success">'+r.nomor_kunjungan+'</span>');
+      } else { $b.prop('disabled',false).html('<i class="fa fa-refresh"></i>'); alert('Gagal: '+(r.message||'Error')); }
+    },
+    error:function(){ $b.prop('disabled',false).html('<i class="fa fa-refresh"></i>'); alert('Error request'); }
+  });
+}
+
+function syncAllKunjungan(){
+  var btns=$('.btn-sync-single');
+  if(!btns.length){ $('#sync-all-status').html('<span class="text-success"><i class="fa fa-check"></i> Semua sudah memiliki no. kunjungan.</span>'); return; }
+  var $ba=$('#btn-sync-all');
+  $ba.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> Proses...');
+  var total=btns.length, idx=0, ok=0, fail=0;
+  function go(i){
+    var rem=$('.btn-sync-single');
+    if(i>=total||!rem.length){
+      $ba.prop('disabled',false).html('<i class="fa fa-refresh"></i> Sync Semua Kosong');
+      $('#sync-all-status').html('<span class="text-info">Selesai: '+ok+' OK, '+fail+' gagal dari '+total+'</span>');
+      return;
+    }
+    var b=rem.first(), nr=b.data('norawat'), nk=b.data('nokartu');
+    var tglDaftar='{$tglDaftar}', baseURL=mlite.url+'/'+mlite.admin;
+    idx++; $('#sync-all-status').text('Proses '+idx+'/'+total+'...');
+    b.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+    $.ajax({
+      url:baseURL+'/pcare/sinkronkunjungan?t='+mlite.token, type:'POST', dataType:'json', timeout:30000,
+      data:{ no_rawat:nr, noKartu:nk, tglDaftar:tglDaftar },
+      success:function(r){
+        if(r.status==='success'||r.status==='skip'){
+          ok++; b.replaceWith('<span class="text-success"><i class="fa fa-check"></i></span>');
+          $('span[data-norawat="'+nr+'"]').replaceWith('<span class="label label-success">'+r.nomor_kunjungan+'</span>');
+        } else { fail++; b.prop('disabled',false).html('<i class="fa fa-refresh"></i>'); }
+        setTimeout(function(){ go(i+1); },200);
+      },
+      error:function(){ fail++; b.prop('disabled',false).html('<i class="fa fa-refresh"></i>'); setTimeout(function(){ go(i+1); },200); }
+    });
+  }
+  go(0);
+}
+
+// =====================================================
+// DATA TABLE INIT
+// =====================================================
+$(document).ready(function(){
+  if($('#tbl_monitor').length){
+    $('#tbl_monitor').DataTable({
+      scrollX:true, pageLength:100, order:[[1,'asc']],
+      columnDefs:[{orderable:false,targets:0}],
+      language:{ lengthMenu:"Tampilkan _MENU_ data", zeroRecords:"Tidak ada data", info:"_START_–_END_ dari _TOTAL_", infoEmpty:"—", infoFiltered:"(filter dari _MAX_)", search:"Cari:",
+        paginate:{first:"&laquo;",last:"&raquo;",next:"&rsaquo;",previous:"&lsaquo;"} }
+    });
+  }
+  if($('#tbl_mlite_data').length){
+    $('#tbl_mlite_data').DataTable({
+      pageLength:50, order:[[1,'asc']],
+      language:{ search:"Cari:", lengthMenu:"Tampilkan _MENU_", zeroRecords:"Tidak ada data", info:"_START_–_END_ dari _TOTAL_",
+        paginate:{next:"&raquo;",previous:"&laquo;"} }
+    });
+  }
+});
+</script>

@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="{?=url('plugins/mlite_api_key/css/admin/swagger-ui.css')?}">
+<script src="{?=url('plugins/mlite_api_key/js/admin/swagger-ui-bundle.js')?}"></script>
+<script src="{?=url('plugins/mlite_api_key/js/admin/swagger-ui-standalone-preset.js')?}"></script>
+
+<style>
+    .swagger-ui .wrapper {
+      max-width: none; /* Removes any maximum width constraints */
+    }  
+    .swagger-ui .info {
+        display: none !important;
+    }
+    /* Improve Response Body Readability */
+    .swagger-ui .highlight-code span {
+        text-shadow: none !important;
+        color: #fff !important;
+    }
+    .swagger-ui .highlight-code pre, .swagger-ui .highlight-code pre code {
+        text-shadow: none !important;
+        color: #fff !important;
+    }
+    .swagger-ui .microlight, .swagger-ui .microlight span {
+        text-shadow: none !important;
+        color: #fff !important;
+    }
+    .swagger-ui .opblock .opblock-summary-method {
+        text-shadow: none !important;
+        color: #fff !important;
+    }
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Alat Pengujian (Swagger UI)</h3>
+    </div>
+    <div class="panel-body">
+      <div id="swagger-ui"></div>
+    </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    const ui = SwaggerUIBundle({
+      url: "{?=url([ADMIN, 'mlite_api_key', 'swaggerjson'])?}",
+      dom_id: '#swagger-ui',
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIStandalonePreset
+      ],
+      layout: "BaseLayout",
+      requestInterceptor: (request) => {
+          if (!request.headers['X-Api-Key']) {
+              request.headers['X-Api-Key'] = localStorage.getItem('mlite_api_key') || 'YOUR_API_KEY_HERE';
+          }
+          if (!request.headers['Authorization']) {
+              const token = localStorage.getItem('mlite_token');
+              if (token) {
+                  request.headers['Authorization'] = 'Bearer ' + token;
+              }
+          }
+          return request;
+      }
+    });
+    window.ui = ui;
+  });
+</script>

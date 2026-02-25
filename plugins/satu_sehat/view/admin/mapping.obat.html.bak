@@ -1,0 +1,590 @@
+<style>
+    .nowrap th, .nowrap td {
+      white-space: nowrap;
+    }
+    #autoMappingPanel {
+      margin-bottom: 20px;
+    }
+    #autoMappingProgress {
+      display: none;
+    }
+    #autoMappingProgress .progress {
+      height: 25px;
+      margin-bottom: 10px;
+    }
+    #autoMappingProgress .progress-bar {
+      line-height: 25px;
+      font-size: 13px;
+    }
+    #autoMappingLog {
+      max-height: 300px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 12px;
+      display: none;
+    }
+    #autoMappingLog .log-entry {
+      padding: 2px 0;
+      border-bottom: 1px solid #eee;
+    }
+    #autoMappingLog .log-success { color: #27ae60; }
+    #autoMappingLog .log-error { color: #e74c3c; }
+    #autoMappingLog .log-skipped { color: #f39c12; }
+    #autoMappingLog .log-notfound { color: #95a5a6; }
+    #autoMappingLog .log-info { color: #3498db; }
+    #autoMappingSummary {
+      display: none;
+      margin-top: 10px;
+    }
+</style>
+<h4>Mapping Obat Satu Sehat</h4>
+
+<!-- Ringkasan Status Mapping -->
+<div class="row" style="margin-bottom: 15px;">
+    <div class="col-md-3 col-sm-6">
+        <div class="panel panel-default" style="text-align:center; margin-bottom:10px;">
+            <div class="panel-body">
+                <h3 style="margin:0; color:#3498db;">{$total_obat}</h3>
+                <small class="text-muted">Total Obat Aktif</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="panel panel-default" style="text-align:center; margin-bottom:10px;">
+            <div class="panel-body">
+                <h3 style="margin:0; color:#27ae60;">{$total_mapped}</h3>
+                <small class="text-muted">Sudah Mapping KFA</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="panel panel-default" style="text-align:center; margin-bottom:10px;">
+            <div class="panel-body">
+                <h3 style="margin:0; color:#e74c3c;">{$total_unmapped}</h3>
+                <small class="text-muted">Belum Mapping KFA</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="panel panel-default" style="text-align:center; margin-bottom:10px;">
+            <div class="panel-body">
+                <h3 style="margin:0; color:#8e44ad;">{$total_pushed}</h3>
+                <small class="text-muted">Sudah Push Satu Sehat</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Sudah Mapping / Belum Mapping -->
+<ul class="nav nav-tabs" style="margin-bottom: 15px;">
+    <li class="active"><a data-toggle="tab" href="#tab_mapped"><i class="fa fa-check-circle text-success"></i> Sudah Mapping ({$total_mapped})</a></li>
+    <li><a data-toggle="tab" href="#tab_unmapped"><i class="fa fa-exclamation-circle text-danger"></i> Belum Mapping ({$total_unmapped})</a></li>
+</ul>
+
+<!-- Auto Mapping Panel -->
+<div class="panel panel-info" id="autoMappingPanel">
+    <div class="panel-heading">
+        <h4 class="panel-title"><i class="fa fa-magic"></i> Auto Mapping Obat KFA</h4>
+    </div>
+    <div class="panel-body">
+        <p>Otomatis mapping semua obat yang belum ter-mapping ke KFA berdasarkan nama obat.</p>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="auto_type">Tipe Default</label>
+                    <select id="auto_type" class="form-control">
+                        <option value="obat">Obat</option>
+                        <option value="vaksin">Vaksin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="auto_delay">Jeda antar Request (ms)</label>
+                    <input type="number" id="auto_delay" class="form-control" value="1500" min="500" max="10000" step="100">
+                </div>
+            </div>
+            <div class="col-md-4" style="padding-top: 25px;">
+                <button type="button" id="btnAutoMapping" class="btn btn-primary"><i class="fa fa-play"></i> Mulai Auto Mapping</button>
+                <button type="button" id="btnStopMapping" class="btn btn-danger" style="display:none;"><i class="fa fa-stop"></i> Stop</button>
+                <button type="button" id="btnToggleLog" class="btn btn-default" style="display:none;"><i class="fa fa-list"></i> Log</button>
+            </div>
+        </div>
+        <div id="autoMappingProgress">
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped active" role="progressbar" style="width: 0%;">0%</div>
+            </div>
+            <div id="autoMappingStatus" class="text-muted">Mempersiapkan...</div>
+        </div>
+        <div id="autoMappingLog"></div>
+        <div id="autoMappingSummary" class="alert alert-info">
+            <strong>Hasil Auto Mapping:</strong>
+            <span id="summarySuccess" class="text-success"></span> |
+            <span id="summaryNotFound" class="text-muted"></span> |
+            <span id="summaryError" class="text-danger"></span> |
+            <span id="summarySkipped" class="text-warning"></span>
+        </div>
+    </div>
+</div>
+
+<form action="{?=url(ADMIN.'/satu_sehat/saveobat')?}" method="POST">
+    <input type="hidden" name="id_organisasi_satusehat">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label>Pilih Obat</label>
+                        <select name="kode_brng" id="kode_brng" class="form-control" data-use-search="true" >
+                            {loop: $databarang}
+                            <option value="{$value.kode_brng}">[{$value.kode_brng}] - {$value.nama_brng}</option>
+                            {/loop}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pilih Obat KFA</label>
+                        <select id="select_kfa" name="select_kfa" class="form-control" placeholder="Silahkan cari Obat KFA..."></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="">Tipe</label>
+                        <select name="type" id="type" class="form-control">
+                            <option value="obat">Obat</option>
+                            <option value="vaksin">Vaksin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-12" style="padding-top: 20px;">
+                    <input type="submit" name="simpan" class="btn btn-success" value="Simpan" />
+                    <!-- <input type="submit" name="update" class="btn btn-info" value="Update" /> -->
+                    <input type="submit" name="hapus" class="btn btn-danger" value="Hapus" />
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="tab-content">
+<div id="tab_mapped" class="tab-pane fade in active">
+<div class="row">
+<div class="col-md-12">
+    <div class="table-responsive no-margin" id="mapping_obat_satu_sehat">
+    <table class="table table-striped table-bordered no-padding nowrap display_mapping_obat" width="100%">
+        <thead>
+            <tr>
+                <th>Kode Obat Lokal</th>
+                <th>Kode Obat KFA</th>
+                <th>Nama Obat KFA</th>
+                <th>Kode Bahan</th>
+                <th>Nama Bahan</th>
+                <th>Numerator</th>
+                <th>Satuan Numerator</th>
+                <th>Denominator</th>
+                <th>Satuan Denominator</th>
+                <th>Nama Satuan Denominator</th>
+                <th>Kode Sediaan</th>
+                <th>Nama Sediaan</th>
+                <th>Kode Route</th>
+                <th>Nama Route</th>
+                <th>Tipe</th>
+                <th>ID Medication</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {loop: $mapping_obat_satu_sehat}
+            <tr class="mapping_obat_satu_sehat"
+            data-kode_brng="{$value.kode_brng}"
+            >
+                <td>{$value.kode_brng}</td>
+                <td>{$value.kode_kfa}</td>
+                <td>{$value.nama_kfa}</td>
+                <td>{$value.kode_bahan}</td>
+                <td>{$value.nama_bahan}</td>
+                <td>{$value.numerator}</td>
+                <td>{$value.satuan_num}</td>
+                <td>{$value.denominator}</td>
+                <td>{$value.satuan_den}</td>
+                <td>{$value.nama_satuan_den}</td>
+                <td>{$value.kode_sediaan}</td>
+                <td>{$value.nama_sediaan}</td>
+                <td>{$value.kode_route}</td>
+                <td>{$value.nama_route}</td>
+                <td>{$value.type}</td>
+                <td style="white-space: nowrap;">{?=isset_or($value.id_medication, '<a href="'.url([ADMIN, 'satu_sehat', 'medication', $value.kode_brng, 'mapping']).'" data-toggle="modal" data-target="#asuransiModal"><i class="fa fa-check"></i></a>')?}</td>
+                <td style="white-space: nowrap;">
+                    <button type="button" class="btn btn-xs btn-info btn-edit-mapping" 
+                        data-kode_brng="{$value.kode_brng}"
+                        data-kode_kfa="{$value.kode_kfa}"
+                        data-type="{$value.type}"
+                        title="Edit"><i class="fa fa-pencil"></i></button>
+                    <button type="button" class="btn btn-xs btn-danger btn-hapus-mapping" 
+                        data-kode_brng="{$value.kode_brng}"
+                        title="Hapus"><i class="fa fa-trash"></i></button>
+                </td>
+            </tr>
+            {/loop}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+</div>
+<!-- Tab Belum Mapping -->
+<div id="tab_unmapped" class="tab-pane fade">
+<div class="row">
+<div class="col-md-12">
+    <div class="table-responsive no-margin">
+    <table class="table table-striped table-bordered no-padding nowrap display_unmapped" width="100%">
+        <thead>
+            <tr>
+                <th>Kode Obat</th>
+                <th>Nama Obat</th>
+                <th>Satuan</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {loop: $unmapped}
+            <tr>
+                <td>{$value.kode_brng}</td>
+                <td>{$value.nama_brng}</td>
+                <td>{?=isset_or($value.kode_sat, '-')?}</td>
+                <td><span class="label label-danger">Belum Mapping</span></td>
+            </tr>
+            {/loop}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+</div>
+</div>
+<div class="modal fade" id="asuransiModal" tabindex="-1" role="dialog" aria-labelledby="asuransiModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="asuransiModalLabel">Detail Mapping</h4>
+            </div>
+            <div class="modal-body">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+
+    $(document).ready(function(){
+        $('.display_mapping_obat').DataTable({
+        "language": { "search": "", "searchPlaceholder": "Search..." },
+        "fixedColumns": {
+            "left": 3
+        },
+        "lengthChange": false,
+        "scrollX": true,
+        dom: "<<'data-table-title'><'datatable-search'f>><'row'<'col-sm-12'tr>><<'pmd-datatable-pagination' l i p>>"
+        });
+        var t = $(".display_mapping_obat").DataTable().rows().count();
+        $(".data-table-title").html('<h3 style="display:inline;float:left;margin-top:0;" class="hidden-xs">Total: ' + t + '</h3>');
+
+        // DataTable untuk tabel unmapped
+        $('.display_unmapped').DataTable({
+            "language": { "search": "", "searchPlaceholder": "Cari obat belum mapping..." },
+            "lengthChange": false,
+            "pageLength": 25,
+            dom: "<<'data-table-title-unmapped'><'datatable-search'f>><'row'<'col-sm-12'tr>><<'pmd-datatable-pagination' l i p>>"
+        });
+        var tu = $(".display_unmapped").DataTable().rows().count();
+        $(".data-table-title-unmapped").html('<h3 style="display:inline;float:left;margin-top:0;" class="hidden-xs">Belum Mapping: ' + tu + '</h3>');
+    });
+
+    // Edit mapping - klik baris tabel untuk isi form
+    $("#mapping_obat_satu_sehat").on("click", ".mapping_obat_satu_sehat", function(event){
+        if ($(event.target).closest('button').length) return; // skip jika klik tombol
+        var kode_brng  = $(this).attr("data-kode_brng");
+        $('#kode_brng').val(kode_brng).change();
+    });
+
+    // Edit mapping - klik tombol edit per baris
+    $("#mapping_obat_satu_sehat").on("click", ".btn-edit-mapping", function(e){
+        e.stopPropagation();
+        var kode_brng = $(this).attr("data-kode_brng");
+        var kode_kfa = $(this).attr("data-kode_kfa");
+        var type = $(this).attr("data-type");
+        
+        // Set dropdown values
+        $('#kode_brng').val(kode_brng).change();
+        $('#type').val(type).change();
+        
+        // Add KFA option to selectator and select it
+        var $kfaSelect = $('#select_kfa');
+        $kfaSelect.empty();
+        $kfaSelect.append('<option value="' + kode_kfa + '" selected>' + kode_kfa + '</option>');
+        $kfaSelect.val(kode_kfa).trigger('change');
+        
+        // Scroll to form
+        $('html, body').animate({ scrollTop: $('form').offset().top - 10 }, 300);
+        
+        // Change button text to indicate edit mode
+        $('input[name="simpan"]').val('Update').removeClass('btn-success').addClass('btn-info');
+    });
+
+    // Hapus mapping via AJAX - klik tombol hapus per baris
+    $("#mapping_obat_satu_sehat").on("click", ".btn-hapus-mapping", function(e){
+        e.stopPropagation();
+        var kode_brng = $(this).attr("data-kode_brng");
+        var $row = $(this).closest('tr');
+        
+        if (!confirm('Apakah Anda yakin ingin menghapus mapping untuk [' + kode_brng + ']?')) return;
+        
+        var baseURL = mlite.url + '/' + mlite.admin;
+        $.ajax({
+            url: baseURL + '/satu_sehat/hapusmappingobat?t=' + mlite.token + '&kode_brng=' + encodeURIComponent(kode_brng),
+            type: 'GET',
+            dataType: 'json',
+            success: function(result) {
+                if (result.status === 'success') {
+                    var table = $('.display_mapping_obat').DataTable();
+                    table.row($row).remove().draw();
+                    var t = table.rows().count();
+                    $(".data-table-title").html('<h3 style="display:inline;float:left;margin-top:0;" class="hidden-xs">Total: ' + t + '</h3>');
+                } else {
+                    alert('Gagal: ' + result.message);
+                }
+            },
+            error: function() {
+                alert('Error saat menghapus mapping');
+            }
+        });
+    });
+
+    // Reset form ke mode simpan saat pilih obat baru
+    $('#kode_brng').on('change', function() {
+        $('input[name="simpan"]').val('Simpan').removeClass('btn-info').addClass('btn-success');
+    });
+
+    $('input[name="hapus"]').on('click', function (e) {
+        const confirmDelete = confirm('Apakah Anda yakin ingin menghapus data ini?');
+        if (!confirmDelete) {
+            e.preventDefault();
+        }
+    });
+
+    var strip_tags = function(str) {
+        return (str + '').replace(/<\/?[^>]+(>|$)/g, '')
+    };
+
+    var truncate_string = function(str, chars) {
+        if ($.trim(str).length <= chars) {
+            return str;
+        } else {
+            return $.trim(str.substr(0, chars)) + '…';
+        }
+    };
+
+    var $select = $('#select_kfa');
+
+    $select.selectator({
+        labels: {
+            search: 'Search here...'
+        },
+        load: function (search, callback) {
+            if (search.length < this.minSearchLength) return callback();
+
+            var baseURL = mlite.url + '/' + mlite.admin;
+            var url = baseURL + '/satu_sehat/mappingobatsearch?t=' + mlite.token + '&keyword=' + encodeURIComponent(search);
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // console.log('Data:', data);
+                    callback(data.items.data.slice(0, 100));
+                },
+                error: function() {
+                    callback();
+                }
+            });
+        },
+        delay: 300,
+        minSearchLength: 6,
+        valueField: 'kfa_code',
+        textField: 'name',
+        render: {
+            option: function (_item, escape) {
+                var html = '';
+                html += '<div class="selectator_option_title">' + ((typeof _item.name !== 'undefined') ? _item.name : '') + '</div>';
+                html += '<div class="selectator_option_subtitle">' + ((typeof _item.manufacturer !== 'undefined') ? truncate_string(escape(strip_tags(_item.manufacturer)), 75) : '') + '</div>';
+                return html;
+            }
+        }
+
+    });
+    
+    $('#asuransiModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget)
+        var modal = $(this)
+        modal.find('.modal-body').load(button.attr('href'))
+    });
+
+    // ============ AUTO MAPPING ============
+    var autoMappingRunning = false;
+    var autoMappingStop = false;
+
+    function addLog(message, type) {
+        var $log = $('#autoMappingLog');
+        $log.show();
+        var cls = 'log-info';
+        if (type === 'success') cls = 'log-success';
+        else if (type === 'error') cls = 'log-error';
+        else if (type === 'skipped') cls = 'log-skipped';
+        else if (type === 'not_found') cls = 'log-notfound';
+        
+        $log.prepend('<div class="log-entry ' + cls + '">' + message + '</div>');
+    }
+
+    function updateProgress(current, total) {
+        var pct = total > 0 ? Math.round((current / total) * 100) : 0;
+        $('#autoMappingProgress .progress-bar').css('width', pct + '%').text(pct + '%');
+    }
+
+    function sleep(ms) {
+        return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+
+    $('#btnAutoMapping').on('click', function() {
+        if (autoMappingRunning) return;
+
+        var confirmStart = confirm('Apakah Anda yakin ingin memulai auto mapping?\n\nProses ini akan mencari dan mapping otomatis semua obat yang belum ter-mapping ke KFA Satu Sehat.\n\nPastikan koneksi internet stabil.');
+        if (!confirmStart) return;
+
+        autoMappingRunning = true;
+        autoMappingStop = false;
+        
+        $('#btnAutoMapping').hide();
+        $('#btnStopMapping').show();
+        $('#btnToggleLog').show();
+        $('#autoMappingProgress').show();
+        $('#autoMappingLog').empty().hide();
+        $('#autoMappingSummary').hide();
+        $('#autoMappingStatus').text('Mengambil daftar obat yang belum ter-mapping...');
+
+        var baseURL = mlite.url + '/' + mlite.admin;
+        var type = $('#auto_type').val();
+        var delay = parseInt($('#auto_delay').val()) || 1500;
+
+        // Step 1: Get unmapped drugs list
+        $.ajax({
+            url: baseURL + '/satu_sehat/automappingobatlist?t=' + mlite.token,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                if (!data.items || data.items.length === 0) {
+                    addLog('Semua obat sudah ter-mapping!', 'success');
+                    $('#autoMappingStatus').text('Semua obat sudah ter-mapping.');
+                    updateProgress(100, 100);
+                    finishMapping(0, 0, 0, 0);
+                    return;
+                }
+
+                addLog('Ditemukan ' + data.total + ' obat yang belum ter-mapping', 'info');
+                processItems(data.items, 0, type, delay, baseURL, { success: 0, not_found: 0, error: 0, skipped: 0 });
+            },
+            error: function(xhr) {
+                addLog('Gagal mengambil daftar obat: ' + xhr.statusText, 'error');
+                finishMapping(0, 0, 0, 0);
+            }
+        });
+    });
+
+    function processItems(items, index, type, delay, baseURL, stats) {
+        if (autoMappingStop || index >= items.length) {
+            if (autoMappingStop) {
+                addLog('Proses dihentikan oleh pengguna pada item ke-' + (index + 1), 'info');
+            }
+            finishMapping(stats.success, stats.not_found, stats.error, stats.skipped);
+            return;
+        }
+
+        var item = items[index];
+        var total = items.length;
+        
+        updateProgress(index + 1, total);
+        $('#autoMappingStatus').text('(' + (index + 1) + '/' + total + ') Memproses: [' + item.kode_brng + '] ' + item.nama_brng);
+
+        $.ajax({
+            url: baseURL + '/satu_sehat/automappingobatprocess?t=' + mlite.token 
+                + '&kode_brng=' + encodeURIComponent(item.kode_brng) 
+                + '&nama_brng=' + encodeURIComponent(item.nama_brng) 
+                + '&type=' + encodeURIComponent(type),
+            type: 'GET',
+            dataType: 'json',
+            timeout: 30000,
+            success: function(result) {
+                if (result.status === 'success') {
+                    stats.success++;
+                    addLog('[' + item.kode_brng + '] ' + result.message, 'success');
+                } else if (result.status === 'not_found') {
+                    stats.not_found++;
+                    addLog('[' + item.kode_brng + '] ' + result.message, 'not_found');
+                } else if (result.status === 'skipped') {
+                    stats.skipped++;
+                    addLog('[' + item.kode_brng + '] ' + result.message, 'skipped');
+                } else {
+                    stats.error++;
+                    addLog('[' + item.kode_brng + '] ' + result.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                stats.error++;
+                addLog('[' + item.kode_brng + '] Request error: ' + xhr.statusText, 'error');
+            },
+            complete: function() {
+                // Wait before processing next item to avoid API rate limiting
+                sleep(delay).then(function() {
+                    processItems(items, index + 1, type, delay, baseURL, stats);
+                });
+            }
+        });
+    }
+
+    function finishMapping(success, not_found, error, skipped) {
+        autoMappingRunning = false;
+        autoMappingStop = false;
+        
+        $('#btnAutoMapping').show().html('<i class="fa fa-play"></i> Mulai Ulang');
+        $('#btnStopMapping').hide();
+        $('#autoMappingProgress .progress-bar').removeClass('active');
+        
+        $('#summarySuccess').text('Berhasil: ' + success);
+        $('#summaryNotFound').text('Tidak ditemukan: ' + not_found);
+        $('#summaryError').text('Error: ' + error);
+        $('#summarySkipped').text('Dilewati: ' + skipped);
+        $('#autoMappingSummary').show();
+        
+        $('#autoMappingStatus').text('Selesai! Berhasil: ' + success + ', Tidak ditemukan: ' + not_found + ', Error: ' + error + ', Dilewati: ' + skipped);
+
+        if (success > 0) {
+            addLog('Auto mapping selesai. Halaman akan di-reload dalam 3 detik...', 'info');
+            setTimeout(function() {
+                location.reload();
+            }, 3000);
+        }
+    }
+
+    $('#btnStopMapping').on('click', function() {
+        autoMappingStop = true;
+        $(this).prop('disabled', true).text('Menghentikan...');
+    });
+
+    $('#btnToggleLog').on('click', function() {
+        $('#autoMappingLog').toggle();
+    });
+</script>
+
