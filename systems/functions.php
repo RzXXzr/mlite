@@ -535,6 +535,155 @@ function hitungUmur($tanggal_lahir)
   return $umur;
 }
 
+// Hitung umur pada tanggal tertentu (untuk surat sakit)
+function hitungUmurPadaTanggal($tanggal_lahir, $tanggal_surat)
+{
+  try {
+    $birthDate = new \DateTime($tanggal_lahir);
+    $suratDate = new \DateTime($tanggal_surat);
+    if ($birthDate >= $suratDate) return '0 Th 0 Bl 0 Hr';
+    $diff = $suratDate->diff($birthDate);
+    return $diff->y . ' Th ' . $diff->m . ' Bl ' . $diff->d . ' Hr';
+  } catch (\Exception $e) {
+    return '0 Th 0 Bl 0 Hr';
+  }
+}
+
+// Generate nomor surat sakit format SK/SKS/DD/MM/YY/00X, reset per hari
+function generateNomorSuratSakit(\PDO $pdo, string $tanggal_surat): array
+{
+  try {
+    // Log input
+    error_log("generateNomorSuratSakit called with date: $tanggal_surat");
+    
+    $bulan_num = (int) date('n', strtotime($tanggal_surat));
+    error_log("Month number: $bulan_num");
+    
+    $bulan_romawi = getRomawi($bulan_num);
+    error_log("Roman month: $bulan_romawi");
+    
+    if (empty($bulan_romawi)) {
+      error_log("ERROR: getRomawi returned empty value for month $bulan_num");
+      throw new \Exception("Failed to get roman numeral for month $bulan_num");
+    }
+    
+    $tahun = date('Y', strtotime($tanggal_surat));
+    $tahun_bulan = date('Y-m', strtotime($tanggal_surat));
+    error_log("Year-Month: $tahun_bulan");
+    
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(nomor_urut_harian), 0) + 1 FROM mlite_surat_sakit WHERE DATE_FORMAT(tanggal_surat, '%Y-%m') = ?");
+    $stmt->execute([$tahun_bulan]);
+    $urut = (int) $stmt->fetchColumn();
+    
+    if ($urut < 1) {
+      error_log("WARNING: urut < 1, setting to 1");
+      $urut = 1;
+    }
+    
+    $nomor_surat = sprintf('%d/%s/%s', $urut, $bulan_romawi, $tahun);
+    error_log("Generated nomor_surat: $nomor_surat");
+    
+    return [
+      'nomor_surat' => $nomor_surat,
+      'nomor_urut_harian' => $urut,
+    ];
+  } catch (\Exception $e) {
+    error_log("CRITICAL ERROR in generateNomorSuratSakit: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    // Return fallback value
+    return [
+      'nomor_surat' => '1/ERROR/'.date('Y'),
+      'nomor_urut_harian' => 1,
+    ];
+  }
+}
+
+function generateNomorSuratSehat(\PDO $pdo, string $tanggal_surat): array
+{
+  try {
+    error_log("generateNomorSuratSehat called with date: $tanggal_surat");
+    
+    $bulan_num = (int) date('n', strtotime($tanggal_surat));
+    error_log("Month number: $bulan_num");
+    
+    $bulan_romawi = getRomawi($bulan_num);
+    error_log("Roman month: $bulan_romawi");
+    
+    if (empty($bulan_romawi)) {
+      error_log("ERROR: getRomawi returned empty value for month $bulan_num");
+      throw new \Exception("Failed to get roman numeral for month $bulan_num");
+    }
+    
+    $tahun = date('Y', strtotime($tanggal_surat));
+    $tahun_bulan = date('Y-m', strtotime($tanggal_surat));
+    error_log("Year-Month: $tahun_bulan");
+    
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(nomor_urut_harian), 0) + 1 FROM mlite_surat_sehat WHERE DATE_FORMAT(tanggal_surat, '%Y-%m') = ?");
+    $stmt->execute([$tahun_bulan]);
+    $urut = (int) $stmt->fetchColumn();
+    
+    if ($urut < 1) {
+      error_log("WARNING: urut < 1, setting to 1");
+      $urut = 1;
+    }
+    
+    $nomor_surat = sprintf('%d/%s/KR/%s', $urut, $bulan_romawi, $tahun);
+    error_log("Generated nomor_surat: $nomor_surat");
+    
+    return [
+      'nomor_surat' => $nomor_surat,
+      'nomor_urut_harian' => $urut,
+    ];
+  } catch (\Exception $e) {
+    error_log("CRITICAL ERROR in generateNomorSuratSehat: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    return [
+      'nomor_surat' => '1/ERROR/KR/'.date('Y'),
+      'nomor_urut_harian' => 1,
+    ];
+  }
+}
+
+function getBulanIndo($tanggal)
+{
+  $bulan = [
+    1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  $d = date('j', strtotime($tanggal));
+  $m = $bulan[(int) date('n', strtotime($tanggal))];
+  $y = date('Y', strtotime($tanggal));
+  return "$d $m $y";
+}
+
+/**
+ * Sanitize string untuk digunakan di JSON/JavaScript
+ * Menghapus newlines, carriage returns, tabs, dan extra spaces
+ * 
+ * @param mixed $value - String atau array yang akan di-sanitize
+ * @return mixed - Cleaned string atau array
+ */
+function sanitizeForJson($value) {
+  if (is_array($value)) {
+    return array_map('sanitizeForJson', $value);
+  }
+  
+  if (!is_string($value)) {
+    return $value;
+  }
+  
+  // Remove carriage returns, newlines, and tabs
+  $value = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $value);
+  
+  // Replace multiple spaces with single space
+  $value = preg_replace('/\s+/', ' ', $value);
+  
+  // Trim whitespace from start and end
+  $value = trim($value);
+  
+  return $value;
+}
+
 function stringDecrypt($key, $string){
 
     $encrypt_method = 'AES-256-CBC';

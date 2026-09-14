@@ -1,0 +1,84 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-stethoscope"></i> Kunjungan</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabAdd" data-toggle="tab">Tambah Kunjungan</a></li>
+            <li><a href="#tabRiwayat" data-toggle="tab">Riwayat Kunjungan</a></li>
+            <li><a href="#tabRujukan" data-toggle="tab">Cek Rujukan</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabAdd">
+                <form id="formKunjungan">
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>No. Kartu</label><input type="text" class="form-control" name="noKartu"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tgl Daftar (dd-mm-yyyy)</label><input type="text" class="form-control datepicker" name="tglDaftar"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kode Poli</label><input type="text" class="form-control" name="kdPoli"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Kode Dokter</label><input type="text" class="form-control" name="kdDokter"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kode Diagnosa 1</label><input type="text" class="form-control" name="kdDiag1"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Keluhan</label><input type="text" class="form-control" name="keluhan" value="Keluhan umum"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3"><div class="form-group"><label>Kesadaran</label><input type="text" class="form-control" name="kdSadar" value="01"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Sistole</label><input type="text" class="form-control" name="sistole" value="120"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Diastole</label><input type="text" class="form-control" name="diastole" value="80"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Berat</label><input type="text" class="form-control" name="beratBadan" value="60"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3"><div class="form-group"><label>Tinggi</label><input type="text" class="form-control" name="tinggiBadan" value="165"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Resp Rate</label><input type="text" class="form-control" name="respRate" value="20"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Heart Rate</label><input type="text" class="form-control" name="heartRate" value="80"></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Status Pulang</label><input type="text" class="form-control" name="kdStatusPulang" value="3"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Terapi Obat</label><input type="text" class="form-control" name="terapiObat" value="tidak ada"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Terapi Non Obat</label><input type="text" class="form-control" name="terapiNonObat" value="tidak ada"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Suhu</label><input type="text" class="form-control" name="suhu" value="36"></div></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan Kunjungan</button>
+                </form>
+                <div id="resultAdd" style="display:none;margin-top:15px"><pre id="resAdd"></pre></div>
+            </div>
+            <div class="tab-pane" id="tabRiwayat">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="noKartuRiwayat" placeholder="No. Kartu"><span class="input-group-btn"><button class="btn btn-primary" id="btnRiwayat"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered" id="tblRiwayat"><thead><tr><th>No Kunjungan</th><th>Tgl Daftar</th><th>Poli</th><th>Dokter</th><th>Diagnosa</th><th>Status Pulang</th></tr></thead><tbody id="tblRiwayatBody"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabRujukan">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="noKunjunganRujukan" placeholder="No. Kunjungan"><span class="input-group-btn"><button class="btn btn-primary" id="btnRujukan"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div id="resultRujukan" style="display:none;margin-top:15px"><pre id="resRujukan"></pre></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$(function(){$('.datepicker').datetimepicker({format:'DD-MM-YYYY',defaultDate:moment()});});
+$('#formKunjungan').on('submit',function(e){
+    e.preventDefault();var d={};$(this).find('input').each(function(){d[$(this).attr('name')]=$(this).val();});
+    apiCall('POST','/kunjungan',d).done(function(r){$('#resAdd').text(JSON.stringify(r,null,2));$('#resultAdd').show();showAlert('success','Kunjungan berhasil dikirim');}).fail(function(x){showAlert('danger','Gagal');});
+});
+$('#btnRiwayat').click(function(){
+    var no=$('#noKartuRiwayat').val();if(!no)return;
+    apiCall('GET','/kunjungan/riwayat/'+encodeURIComponent(no)).done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,k){
+            var tgl=k.tglKunjungan||k.tglDaftar||'-';
+            var poli=k.poli?k.poli.nmPoli:(k.kdPoli||'-');
+            var dokter=k.dokter?k.dokter.nmDokter:(k.kdDokter||'-');
+            var diag=k.diagnosa1?k.diagnosa1.nmDiag:(k.kdDiag1||'-');
+            var status=k.statusPulang?k.statusPulang.nmStatusPulang:(k.kdStatusPulang||'-');
+            b+='<tr><td>'+k.noKunjungan+'</td><td>'+tgl+'</td><td>'+poli+'</td><td>'+dokter+'</td><td>'+diag+'</td><td>'+status+'</td></tr>';
+        });}
+        $('#tblRiwayatBody').html(b||'<tr><td colspan="6">Tidak ada data</td></tr>');
+    });
+});
+$('#btnRujukan').click(function(){
+    var no=$('#noKunjunganRujukan').val();if(!no)return;
+    apiCall('GET','/kunjungan/rujukan/'+encodeURIComponent(no)).done(function(r){$('#resRujukan').text(JSON.stringify(r,null,2));$('#resultRujukan').show();});
+});
+</script>
+{{end}}

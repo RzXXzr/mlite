@@ -1,0 +1,211 @@
+Response kembalian dari web service vclaim sudah dalam bentuk compres dan terenkripsi.
+
+Kompresi service menggunakan metode : Lz-string
+Enkripsi menggunakan metode : AES 256 (mode CBC) - SHA256 dan key enkripsi: consid + conspwd + timestamp request (concatenate string)
+
+Langkah proses dalam melakukan decrypt data response sebagai berikut :
+1. Dekripsi : AES 256 (mode CBC) - SHA256
+2. Dekompresi : Lz-string (decompressFromEncodedURIComponent)
+
+key : consid + conspwd + timestamp request (concatenate string)
+
+Contoh Penggunaan Decrypt Service
+
+JAVA
+        import java.nio.charset.StandardCharsets;
+        import java.security.InvalidAlgorithmParameterException;
+        import java.security.InvalidKeyException;
+        import java.security.MessageDigest;
+        import java.security.NoSuchAlgorithmException;
+        import java.util.Base64;
+    
+        import javax.crypto.BadPaddingException;
+        import javax.crypto.Cipher;
+        import javax.crypto.IllegalBlockSizeException;
+        import javax.crypto.NoSuchPaddingException;
+        import javax.crypto.SecretKey;
+        import javax.crypto.spec.IvParameterSpec;
+        import javax.crypto.spec.SecretKeySpec;
+    
+        import id.go.bpjskesehatan.arsws.entitas.AesKeySpec;
+    
+        public class Enc {
+        
+            public static final String ALGORITHM = "AES/CBC/PKCS5Padding";
+        
+            public static AesKeySpec generateKey(String key) 
+                    throws NoSuchPaddingException, NoSuchAlgorithmException,
+                    InvalidAlgorithmParameterException, InvalidKeyException,
+                    BadPaddingException, IllegalBlockSizeException {
+                
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] _hashKey = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+                byte[] _hashIv = new byte[16];
+                for (int i = 0; i < 16; i++) {
+                    _hashIv[i] = _hashKey[i];
+                }
+            
+                AesKeySpec aesKeySpec = new AesKeySpec();
+                SecretKeySpec _key = new SecretKeySpec(_hashKey, "AES");
+                IvParameterSpec _iv = new IvParameterSpec(_hashIv);
+                aesKeySpec.setKey(_key);
+                aesKeySpec.setIv(_iv);
+                return aesKeySpec;
+            }
+        
+            public static String decrypt(String cipherText, SecretKeySpec key, IvParameterSpec iv) 
+                    throws NoSuchPaddingException, NoSuchAlgorithmException,
+                    InvalidAlgorithmParameterException, InvalidKeyException,
+                    BadPaddingException, IllegalBlockSizeException {
+                
+                Cipher cipher = Cipher.getInstance(ALGORITHM);
+                cipher.init(Cipher.DECRYPT_MODE, key, iv);
+                byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(cipherText));
+                return new String(plainText);
+            }
+            
+            String respon = LZString.decompressFromEncodedURIComponent(lzString);
+        }
+    
+                                            
+
+
+PHP
+    <?php 
+        require_once 'vendor/autoload.php';
+    
+        // function decrypt
+        function stringDecrypt($key, $string){
+            
+      
+            $encrypt_method = 'AES-256-CBC';
+    
+            // hash
+            $key_hash = hex2bin(hash('sha256', $key));
+      
+            // iv - encrypt method AES-256-CBC expects 16 bytes - else you will get a warning
+            $iv = substr(hex2bin(hash('sha256', $key)), 0, 16);
+    
+            $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key_hash, OPENSSL_RAW_DATA, $iv);
+      
+            return $output;
+        }
+    
+        // function lzstring decompress 
+        // download libraries lzstring : https://github.com/nullpunkt/lz-string-php
+        function decompress($string){
+      
+            return \LZCompressor\LZString::decompressFromEncodedURIComponent($string);
+    
+        }
+    ?>
+                                        
+C#
+    namespace BpjsIntegration
+    {
+        class Program
+        {
+     
+            public string Decrypt(string key, string data)
+            {
+                string decData = null;
+                byte[][] keys = GetHashKeys(key);
+    
+                try
+                {
+                    decData = DecryptStringFromBytes_Aes(data, keys[0], keys[1]);
+                }
+                catch (CryptographicException) { }
+                catch (ArgumentNullException) { }
+    
+                return decData;
+            }
+    
+            private static string DecryptStringFromBytes_Aes(string cipherTextString, byte[] Key, byte[] IV)
+            {
+                byte[] cipherText = Convert.FromBase64String(cipherTextString);
+    
+                if (cipherText == null || cipherText.Length <= 0)
+                    throw new ArgumentNullException("cipherText");
+                if (Key == null || Key.Length <= 0)
+                    throw new ArgumentNullException("Key");
+                if (IV == null || IV.Length <= 0)
+                    throw new ArgumentNullException("IV");
+    
+                string plaintext = null;
+    
+                using (Aes aesAlg = Aes.Create())
+                {
+                    aesAlg.Key = Key;
+                    aesAlg.IV = IV;
+    
+                    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+    
+                    using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                    {
+                        using (CryptoStream csDecrypt =
+                                new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                plaintext = srDecrypt.ReadToEnd();
+                            }
+                        }
+                    }
+                }
+                return plaintext;
+            }
+
+        private byte[][] GetHashKeys(string key)
+        //public byte[][] GetHashKeys(string key)
+        {
+            byte[][] result = new byte[2][];
+            Encoding enc = Encoding.UTF8;
+
+            SHA256 sha2 = new SHA256CryptoServiceProvider();
+
+            byte[] rawKey = enc.GetBytes(key);
+            byte[] rawIV = enc.GetBytes(key);
+
+            byte[] hashKey = sha2.ComputeHash(rawKey);
+            byte[] hashIV = sha2.ComputeHash(rawIV);
+
+            Array.Resize(ref hashIV, 16);
+
+            result[0] = hashKey;
+            result[1] = hashIV;
+
+            return result;
+        }
+    
+            ///Decrypted
+            string LZDecrypted = _security.Decrypt(key, textenc);
+            string result = LZString.decompressFromEncodedURIComponent(LZDecrypted);   
+    
+        }   
+    }
+    
+    //source: https://msdn.microsoft.com/de-de/library/system.security.cryptography.aes(v=vs.110).aspx
+
+Phyton
+    import hashlib
+    from Crypto.Cipher import AES
+    from Crypto.Util.Padding import pad, unpad
+    import base64
+    import lzstring
+    
+    
+    def decrypt(key, txt_enc):
+    
+        x = lzstring.LZString()
+    
+        key_hash = hashlib.sha256(key.encode('utf-8')).digest()
+    
+        mode = AES.MODE_CBC
+    
+        # decrypt
+        decryptor = AES.new(key_hash[0:32], mode, IV=key_hash[0:16])
+        plain = decryptor.decrypt(base64.b64decode(txt_enc))
+        decompress = x.decompressFromEncodedURIComponent(plain.decode('utf-8'))
+    
+        return decompress

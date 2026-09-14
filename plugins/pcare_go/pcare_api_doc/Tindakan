@@ -1,0 +1,180 @@
+Tindakan
+Get Tindakan by Kunjungan
+{Base URL}/{Service Name}/tindakan/kunjungan/{Parameter 1}
+Fungsi : Get Data Tindakan by Kunjungan
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kunjungan
+
+                                    
+{
+  "response": {
+    "count": 1,
+    "list": [
+      {
+        "kdTindakanSK": 199,
+        "noKunjungan": "1301U0070815Y000005",
+        "kdTindakan": "01006",
+        "nmTindakan": "Pelayanan KB : Suntik\r\n",
+        "biaya": 15000,
+        "keterangan": "2000",
+        "hasil": 0
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Referensi Tindakan
+{Base URL}/{Service Name}/tindakan/kdTkp/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Get Data Referensi Tindakan
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : kdTkp => 10 : RJTP, 20 : RITP, 50 : Promotif
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 212,
+    "list": [
+      {
+        "kdTindakan": "02007",
+        "nmTindakan": "Penanganan pendarahan pasca keguguran\r\n",
+        "maxTarif": 750000,
+        "withValue": false
+      },
+      {
+        "kdTindakan": "02005",
+        "nmTindakan": "Paket persalinan per vaginam normal",
+        "maxTarif": 600000,
+        "withValue": false
+      },
+      {
+        "kdTindakan": "02003",
+        "nmTindakan": "Pelayanan tindakan pasca persalinan",
+        "maxTarif": 175000,
+        "withValue": false
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Add Tindakan
+{Base URL}/{Service Name}/tindakan
+Fungsi : Add Data Tindakan
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                                
+{
+  "kdTindakanSK": 0,
+  "noKunjungan": "1301U0070815Y000004",
+  "kdTindakan": "01007",
+  "biaya": 0,
+  "keterangan": null,
+  "hasil": 0
+}
+
+Response
+                                            
+{
+  "response": {
+    "field": "kdTindakanSK",
+    "message": "218"
+  },
+  "metaData": {
+    "message": "CREATED",
+    "code": 201
+  }
+}
+
+
+Edit Tindakan
+{Base URL}/{Service Name}/tindakan
+Fungsi : Edit Data Tindakan
+
+Method : PUT
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                                
+{
+  "kdTindakanSK": 218,
+  "noKunjungan": "1301U0070815Y000004",
+  "kdTindakan": "01007",
+  "biaya": 0,
+  "keterangan": null,
+  "hasil": 0
+}
+
+Response
+                                            
+{
+  "response": {
+    "field": "kdTindakanSK",
+    "message": "219"
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+Delete Tindakan
+{Base URL}/{Service Name}/tindakan/{Parameter 1}/kunjungan/{Parameter 2}
+Fungsi : Delete Data Tindakan
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : kdTindakanSK
+
+Parameter 2 : Nomor Kunjungan
+
+                                    
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

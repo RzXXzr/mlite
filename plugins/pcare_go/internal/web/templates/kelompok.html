@@ -1,0 +1,70 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-users"></i> Kelompok / Club Prolanis</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabClub" data-toggle="tab">Club</a></li>
+            <li><a href="#tabKegiatan" data-toggle="tab">Kegiatan</a></li>
+            <li><a href="#tabPeserta" data-toggle="tab">Peserta Kegiatan</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabClub">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group"><label>Jenis Kelompok</label>
+                        <select class="form-control" id="jenisClub">
+                            <option value="01">Diabetes Melitus</option>
+                            <option value="02">Hipertensi</option>
+                        </select></div>
+                    </div>
+                    <div class="col-md-2"><button class="btn btn-primary" id="btnClub" style="margin-top:25px"><i class="fa fa-search"></i></button></div>
+                </div>
+                <div class="table-responsive"><table class="table table-striped table-bordered"><thead><tr><th>Club ID</th><th>Nama Club</th><th>Ketua</th><th>No HP</th><th>Alamat</th><th>Periode</th></tr></thead><tbody id="tblClub"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabKegiatan">
+                <div class="row">
+                    <div class="col-md-4"><div class="input-group"><input type="text" class="form-control" id="kdClubKegiatan" placeholder="Kode Club"><span class="input-group-btn"><button class="btn btn-primary" id="btnKegiatan"><i class="fa fa-search"></i></button></span></div></div>
+                </div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered"><thead><tr><th>Tgl Kegiatan</th><th>Kegiatan</th><th>Materi</th></tr></thead><tbody id="tblKegiatan"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabPeserta">
+                <div class="row">
+                    <div class="col-md-4"><div class="input-group"><input type="text" class="form-control" id="eduIdPeserta" placeholder="Edu ID Kegiatan"><span class="input-group-btn"><button class="btn btn-primary" id="btnPeserta"><i class="fa fa-search"></i></button></span></div></div>
+                </div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered"><thead><tr><th>No Kartu</th><th>Nama</th></tr></thead><tbody id="tblPeserta"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+$(function(){$('.datepicker').datetimepicker({format:'DD-MM-YYYY',defaultDate:moment()});});
+$('#btnClub').click(function(){
+    var jenis=$('#jenisClub').val();
+    apiCall('GET','/kelompok/club/'+jenis).done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,c){
+            b+='<tr><td>'+c.clubId+'</td><td>'+(c.nama||'-')+'</td><td>'+(c.ketua_nama||'-')+'</td><td>'+(c.ketua_noHP||'-')+'</td><td>'+(c.alamat||'-')+'</td><td>'+(c.tglMulai||'')+' - '+(c.tglAkhir||'')+'</td></tr>';
+        });}
+        $('#tblClub').html(b||'<tr><td colspan="6">Tidak ada data</td></tr>');
+    });
+});
+$('#btnKegiatan').click(function(){
+    var kd=$('#kdClubKegiatan').val();if(!kd)return;
+    apiCall('GET','/kelompok/kegiatan/'+encodeURIComponent(kd)).done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,k){b+='<tr><td>'+k.tglKegiatan+'</td><td>'+k.kegiatan+'</td><td>'+(k.materi||'-')+'</td></tr>';});}
+        $('#tblKegiatan').html(b||'<tr><td colspan="3">Tidak ada data</td></tr>');
+    });
+});
+$('#btnPeserta').click(function(){
+    var eduId=$('#eduIdPeserta').val();if(!eduId)return;
+    apiCall('GET','/kelompok/peserta/'+encodeURIComponent(eduId)).done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,p){b+='<tr><td>'+(p.noKartu||'-')+'</td><td>'+(p.nama||'-')+'</td></tr>';});}
+        $('#tblPeserta').html(b||'<tr><td colspan="2">Tidak ada data</td></tr>');
+    });
+});
+</script>
+{{end}}

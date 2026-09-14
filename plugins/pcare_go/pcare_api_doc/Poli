@@ -1,0 +1,37 @@
+Get Poli FKTP
+{Base URL}/{Service Name}/poli/fktp/{Parameter 1}/{Parameter 2}
+Fungsi : Get Data Poli FKTP
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Row data awal yang akan ditampilkan
+
+Parameter 2 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "kdPoli": "001",
+        "nmPoli": "Umum",
+        "poliSakit":true
+      },
+      {
+        "kdPoli": "003",
+        "nmPoli": "K I A",
+        "poliSakit":true
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

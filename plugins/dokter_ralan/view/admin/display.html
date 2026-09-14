@@ -86,22 +86,22 @@
                   {/if}
                   <li><a href="#" onclick="openPdfTteModal('{$value.no_rkm_medis}','{$value.no_rawat}')">Elektronik Rekam Medis</a></li>
                   {if: $this->core->getUserInfo('role') == 'admin' || $this->core->getUserInfo('role') == 'medis' || $this->core->getUserInfo('role') == 'paramedis'}
-                  <li><a href="#soap" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}" data-umur="{$value.umurdaftar} {$value.sttsumur}" data-kd_pj="{$value.kd_pj}">SOAPIE & Pemeriksaan</a></li>
+                  <li><a href="#soap" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}" data-umur="{$value.umurdaftar} {$value.sttsumur}" data-kd_pj="{$value.kd_pj}" data-stts="{$value.stts}">SOAPIE & Pemeriksaan</a></li>
                   <li><a href="#layanan_obat" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}">Layanan & Obat</a></li>
                   <li><a href="#rujuk_internal" data-no_rawat="{$value.no_rawat}">Rujuk Internal</a></li>
                   <li class="dropdown-submenu">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Surat-Surat</a>
                     <ul class="dropdown-menu">
                       <li><a href="#surat_kontrol" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}" data-tgl_registrasi="{$value.tgl_registrasi}">Surat Kontrol</a></li>
-                      <li><a href="{?=url([ADMIN,'dokter_ralan','suratrujukan',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Rujukan</a></li>
-                      <li><a href="{?=url([ADMIN,'dokter_ralan','suratsehat',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Keterangan Sehat</a></li>
-                      <li><a href="{?=url([ADMIN,'dokter_ralan','suratsakit',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Keterangan Sakit</a></li>
+                      <li><a href="{?=url([ADMIN,'surat','suratrujukan',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Rujukan</a></li>
+                      <li><a href="{?=url([ADMIN,'surat','suratsehat',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Keterangan Sehat</a></li>
+                      <li><a href="{?=url([ADMIN,'surat','suratsakit',convertNorawat($value.no_rawat)])?}" target="_blank">Surat Keterangan Sakit</a></li>
                     </ul>
                   </li>
                   {/if}
                 </ul>
               </td>
-              <td style="white-space: nowrap;"><a href="#soap" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}">{$value.nm_pasien}</a></td>
+              <td style="white-space: nowrap;"><a href="#soap" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}" data-umur="{$value.umurdaftar} {$value.sttsumur}" data-kd_pj="{$value.kd_pj}" data-stts="{$value.stts}">{$value.nm_pasien}</a></td>
               <td style="white-space: nowrap;"><a href="#layanan_obat" data-no_rawat="{$value.no_rawat}" data-no_rkm_medis="{$value.no_rkm_medis}" data-nm_pasien="{$value.nm_pasien}">{$value.no_rawat}</a></td>
               <td style="white-space: nowrap;">
                 <button type="button" name="button" class="btn btn-xs btn-warning antrian"
@@ -240,19 +240,10 @@
     var umur = $(this).attr("data-umur");
     var tgl_registrasi = $(this).attr("data-tgl_registrasi");
     var kd_pj = $(this).attr("data-kd_pj") || '';
+    var stts = $(this).attr("data-stts") || '';
 
-    // Tampilkan popup konfirmasi kedatangan pasien
-    showConfirmPasien(nm_pasien, function(result) {
-      if(result) {
-        // Jika YA - Update status ke Berkas Diterima, lalu buka form SOAP
-        var urlBerkas = baseURL + '/dokter_ralan/setberkasditerima?t=' + mlite.token;
-        $.post(urlBerkas, {no_rawat: no_rawat}, function(res) {
-          try {
-            var resp = (typeof res === 'string') ? JSON.parse(res) : res;
-            console.log('Status update:', resp.message);
-          } catch(e) { console.log('Berkas diterima response:', res); }
-        });
-
+    // Fungsi untuk membuka form SOAP
+    function bukaFormSOAP() {
         $('input:text[name=no_rawat]').val(no_rawat);
         $('input:text[name=no_rkm_medis]').val(no_rkm_medis);
         $('input:text[name=nm_pasien]').val(nm_pasien);
@@ -264,7 +255,6 @@
         var url = baseURL + '/dokter_ralan/soap?t=' + mlite.token;
         $.post(url, {no_rawat : no_rawat,
         }, function(data) {
-          // tampilkan data
           $("#form_rincian").hide();
           $("#form").hide();
           $("#notif").hide();
@@ -273,6 +263,7 @@
           $("#form_alergi_container").show();
           loadAlergiPasien(no_rkm_medis);
           $("#soap").html(data).show();
+          loadTindakanSoap(no_rawat);
 
           // Prefill TTV dari data paramedis
           var urlTTV = baseURL + '/dokter_ralan/getttv?t=' + mlite.token;
@@ -293,6 +284,27 @@
             } catch(e) { console.log('TTV prefill error:', e); }
           });
         });
+    }
+
+    // Jika status sudah 'Sudah' atau 'Berkas Diterima', langsung buka SOAP tanpa konfirmasi
+    if(stts == 'Sudah' || stts == 'Berkas Diterima') {
+      bukaFormSOAP();
+      return;
+    }
+
+    // Tampilkan popup konfirmasi kedatangan pasien (hanya untuk status selain Sudah/Berkas Diterima)
+    showConfirmPasien(nm_pasien, function(result) {
+      if(result) {
+        // Jika YA - Update status ke Berkas Diterima, lalu buka form SOAP
+        var urlBerkas = baseURL + '/dokter_ralan/setberkasditerima?t=' + mlite.token;
+        $.post(urlBerkas, {no_rawat: no_rawat}, function(res) {
+          try {
+            var resp = (typeof res === 'string') ? JSON.parse(res) : res;
+            console.log('Status update:', resp.message);
+          } catch(e) { console.log('Berkas diterima response:', res); }
+        });
+
+        bukaFormSOAP();
       } else {
         // Jika TIDAK - refresh halaman
         location.reload();
@@ -453,15 +465,25 @@ $(document).ready(function() {
     }
   };
 
-  // Status filter: default hanya tampilkan "Berkas Dikirim"
+  // Status filter: default tampilkan pasien yang belum selesai diperiksa
   var showAllData = false;
-  $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+
+  // Hapus filter dokter_ralan lama (mencegah akumulasi saat AJAX reload)
+  if (window._dokterRalanFilter) {
+    var idx = $.fn.dataTable.ext.search.indexOf(window._dokterRalanFilter);
+    if (idx !== -1) {
+      $.fn.dataTable.ext.search.splice(idx, 1);
+    }
+  }
+  window._dokterRalanFilter = function(settings, data, dataIndex) {
     // Hanya terapkan filter ke tabel dokter ralan
     if (!$(settings.nTable).closest('#dokter-ralan').length) return true;
     if (showAllData) return true;
     var status = $.trim(data[9]);
-    return status === 'Berkas Dikirim';
-  });
+    // Default: hanya tampilkan pasien yang berkasnya sudah dikirim/diterima
+    return status === 'Berkas Dikirim' || status === 'Berkas Diterima';
+  };
+  $.fn.dataTable.ext.search.push(window._dokterRalanFilter);
 
   // Destroy existing DataTables jika sudah diinit (AJAX reload protection)
   if ($.fn.DataTable.isDataTable('#dokter-ralan .dataTables')) {
@@ -511,11 +533,11 @@ $(document).ready(function() {
     '<i class="fa fa-eye"></i> Tampilkan Semua Pasien</button>';
   $('#dokter-ralan .dataTables_wrapper').prepend(btnHtml);
 
-  // Klik tombol Tampilkan Semua / Filter Berkas Dikirim
+  // Klik tombol Tampilkan Semua / Filter Belum Diperiksa
   $('#dokter-ralan').on('click', '#btn-tampil-semua', function() {
     showAllData = !showAllData;
     if (showAllData) {
-      $(this).html('<i class="fa fa-filter"></i> Filter Berkas Dikirim').removeClass('btn-info').addClass('btn-warning');
+      $(this).html('<i class="fa fa-filter"></i> Filter Belum Diperiksa').removeClass('btn-info').addClass('btn-warning');
     } else {
       $(this).html('<i class="fa fa-eye"></i> Tampilkan Semua Pasien').removeClass('btn-warning').addClass('btn-info');
     }

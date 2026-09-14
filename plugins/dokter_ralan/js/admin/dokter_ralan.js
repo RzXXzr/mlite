@@ -1993,6 +1993,99 @@ $(document).on('click', 'a[href="#hapus_rujukan_internal"]', function(event){
   return false;
 });
 
+// ========================
+// TINDAKAN DOKTER (SOAP)
+// ========================
+
+// Fungsi global untuk load daftar tindakan di panel SOAP
+function loadTindakanSoap(no_rawat) {
+  var baseURL = mlite.url + '/' + mlite.admin;
+  $.post(baseURL + '/dokter_ralan/gettindakandokter?t=' + mlite.token, {no_rawat: no_rawat}, function(data) {
+    $('#list_tindakan_soap').html(data);
+  });
+}
+
+// Input pencarian tindakan dari SOAP form
+$('#form_soap').on('input', '#cari_tindakan_soap', function() {
+  var baseURL = mlite.url + '/' + mlite.admin;
+  var term = $(this).val();
+  if (term.length < 2) {
+    $('#hasil_cari_tindakan_soap').hide().empty();
+    return;
+  }
+  $.post(baseURL + '/dokter_ralan/layanan?t=' + mlite.token, {layanan: term}, function(data) {
+    // Ganti class pilih_layanan menjadi pilih_tindakan_soap agar tidak konflik
+    data = data.replace(/class="pilih_layanan"/g, 'class="pilih_tindakan_soap"');
+    $('#hasil_cari_tindakan_soap').html(data).show();
+  });
+});
+
+// Sembunyikan hasil pencarian saat klik di luar
+$(document).on('click', function(e) {
+  if (!$(e.target).closest('#cari_tindakan_soap, #hasil_cari_tindakan_soap').length) {
+    $('#hasil_cari_tindakan_soap').hide();
+  }
+});
+
+// Pilih tindakan dari hasil pencarian (SOAP context)
+$('#form_soap').on('click', '.pilih_tindakan_soap', function() {
+  var baseURL = mlite.url + '/' + mlite.admin;
+  var kd_jenis_prw = $(this).attr('data-kd_jenis_prw');
+  var nm_perawatan = $(this).attr('data-nm_perawatan');
+  var no_rawat = $('#soap_no_rawat').val();
+  var tgl = $('#soap_tgl_perawatan').val();
+
+  if (!no_rawat) {
+    bootbox.alert('Pilih pasien terlebih dahulu.');
+    return;
+  }
+
+  $('#cari_tindakan_soap').val('');
+  $('#hasil_cari_tindakan_soap').hide().empty();
+
+  // Ambil waktu server lalu simpan tindakan
+  $.post(baseURL + '/dokter_ralan/cekwaktu?t=' + mlite.token, {}, function(jam) {
+    $.post(baseURL + '/dokter_ralan/savedetail?t=' + mlite.token, {
+      no_rawat: no_rawat,
+      kd_jenis_prw: kd_jenis_prw,
+      tgl_perawatan: tgl,
+      jam_rawat: jam,
+      kat: 'tindakan',
+      provider: 'rawat_jl_dr'
+    }, function() {
+      loadTindakanSoap(no_rawat);
+      $('#notif').html('<div class="alert alert-success alert-dismissible fade in" role="alert" style="border-radius:0px;margin-top:-15px;">Tindakan <strong>' + nm_perawatan + '</strong> berhasil ditambahkan.<button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button></div>').show();
+      $(".alert-dismissible").fadeTo(4000, 500).slideUp(500);
+    });
+  });
+});
+
+// Hapus tindakan dari panel SOAP
+$('#form_soap').on('click', '.hapus_tindakan_soap', function() {
+  var baseURL = mlite.url + '/' + mlite.admin;
+  var no_rawat = $(this).attr('data-no_rawat');
+  var kd_jenis_prw = $(this).attr('data-kd_jenis_prw');
+  var tgl_perawatan = $(this).attr('data-tgl_perawatan');
+  var jam_rawat = $(this).attr('data-jam_rawat');
+  var provider = $(this).attr('data-provider');
+
+  bootbox.confirm('Hapus tindakan ini?', function(result) {
+    if (result) {
+      $.post(baseURL + '/dokter_ralan/hapusdetail?t=' + mlite.token, {
+        no_rawat: no_rawat,
+        kd_jenis_prw: kd_jenis_prw,
+        tgl_perawatan: tgl_perawatan,
+        jam_rawat: jam_rawat,
+        provider: provider
+      }, function() {
+        loadTindakanSoap(no_rawat);
+      });
+    }
+  });
+});
+
+// ========================
+
 {if: $mlite.websocket == 'ya'}
 
   {if: $mlite.websocket_proxy != ''}
@@ -2009,7 +2102,12 @@ $(document).on('click', 'a[href="#hapus_rujukan_internal"]', function(event){
       output = JSON.parse(response.data);
       if(output['action'] == 'simpan'){
         if(output['modul'] == 'rawat_jalan' || output['modul'] == 'igd'){
-          $("#dokter_ralan #display").show().load(baseURL + '/dokter_ralan/display?t=' + mlite.token);
+          // Jangan reload display jika form SOAP atau form rincian sedang terbuka (mencegah form rusak)
+          // #form_soap dan #rincian adalah sibling dari #dokter_ralan, bukan child
+          if (!$('#form_soap').is(':visible') && !$('#rincian').is(':visible')) {
+            // Load ke parent container agar tidak ada nested #display duplikat
+            $("#dokter_ralan").load(baseURL + '/dokter_ralan/display?t=' + mlite.token);
+          }
         }
       }
     }catch(e){

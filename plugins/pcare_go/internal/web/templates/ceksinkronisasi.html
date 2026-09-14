@@ -1,0 +1,1478 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <div class="row">
+            <div class="col-md-3"><h3 class="panel-title" style="line-height:30px"><i class="fa fa-refresh"></i> Cek Sinkronisasi PCare</h3></div>
+            <div class="col-md-6">
+                <div class="form-inline">
+                    <div class="form-group" style="margin-right:5px">
+                        <label class="sr-only">Dari</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-addon">Dari</span>
+                            <input type="text" class="form-control" id="tglDari" placeholder="dd-mm-yyyy" style="width:120px">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right:5px">
+                        <label class="sr-only">Sampai</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-addon">Sampai</span>
+                            <input type="text" class="form-control" id="tglSampai" placeholder="dd-mm-yyyy (opsional)" style="width:120px">
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" id="btnCek"><i class="fa fa-search"></i> Cek</button>
+                </div>
+            </div>
+            <div class="col-md-3 text-right">
+                <button class="btn btn-sm btn-success" id="btnBulkPendaftaran" style="display:none" title="Kirim semua pendaftaran yang belum terdaftar di PCare"><i class="fa fa-upload"></i> Bulk Pendaftaran</button>
+                <button class="btn btn-sm btn-info" id="btnBulkKunjungan" style="display:none" title="Kirim semua kunjungan (stts=Sudah, apotek selesai)"><i class="fa fa-send"></i> Bulk Kunjungan</button>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <!-- Progress -->
+        <div id="progressWrap" style="display:none">
+            <p id="progressLabel" class="text-info"><i class="fa fa-spinner fa-spin"></i> Mengambil data...</p>
+            <div class="progress"><div id="progressBar" class="progress-bar progress-bar-info progress-bar-striped active" style="width:0%"></div></div>
+        </div>
+
+        <!-- Summary Panels -->
+        <div class="row" id="summaryRow" style="display:none">
+            <div class="col-sm-2">
+                <div class="panel panel-primary text-center">
+                    <div class="panel-heading"><i class="fa fa-database"></i> Total Bridging Lokal</div>
+                    <div class="panel-body"><h3 id="cntLocal">0</h3></div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="panel panel-info text-center">
+                    <div class="panel-heading"><i class="fa fa-cloud"></i> Total di PCare</div>
+                    <div class="panel-body"><h3 id="cntPcare">0</h3></div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="panel panel-success text-center">
+                    <div class="panel-heading"><i class="fa fa-check"></i> Cocok (Matched)</div>
+                    <div class="panel-body"><h3 id="cntMatched">0</h3></div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="panel panel-danger text-center">
+                    <div class="panel-heading"><i class="fa fa-exclamation-triangle"></i> Hanya di PCare</div>
+                    <div class="panel-body"><h3 id="cntOnlyPcare">0</h3></div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="panel panel-warning text-center">
+                    <div class="panel-heading"><i class="fa fa-medkit"></i> Sudah Dilayani</div>
+                    <div class="panel-body"><h3 id="cntDilayani">0</h3></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Only in PCare Table -->
+        <div class="panel panel-danger" id="panelOnlyPcare" style="display:none">
+            <div class="panel-heading"><i class="fa fa-exclamation-triangle"></i> Pendaftaran Hanya di PCare (tidak ada di bridging lokal) <button class="btn btn-xs btn-info pull-right" id="btnBulkSyncPendaftaran" style="display:none" onclick="bulkSyncPendaftaran()"><i class="fa fa-download"></i> Sync Semua Pendaftaran</button></div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-condensed" id="tblOnlyPcare" style="width:100%">
+                        <thead><tr><th>No</th><th>No Kartu</th><th>Nama</th><th>No Urut</th><th>Poli</th><th>Tgl Daftar</th><th>Keluhan</th><th>Status Kunjungan</th><th>Aksi</th></tr></thead>
+                        <tbody id="bodyOnlyPcare"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Panel -->
+        <div class="panel panel-default" id="panelLog" style="display:none">
+            <div class="panel-heading" style="cursor:pointer" onclick="$('#logBody').toggle()">
+                <i class="fa fa-list"></i> Log Proses <span class="badge" id="logCount">0</span>
+            </div>
+            <div id="logBody" class="panel-body" style="max-height:200px;overflow-y:auto;display:none;font-size:12px;font-family:monospace"></div>
+        </div>
+
+        <!-- Local Bridging Table -->
+        <div class="panel panel-default">
+            <div class="panel-heading"><i class="fa fa-table"></i> Data Bridging Lokal</div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover table-condensed" id="tblLocal" style="width:100%">
+                        <thead><tr><th>No</th><th>No. Rawat</th><th>No. RM</th><th>Nama</th><th>Poli</th><th>Dokter</th><th>Status</th><th>No Urut</th><th>No Kunjungan</th><th>Apotek</th><th>Status Sync</th><th>Aksi</th></tr></thead>
+                        <tbody id="bodyLocal"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Riwayat Pasien -->
+<div class="modal fade" id="modalRiwayat" tabindex="-1">
+    <div class="modal-dialog" style="width:95%;max-width:1200px">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#f8f9fa;border-bottom:2px solid #ddd">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title"><i class="fa fa-history"></i> Riwayat Pasien: <span id="riwNamaPasien"></span></h4>
+                <small class="text-muted" id="riwInfoPasien"></small>
+            </div>
+            <div class="modal-body" style="max-height:75vh;overflow-y:auto;padding:10px">
+                <div id="riwLoading" class="text-center" style="padding:40px"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Memuat riwayat...</div>
+                <!-- Tab nav -->
+                <ul class="nav nav-tabs" id="riwTabs" style="display:none">
+                    <li class="active"><a data-toggle="tab" href="#riwLocal"><i class="fa fa-database"></i> Riwayat Lokal (mLITE) <span id="riwLocalCount" class="badge">0</span></a></li>
+                    <li><a data-toggle="tab" href="#riwPcare"><i class="fa fa-cloud"></i> Riwayat PCare <span id="riwPcareCount" class="badge">0</span></a></li>
+                </ul>
+                <div class="tab-content" style="margin-top:10px">
+                    <div id="riwLocal" class="tab-pane active">
+                        <div id="riwLocalBody"></div>
+                    </div>
+                    <div id="riwPcare" class="tab-pane">
+                        <div id="riwPcareBody"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-default" data-dismiss="modal">Tutup</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Progress Bulk -->
+<div class="modal fade" id="modalBulkProgress" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h4 class="modal-title" id="bulkProgressTitle">Proses Bulk...</h4></div>
+            <div class="modal-body">
+                <div class="progress"><div id="bulkProgressBar" class="progress-bar progress-bar-info progress-bar-striped active" style="width:0%"></div></div>
+                <p id="bulkProgressLabel" class="text-center">Mempersiapkan...</p>
+                <div id="bulkResultPanel" style="display:none;max-height:250px;overflow-y:auto;font-size:12px;font-family:monospace"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" id="btnBulkClose" style="display:none" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Kirim Kunjungan -->
+<div class="modal fade" id="modalKunjungan" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title"><i class="fa fa-send"></i> Kirim Kunjungan PCare</h4>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" id="mInfo"></div>
+                <form id="formKirimKunjungan">
+                    <input type="hidden" id="mk_id">
+                    <input type="hidden" id="mk_no_rawat">
+                    <input type="hidden" id="mk_no_rkm_medis">
+                    <input type="hidden" id="mk_nomor_jaminan">
+                    <input type="hidden" id="mk_kd_dokter">
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal Kunjungan</label><input type="text" class="form-control" id="mk_tgl_kunjungan" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal Pulang</label><input type="text" class="form-control" id="mk_tgl_pulang" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Dokter</label><input type="text" class="form-control" id="mk_dokter" readonly></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Keluhan</label><textarea class="form-control" id="mk_keluhan" rows="2"></textarea></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Pemeriksaan / Anamnesa</label><textarea class="form-control" id="mk_anamnesa" rows="2"></textarea></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12"><div class="form-group"><label>Terapi</label><textarea class="form-control" id="mk_terapi" rows="2" placeholder="Isi terapi umum pasien"></textarea></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><div class="form-group"><label>Kode Poli</label><input type="text" class="form-control" id="mk_kd_poli"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Diagnosa 1 <span class="text-danger">*</span></label><input type="text" class="form-control mk-diag-input" id="mk_diag1" placeholder="Ketik kode/nama..." autocomplete="off"><div class="mk-diag-dropdown" id="mk_diag1_dd"></div><small class="text-muted" id="mk_diag1_nama"></small></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Diagnosa 2</label><input type="text" class="form-control mk-diag-input" id="mk_diag2" placeholder="Ketik kode/nama..." autocomplete="off"><div class="mk-diag-dropdown" id="mk_diag2_dd"></div><small class="text-muted" id="mk_diag2_nama"></small></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Diagnosa 3</label><input type="text" class="form-control mk-diag-input" id="mk_diag3" placeholder="Ketik kode/nama..." autocomplete="off"><div class="mk-diag-dropdown" id="mk_diag3_dd"></div><small class="text-muted" id="mk_diag3_nama"></small></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3"><div class="form-group"><label>Kesadaran</label><select class="form-control" id="mk_kesadaran"><option value="01">01: Compos Mentis</option><option value="02">02: Somnolence</option><option value="03">03: Sopor</option><option value="04">04: Coma</option></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Status Pulang</label><select class="form-control" id="mk_status_pulang"><option value="1">1. Sembuh</option><option value="2">2. Rujuk</option><option value="3" selected>3. Berobat Jalan</option><option value="4">4. Meninggal</option></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Prognosa</label><select class="form-control" id="mk_prognosa"><option value="01" selected>01: Sanam (Sembuh)</option><option value="02">02: Bonam (Baik)</option><option value="03">03: Dubia Ad Bonam</option><option value="04">04: Dubia Ad Malam</option><option value="05">05: Malam (Buruk)</option></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Jenis Kunjungan</label><select class="form-control" id="mk_kunj_sakit"><option value="1" selected>Kunjungan Sakit</option><option value="2">Kunjungan Sehat</option></select></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><div class="form-group"><label>Sistole</label><input type="number" class="form-control" id="mk_sistole" value="120"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Diastole</label><input type="number" class="form-control" id="mk_diastole" value="80"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Nadi</label><input type="number" class="form-control" id="mk_nadi" value="80"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Respirasi</label><input type="number" class="form-control" id="mk_respirasi" value="20"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Suhu</label><input type="number" class="form-control" id="mk_suhu" value="36"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Lingkar Perut</label><input type="number" class="form-control" id="mk_lingkar" value="70"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><div class="form-group"><label>Berat (Kg)</label><input type="number" class="form-control" id="mk_berat" value="50"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Tinggi (cm)</label><input type="number" class="form-control" id="mk_tinggi" value="160"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Terapi Obat</label><input type="text" class="form-control" id="mk_terapi_obat" value="tidak ada"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Terapi Non Obat</label><input type="text" class="form-control" id="mk_terapi_nonobat" value="tidak ada"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Alergi Makan</label><select class="form-control mk-alergi-sel" id="mk_alergi_makan" data-jenis="makan"><option value="">-- Memuat... --</option></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Alergi Udara</label><select class="form-control mk-alergi-sel" id="mk_alergi_udara" data-jenis="udara"><option value="">-- Memuat... --</option></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Alergi Obat</label><select class="form-control mk-alergi-sel" id="mk_alergi_obat" data-jenis="obat"><option value="">-- Memuat... --</option></select></div></div>
+                    </div>
+                    <!-- Rujukan Section -->
+                    <div class="panel panel-default" style="margin-top:10px">
+                        <div class="panel-heading" style="padding:5px 10px;cursor:pointer" onclick="$('#rujukanBody').toggle();$(this).find('i.fa-chevron-down,i.fa-chevron-up').toggleClass('fa-chevron-down fa-chevron-up');">
+                            <label style="margin:0;cursor:pointer"><input type="checkbox" id="mk_rujukan_cb" style="margin-right:5px"> Rujukan <i class="fa fa-chevron-down pull-right" style="margin-top:3px"></i></label>
+                        </div>
+                        <div class="panel-body" id="rujukanBody" style="display:none;padding:10px">
+                            <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>TACC</label><select class="form-control" id="mk_tacc"><option value="-1" selected>Tidak Ada</option><option value="1">1. Alih Rawat</option><option value="2">2. Pemeriksaan Penunjang</option><option value="3">3. Tindakan Medis</option></select></div></div>
+                                <div class="col-md-9"><div class="form-group"><label>Alasan TACC</label><input type="text" class="form-control" id="mk_alasan_tacc" placeholder="Alasan TACC (opsional)"></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>Tujuan Rujukan</label><select class="form-control" id="mk_sarana"><option value="1">1. RS</option><option value="2">2. Khusus</option></select></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Spesialis</label><select class="form-control" id="mk_spesialis"><option value="">-- Pilih --</option></select></div></div>
+                                <div class="col-md-5"><div class="form-group"><label>Sub Spesialis</label><select class="form-control" id="mk_subspesialis"><option value="">-- Pilih Spesialis dulu --</option></select></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6"><div class="form-group"><label>Faskes Tujuan</label><select class="form-control" id="mk_faskes"><option value="">-- Pilih Spesialis dulu --</option></select></div></div>
+                                <div class="col-md-6"><div class="form-group"><label>Tgl Estimasi Rujuk</label><input type="text" class="form-control" id="mk_tgl_rujuk"></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12"><div class="form-group"><label>Catatan</label><textarea class="form-control" id="mk_catatan" rows="2" placeholder="Catatan rujukan"></textarea></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" id="btnKirimKunjungan"><i class="fa fa-send"></i> Kirim Kunjungan</button>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<style>
+.mk-diag-input{position:relative}
+.mk-diag-dropdown{position:absolute;z-index:1060;background:#fff;border:1px solid #ccc;max-height:200px;overflow-y:auto;width:100%;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.mk-diag-dropdown .mk-diag-item{padding:4px 8px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0}
+.mk-diag-dropdown .mk-diag-item:hover{background:#e8f4fd}
+.mk-diag-dropdown .mk-diag-loading{padding:6px 8px;color:#999;font-size:12px}
+</style>
+<script>
+var dtLocal,dtOnlyPcare;
+var localRows=[],pcareRows=[],pcareByNoUrut={},localByNoUrut={};
+var localByNoKartu={}; // key: noKartu_tglDaftar -> local row (for rows without nomor_urut)
+var riwayatMap={}; // key: noKartu_tglDaftar, value: kunjungan object or null
+var localRiwayatMap={}; // key: noKartu_tglReg, value: kunjungan object or null for local rows
+var logLines=[];
+var alergiLoaded={};
+
+$(function(){
+    $('#tglDari').datetimepicker({format:'DD-MM-YYYY',defaultDate:moment()});
+    $('#tglSampai').datetimepicker({format:'DD-MM-YYYY'});
+    $('#btnCek').click(startCheck);
+    $('#btnBulkPendaftaran').click(bulkKirimPendaftaran);
+    $('#btnBulkKunjungan').click(bulkKirimKunjungan);
+});
+
+function addLog(msg){
+    logLines.push('['+moment().format('HH:mm:ss')+'] '+msg);
+    $('#logCount').text(logLines.length);
+    $('#logBody').html(logLines.join('<br>'));
+    $('#logBody').scrollTop($('#logBody')[0].scrollHeight);
+}
+
+function setProgress(pct,label){
+    $('#progressBar').css('width',pct+'%');
+    if(label) $('#progressLabel').html('<i class="fa fa-spinner fa-spin"></i> '+label);
+}
+
+function startCheck(){
+    var tglDari=$('#tglDari').val();
+    if(!tglDari){showAlert('warning','Pilih tanggal "Dari" terlebih dahulu');return;}
+    var tglSampai=$('#tglSampai').val()||'';
+
+    // Reset
+    localRows=[];pcareRows=[];pcareByNoUrut={};localByNoUrut={};localByNoKartu={};riwayatMap={};localRiwayatMap={};logLines=[];
+    if(dtLocal){dtLocal.destroy();dtLocal=null;}
+    if(dtOnlyPcare){dtOnlyPcare.destroy();dtOnlyPcare=null;}
+    $('#bodyLocal').empty();$('#bodyOnlyPcare').empty();
+    $('#summaryRow').hide();$('#panelOnlyPcare').hide();$('#panelLog').show();$('#logBody').empty().show();
+    $('#progressWrap').show();setProgress(5,'Mengambil data lokal...');
+    $('#btnBulkPendaftaran').hide();$('#btnBulkKunjungan').hide();$('#btnBulkSyncPendaftaran').hide();
+
+    var rangeLabel=tglSampai?(tglDari+' s/d '+tglSampai):tglDari;
+    addLog('Mulai cek sinkronisasi: '+rangeLabel);
+
+    // Build API URL with date range
+    var dashUrl='/dashboard?date='+tglDari;
+    if(tglSampai) dashUrl+='&date_to='+tglSampai;
+
+    // Step 1: Fetch local data
+    apiCall('GET',dashUrl).done(function(res){
+        localRows=res.rows||[];
+        addLog('Data lokal ditemukan: '+localRows.length+' pasien BPJS');
+        setProgress(20,'Mengambil data PCare...');
+
+        // Build local lookup by nomor_urut + tgl (composite key for date-range)
+        $.each(localRows,function(_,r){
+            if(r.nomor_urut){
+                var lk=r.nomor_urut+'_'+(r.tgl_registrasi||'');
+                localByNoUrut[lk]=r;
+            }
+            // Also build lookup by no_kartu + tgl for rows WITHOUT nomor_urut (for sync matching)
+            var noKartu=r.no_peserta||r.nomor_jaminan||'';
+            var tgl=r.tgl_registrasi||'';
+            if(noKartu && !r.nomor_urut && r.stts!=='Batal'){
+                localByNoKartu[noKartu+'_'+tgl]=r;
+            }
+        });
+
+        // Step 2: Fetch all PCare data (day by day for multi-day)
+        var dates=getDateRange(tglDari,tglSampai);
+        fetchPcareAllDates(dates,0);
+    }).fail(function(){
+        addLog('ERROR: Gagal mengambil data lokal');
+        setProgress(0,'');$('#progressWrap').hide();
+        showAlert('danger','Gagal mengambil data lokal');
+    });
+}
+
+function getDateRange(dari,sampai){
+    if(!sampai) return [dari];
+    var dates=[];
+    var start=moment(dari,'DD-MM-YYYY');
+    var end=moment(sampai,'DD-MM-YYYY');
+    while(start.isSameOrBefore(end)){
+        dates.push(start.format('DD-MM-YYYY'));
+        start.add(1,'day');
+    }
+    return dates;
+}
+
+var allPcareDates=[],currentDateIdx=0;
+function fetchPcareAllDates(dates,idx){
+    allPcareDates=dates;currentDateIdx=idx;
+    if(idx>=dates.length){
+        addLog('Total data PCare: '+pcareRows.length);
+        setProgress(80,'Membandingkan data...');
+        compareData();
+        return;
+    }
+    addLog('Mengambil PCare tanggal '+dates[idx]+'...');
+    fetchPcareAll(dates[idx],0,function(){
+        var pct=20+Math.floor(60*(idx+1)/dates.length);
+        setProgress(pct,'Mengambil PCare tanggal '+(idx+2<=dates.length?dates[idx+1]:'...')+'...');
+        fetchPcareAllDates(dates,idx+1);
+    });
+}
+
+function fetchPcareAll(tgl,offset,doneCallback){
+    apiCall('GET','/pendaftaran/provider/'+tgl+'/'+offset+'/10').done(function(r){
+        var list=pcare.list(r);
+        if(Array.isArray(list)&&list.length>0){
+            pcareRows=pcareRows.concat(list);
+            var page=Math.floor(offset/10)+1;
+            addLog('PCare '+tgl+' hal.'+page+': '+list.length+' data (total: '+pcareRows.length+')');
+            if(list.length>=10){
+                fetchPcareAll(tgl,offset+list.length,doneCallback);
+                return;
+            }
+        } else {
+            if(offset===0) addLog('PCare '+tgl+': Tidak ada data');
+        }
+        if(doneCallback) doneCallback();
+    }).fail(function(xhr){
+        var msg='Gagal mengambil data PCare';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        addLog('WARN '+tgl+': '+msg);
+        if(doneCallback) doneCallback();
+    });
+}
+
+function compareData(){
+    // Build PCare lookup by noUrut + tglDaftar (composite key for date-range)
+    $.each(pcareRows,function(_,p){
+        var nu=p.noUrut||'';
+        var tgl=p.tglDaftar||'';
+        if(nu){
+            var pk=nu+'_'+tgl;
+            pcareByNoUrut[pk]=p;
+        }
+    });
+
+    var matched=0,onlyPcare=0;
+
+    // Find matched & only-in-pcare
+    var onlyPcareList=[];
+    $.each(pcareRows,function(_,p){
+        var nu=p.noUrut||'';
+        var tgl=p.tglDaftar||'';
+        var pk=nu+'_'+tgl;
+        if(nu && localByNoUrut[pk]){
+            matched++;
+        } else {
+            onlyPcare++;
+            onlyPcareList.push(p);
+        }
+    });
+
+    addLog('Hasil: Cocok='+matched+', Hanya di PCare='+onlyPcare);
+
+    // Update summary (partial - dilayani count updated after riwayat check)
+    $('#cntLocal').text(localRows.length);
+    $('#cntPcare').text(pcareRows.length);
+    $('#cntMatched').text(matched);
+    $('#cntOnlyPcare').text(onlyPcare);
+    $('#cntDilayani').text(0);
+    $('#summaryRow').show();
+
+    if(onlyPcareList.length>0){
+        setProgress(92,'Mengecek riwayat kunjungan (0/'+onlyPcareList.length+')...');
+        addLog('Mengecek riwayat kunjungan untuk '+onlyPcareList.length+' data hanya di PCare...');
+        checkRiwayatAll(onlyPcareList,0,function(){
+            // After only-in-pcare check, check local rows needing sync
+            checkLocalRiwayat();
+        });
+    } else {
+        $('#panelOnlyPcare').hide();
+        checkLocalRiwayat();
+    }
+}
+
+function checkLocalRiwayat(){
+    // Find local rows with nomor_urut but no nomor_kunjungan (need riwayat check)
+    var needCheck=[];
+    $.each(localRows,function(_,r){
+        var nu=r.nomor_urut||'';
+        var nk=r.nomor_kunjungan||'';
+        if(nu && !nk && r.stts!=='Batal'){
+            needCheck.push(r);
+        }
+    });
+    if(needCheck.length>0){
+        addLog('Batch cek riwayat lokal '+needCheck.length+' pasien...');
+        setProgress(92,'Mengecek riwayat lokal (batch '+needCheck.length+')...');
+
+        var items=[];
+        $.each(needCheck,function(_,r){
+            var noKartu=r.no_peserta||r.nomor_jaminan||'';
+            var tgl=r.tgl_registrasi||'';
+            var key=noKartu+'_'+tgl;
+            if(noKartu && !localRiwayatMap.hasOwnProperty(key)){
+                items.push({noKartu:noKartu,tglDaftar:tgl});
+            }
+        });
+
+        if(items.length===0){
+            renderLocalTable();
+            showBulkButtons();
+            setTimeout(function(){$('#progressWrap').hide();},1000);
+            return;
+        }
+
+        apiCall('POST','/bridging/batch-riwayat',{items:items,workers:5}).done(function(resp){
+            var results=resp.results||[];
+            $.each(results,function(_,r){
+                var key=r.noKartu+'_'+r.tglDaftar;
+                if(r.found && r.kunjungan){
+                    localRiwayatMap[key]=r.kunjungan;
+                    addLog('  Lokal '+r.noKartu+': Kunjungan ditemukan - '+(r.kunjungan.noKunjungan||''));
+                } else {
+                    localRiwayatMap[key]=null;
+                }
+            });
+            setProgress(100,'Selesai');
+            renderLocalTable();
+            showBulkButtons();
+            setTimeout(function(){$('#progressWrap').hide();},1000);
+        }).fail(function(){
+            addLog('WARN: Batch riwayat lokal gagal');
+            $.each(items,function(_,it){localRiwayatMap[it.noKartu+'_'+it.tglDaftar]=null;});
+            renderLocalTable();
+            showBulkButtons();
+            setTimeout(function(){$('#progressWrap').hide();},1000);
+        });
+    } else {
+        renderLocalTable();
+        showBulkButtons();
+        setTimeout(function(){$('#progressWrap').hide();},1000);
+    }
+}
+
+function showBulkButtons(){
+    // Count eligible for bulk pendaftaran (no nomor_urut, not batal)
+    var cntPendaftaran=0, cntKunjungan=0;
+    $.each(localRows,function(_,r){
+        if(!r.nomor_urut && r.stts!=='Batal') cntPendaftaran++;
+        if(r.nomor_urut && !r.nomor_kunjungan && r.stts==='Sudah' && r.apotek_served){
+            var noKartu=r.no_peserta||r.nomor_jaminan||'';
+            var tgl=r.tgl_registrasi||'';
+            var key=noKartu+'_'+tgl;
+            if(!localRiwayatMap[key]) cntKunjungan++;
+        }
+    });
+    if(cntPendaftaran>0){
+        $('#btnBulkPendaftaran').show().html('<i class="fa fa-upload"></i> Bulk Pendaftaran ('+cntPendaftaran+')');
+    } else {
+        $('#btnBulkPendaftaran').hide();
+    }
+    if(cntKunjungan>0){
+        $('#btnBulkKunjungan').show().html('<i class="fa fa-send"></i> Bulk Kunjungan ('+cntKunjungan+')');
+    } else {
+        $('#btnBulkKunjungan').hide();
+    }
+}
+
+function checkRiwayatAll(list,idx,callback){
+    // Use batch riwayat API for parallel server-side checking
+    var items=[];
+    $.each(list,function(_,p){
+        var noKartu=p.peserta?p.peserta.noKartu:(p.noKartu||'');
+        var tgl=p.tglDaftar||'';
+        var key=noKartu+'_'+tgl;
+        if(noKartu && !riwayatMap.hasOwnProperty(key)){
+            items.push({noKartu:noKartu,tglDaftar:tgl});
+        }
+    });
+    if(items.length===0){
+        $('#cntDilayani').text(0);
+        setProgress(100,'Selesai');
+        renderOnlyPcare(list);
+        if(callback) callback();
+        return;
+    }
+    addLog('Batch cek riwayat '+items.length+' pasien (server-side parallel)...');
+    setProgress(92,'Mengecek riwayat kunjungan (batch '+items.length+')...');
+
+    apiCall('POST','/bridging/batch-riwayat',{items:items,workers:5}).done(function(resp){
+        var results=resp.results||[];
+        var dilayani=0;
+        $.each(results,function(_,r){
+            var key=r.noKartu+'_'+r.tglDaftar;
+            if(r.found && r.kunjungan){
+                riwayatMap[key]=r.kunjungan;
+                dilayani++;
+            } else {
+                riwayatMap[key]=null;
+            }
+        });
+        addLog('Riwayat selesai: '+dilayani+' sudah dilayani, '+(items.length-dilayani)+' belum dilayani');
+        $('#cntDilayani').text(dilayani);
+        setProgress(100,'Selesai');
+        renderOnlyPcare(list);
+        if(callback) callback();
+    }).fail(function(){
+        addLog('WARN: Batch riwayat gagal, skip');
+        $.each(items,function(_,it){riwayatMap[it.noKartu+'_'+it.tglDaftar]=null;});
+        renderOnlyPcare(list);
+        if(callback) callback();
+    });
+}
+
+function renderOnlyPcare(list){
+    if(list.length===0){$('#panelOnlyPcare').hide();return;}
+    $('#panelOnlyPcare').show();
+    var body='';
+    var syncableCount=0;
+    $.each(list,function(i,p){
+        var noKartu=p.peserta?p.peserta.noKartu:(p.noKartu||'-');
+        var nama=p.peserta?p.peserta.nama:(p.nama||'-');
+        var poli=p.poli?(p.poli.nmPoli||p.poli.kdPoli):(p.kdPoli||'-');
+        var kdPoli=p.poli?p.poli.kdPoli:(p.kdPoli||'');
+        var tgl=p.tglDaftar||'-';
+        var keluhan=p.keluhan||'-';
+        var nu=p.noUrut||'-';
+        var key=noKartu+'_'+tgl;
+        var kunj=riwayatMap[key];
+        var localMatch=localByNoKartu[key]; // match local row by no_kartu + tgl
+        var stsKunj='',aksi='';
+        if(kunj){
+            var diag=kunj.diagnosa1?kunj.diagnosa1.nmDiag:(kunj.kdDiag1||'-');
+            var stsPulang=kunj.statusPulang?kunj.statusPulang.nmStatusPulang:(kunj.kdStatusPulang||'-');
+            var dokter=kunj.dokter?kunj.dokter.nmDokter:(kunj.kdDokter||'-');
+            stsKunj='<span class="label label-warning"><i class="fa fa-medkit"></i> Sudah Dilayani</span><br><small>'+diag+'<br>'+dokter+'<br>Pulang: '+stsPulang+'</small>';
+            aksi='<span class="text-muted"><i class="fa fa-check"></i> Terlayani</span>';
+        } else {
+            stsKunj='<span class="label label-default">Belum Dilayani</span>';
+            aksi='<button class="btn btn-xs btn-danger" onclick="hapusPcare(\''+noKartu+'\',\''+tgl+'\',\''+nu+'\',\''+kdPoli+'\',this)"><i class="fa fa-trash"></i> Hapus</button>';
+        }
+        // If local row exists without nomor_urut, show sync button
+        if(localMatch){
+            syncableCount++;
+            aksi+=' <button class="btn btn-xs btn-info" onclick="syncPendaftaranSingle(\''+localMatch.no_rawat+'\',\''+localMatch.no_rkm_medis+'\',\''+noKartu+'\',\''+nu+'\',\''+localMatch.kd_poli+'\',this)"><i class="fa fa-download"></i> Sync ke Lokal</button>';
+        }
+        body+='<tr class="'+(localMatch?'info':(kunj?'warning':'danger'))+'">';
+        body+='<td>'+(i+1)+'</td>';
+        body+='<td>'+noKartu+'</td>';
+        body+='<td><a href="javascript:void(0)" onclick="openRiwayat(\''+escJs(nama)+'\',\'\',\''+escJs(noKartu)+'\')">'+nama+'</a>'+(localMatch?'<br><small class="text-info"><i class="fa fa-link"></i> Ada di lokal: '+localMatch.no_rawat+'</small>':'')+'</td>';
+        body+='<td>'+nu+'</td>';
+        body+='<td>'+poli+'</td>';
+        body+='<td>'+tgl+'</td>';
+        body+='<td>'+keluhan+'</td>';
+        body+='<td>'+stsKunj+'</td>';
+        body+='<td>'+aksi+'</td>';
+        body+='</tr>';
+    });
+    $('#bodyOnlyPcare').html(body);
+    if(dtOnlyPcare){dtOnlyPcare.destroy();dtOnlyPcare=null;}
+    dtOnlyPcare=$('#tblOnlyPcare').DataTable({pageLength:25,destroy:true,order:[[3,'asc']]});
+    // Show bulk sync button if any syncable entries
+    if(syncableCount>0){
+        $('#btnBulkSyncPendaftaran').show().html('<i class="fa fa-download"></i> Sync Semua Pendaftaran ('+syncableCount+')');
+    } else {
+        $('#btnBulkSyncPendaftaran').hide();
+    }
+}
+
+function renderLocalTable(){
+    if(dtLocal){dtLocal.destroy();dtLocal=null;}
+    var body='';
+    $.each(localRows,function(i,r){
+        var nu=r.nomor_urut||'';
+        var nk=r.nomor_kunjungan||'';
+        var noKartu=r.no_peserta||r.nomor_jaminan||'';
+        var tgl=r.tgl_registrasi||'';
+        var key=noKartu+'_'+tgl;
+        var cls='',syncLabel='',aksi='';
+
+        // Apotek column
+        var apotekLabel='';
+        if(r.apotek_served){
+            apotekLabel='<span class="label label-success"><i class="fa fa-check"></i></span><br><small>'+r.tgl_penyerahan_obat+'</small>';
+        } else {
+            apotekLabel='<span class="label label-default"><i class="fa fa-minus"></i></span>';
+        }
+
+        if(r.stts==='Batal'){
+            cls='danger';syncLabel='<span class="label label-danger">Batal</span>';
+        } else if(nk){
+            cls='success';syncLabel='<span class="label label-success">Kunjungan Terkirim</span>';
+        } else if(nu && !nk){
+            // Has nomor_urut but no nomor_kunjungan — check if PCare has kunjungan
+            var kunj=localRiwayatMap[key];
+            if(kunj){
+                cls='info';
+                var diag=kunj.diagnosa1?kunj.diagnosa1.nmDiag:(kunj.kdDiag1||'-');
+                syncLabel='<span class="label label-info">Ada Kunjungan di PCare</span><br><small>'+kunj.noKunjungan+'<br>'+diag+'</small>';
+                // Escape data for onclick
+                var kunjJson=encodeURIComponent(JSON.stringify(kunj));
+                aksi='<button class="btn btn-xs btn-success" onclick="sinkronisasi('+r.bridging_id+',\''+kunjJson+'\',this)"><i class="fa fa-download"></i> Sinkronisasi</button>';
+            } else if(localRiwayatMap.hasOwnProperty(key)){
+                // Checked but not found — show "Kirim Kunjungan"
+                cls='warning';
+                syncLabel='<span class="label label-warning">Belum Ada Kunjungan</span>';
+                if(r.stts==='Sudah'){
+                    aksi='<button class="btn btn-xs btn-primary" onclick="openModalKirim('+JSON.stringify(i)+')"><i class="fa fa-send"></i> Kirim Kunjungan</button>';
+                } else {
+                    aksi='<span class="text-muted">Belum diperiksa</span>';
+                }
+            } else if(pcareByNoUrut[nu+'_'+tgl]){
+                cls='info';syncLabel='<span class="label label-info">Cocok di PCare</span>';
+            } else {
+                cls='warning';syncLabel='<span class="label label-warning">Tidak ditemukan di PCare</span>';
+            }
+        } else {
+            cls='';syncLabel='<span class="label label-default">Belum Terdaftar</span>';
+        }
+
+        body+='<tr class="'+cls+'">';
+        body+='<td>'+(i+1)+'</td>';
+        body+='<td>'+r.no_rawat+'</td>';
+        body+='<td>'+r.no_rkm_medis+'</td>';
+        body+='<td><a href="javascript:void(0)" onclick="openRiwayat(\''+escJs(r.nm_pasien)+'\',\''+escJs(r.no_rkm_medis)+'\',\''+escJs(noKartu)+'\')">'+escHtml(r.nm_pasien)+'</a></td>';
+        body+='<td>'+r.nm_poli+'</td>';
+        body+='<td>'+(r.nm_dokter||'-')+'</td>';
+        body+='<td>'+r.stts+'</td>';
+        body+='<td>'+(nu||'-')+'</td>';
+        body+='<td>'+(nk||'-')+'</td>';
+        body+='<td>'+apotekLabel+'</td>';
+        body+='<td>'+syncLabel+'</td>';
+        body+='<td>'+aksi+'</td>';
+        body+='</tr>';
+    });
+    $('#bodyLocal').html(body||'<tr><td colspan="12" class="text-center">Tidak ada data</td></tr>');
+    if(localRows.length>0) dtLocal=$('#tblLocal').DataTable({pageLength:25,destroy:true,order:[[0,'asc']]});
+}
+
+function sinkronisasi(bridgingId,kunjJsonEncoded,btn){
+    var kunj=JSON.parse(decodeURIComponent(kunjJsonEncoded));
+    if(!confirm('Sinkronisasi data kunjungan '+kunj.noKunjungan+' dari PCare ke database lokal?')) return;
+    $(btn).prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+    var data={
+        bridging_id: bridgingId,
+        nomor_kunjungan: kunj.noKunjungan||'',
+        kode_dokter: kunj.dokter?(kunj.dokter.kdDokter||''):(kunj.kdDokter||''),
+        nama_dokter: kunj.dokter?(kunj.dokter.nmDokter||''):'',
+        kode_kesadaran: kunj.kdSadar||'01',
+        nama_kesadaran: kunj.nmSadar||'',
+        kode_status_pulang: kunj.statusPulang?(kunj.statusPulang.kdStatusPulang||'3'):(kunj.kdStatusPulang||'3'),
+        nama_status_pulang: kunj.statusPulang?(kunj.statusPulang.nmStatusPulang||''):'',
+        kode_diagnosa1: kunj.diagnosa1?(kunj.diagnosa1.kdDiag||''):'',
+        nama_diagnosa1: kunj.diagnosa1?(kunj.diagnosa1.nmDiag||''):'',
+        kode_diagnosa2: kunj.diagnosa2?(kunj.diagnosa2.kdDiag||''):'',
+        nama_diagnosa2: kunj.diagnosa2?(kunj.diagnosa2.nmDiag||''):'',
+        kode_diagnosa3: kunj.diagnosa3?(kunj.diagnosa3.kdDiag||''):'',
+        nama_diagnosa3: kunj.diagnosa3?(kunj.diagnosa3.nmDiag||''):'',
+        sistole: String(kunj.sistole||0),
+        diastole: String(kunj.diastole||0),
+        berat: String(kunj.beratBadan||0),
+        tinggi: String(kunj.tinggiBadan||0),
+        nadi: String(kunj.heartRate||0),
+        respirasi: String(kunj.respRate||0),
+        lingkar_perut: String(kunj.lingkarPerut||0),
+        subyektif: kunj.keluhan||'',
+        tgl_kunjungan: kunj.tglKunjungan||'',
+        tgl_pulang: kunj.tglPulang||kunj.tglKunjungan||''
+    };
+
+    apiCall('POST','/bridging/sync-kunjungan',data).done(function(r){
+        addLog('Sinkronisasi berhasil: '+kunj.noKunjungan);
+        showAlert('success','Data kunjungan '+kunj.noKunjungan+' berhasil disinkronisasi');
+        // Update local row data so re-render picks up the new values
+        $.each(localRows,function(_,lr){
+            if(lr.bridging_id==bridgingId){
+                lr.nomor_kunjungan=kunj.noKunjungan;
+                // Remove from riwayat map so renderLocalTable treats it as "Kunjungan Terkirim"
+                var noKartu=lr.no_peserta||lr.nomor_jaminan||'';
+                var tgl=lr.tgl_registrasi||'';
+                delete localRiwayatMap[noKartu+'_'+tgl];
+            }
+        });
+        renderLocalTable();
+    }).fail(function(xhr){
+        var msg='Gagal sinkronisasi';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        addLog('ERROR sync: '+msg);
+        showAlert('danger',msg);
+        $(btn).prop('disabled',false).html('<i class="fa fa-download"></i> Sinkronisasi');
+    });
+}
+
+// === Sync Pendaftaran dari PCare ke Lokal ===
+function syncPendaftaranSingle(noRawat,noRkmMedis,noKartu,noUrut,kdPoli,btn){
+    if(!confirm('Sinkronisasi No.Urut '+noUrut+' dari PCare ke data lokal ('+noRawat+')?')) return;
+    $(btn).prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+    apiCall('POST','/bridging/sync-pendaftaran',{items:[{no_rawat:noRawat,no_rkm_medis:noRkmMedis,no_kartu:noKartu,nomor_urut:noUrut,kd_poli:kdPoli}]}).done(function(r){
+        addLog('Sync pendaftaran berhasil: '+noRawat+' → No.Urut '+noUrut);
+        showAlert('success','Pendaftaran '+noRawat+' berhasil disinkronisasi (No.Urut: '+noUrut+')');
+        // Update local data
+        $.each(localRows,function(_,lr){
+            if(lr.no_rawat==noRawat){
+                lr.nomor_urut=noUrut;
+                // Remove from localByNoKartu since it now has nomor_urut
+                var k=(lr.no_peserta||lr.nomor_jaminan||'')+'_'+(lr.tgl_registrasi||'');
+                delete localByNoKartu[k];
+                // Add to localByNoUrut
+                localByNoUrut[noUrut+'_'+(lr.tgl_registrasi||'')]=lr;
+            }
+        });
+        $(btn).closest('tr').fadeOut(300);
+        renderLocalTable();
+    }).fail(function(xhr){
+        var msg='Gagal sync';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        addLog('ERROR sync pendaftaran: '+msg);
+        showAlert('danger',msg);
+        $(btn).prop('disabled',false).html('<i class="fa fa-download"></i> Sync ke Lokal');
+    });
+}
+
+function bulkSyncPendaftaran(){
+    // Collect all syncable items (PCare entries that match local rows by no_kartu)
+    var items=[];
+    $.each(pcareRows,function(_,p){
+        var noKartu=p.peserta?p.peserta.noKartu:(p.noKartu||'');
+        var tgl=p.tglDaftar||'';
+        var nu=p.noUrut||'';
+        var key=noKartu+'_'+tgl;
+        var localMatch=localByNoKartu[key];
+        if(localMatch && nu){
+            items.push({no_rawat:localMatch.no_rawat,no_rkm_medis:localMatch.no_rkm_medis,no_kartu:noKartu,nomor_urut:nu,kd_poli:localMatch.kd_poli});
+        }
+    });
+    if(items.length===0){showAlert('info','Tidak ada pendaftaran yang perlu disinkronisasi');return;}
+    if(!confirm('Sinkronisasi '+items.length+' pendaftaran dari PCare ke database lokal?')) return;
+
+    $('#bulkProgressTitle').text('Sync Pendaftaran dari PCare');
+    $('#bulkProgressBar').css('width','10%').removeClass('progress-bar-danger').addClass('progress-bar-info active');
+    $('#bulkProgressLabel').text('Menyinkronisasi '+items.length+' pendaftaran...');
+    $('#bulkResultPanel').hide().empty();$('#btnBulkClose').hide();
+    $('#modalBulkProgress').modal('show');
+
+    apiCall('POST','/bridging/sync-pendaftaran',{items:items}).done(function(resp){
+        $('#bulkProgressBar').css('width','100%').removeClass('active');
+        $('#bulkProgressLabel').text('Selesai: '+(resp.success||0)+' berhasil, '+(resp.fail||0)+' gagal');
+        var html='';
+        if(resp.results && resp.results.length>0){
+            $.each(resp.results,function(_,r){
+                var cls=r.status==='success'?'text-success':'text-danger';
+                html+='<div class="'+cls+'"><b>'+r.no_rawat+'</b>: '+r.message+(r.nomor_urut?' → No.Urut: '+r.nomor_urut:'')+'</div>';
+            });
+        }
+        $('#bulkResultPanel').html(html).show();$('#btnBulkClose').show();
+        addLog('Sync pendaftaran selesai: '+(resp.success||0)+' berhasil, '+(resp.fail||0)+' gagal');
+        // Update local data
+        if(resp.results){
+            $.each(resp.results,function(_,r){
+                if(r.status==='success'){
+                    $.each(localRows,function(_,lr){
+                        if(lr.no_rawat==r.no_rawat){
+                            lr.nomor_urut=r.nomor_urut;
+                            var k=(lr.no_peserta||lr.nomor_jaminan||'')+'_'+(lr.tgl_registrasi||'');
+                            delete localByNoKartu[k];
+                            localByNoUrut[r.nomor_urut+'_'+(lr.tgl_registrasi||'')]=lr;
+                        }
+                    });
+                }
+            });
+        }
+        renderLocalTable();
+        showBulkButtons();
+    }).fail(function(xhr){
+        var msg='Gagal';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        $('#bulkProgressBar').css('width','100%').addClass('progress-bar-danger').removeClass('active');
+        $('#bulkProgressLabel').text(msg);$('#btnBulkClose').show();
+        addLog('Sync pendaftaran ERROR: '+msg);
+    });
+}
+
+var _kirimRowIndex=-1;
+function openModalKirim(rowIndex){
+    _kirimRowIndex=rowIndex;
+    var r=localRows[rowIndex];
+    if(!r) return;
+
+    $('#mk_id').val(r.bridging_id);
+    $('#mk_no_rawat').val(r.no_rawat);
+    $('#mk_no_rkm_medis').val(r.no_rkm_medis);
+    $('#mk_nomor_jaminan').val(r.no_peserta||r.nomor_jaminan||'');
+    $('#mk_tgl_kunjungan').val(r.tgl_registrasi);
+    $('#mk_tgl_pulang').val(r.tgl_registrasi);
+    $('#mk_dokter').val(r.nm_dokter||'');
+
+    var infoHtml='<strong>'+r.nm_pasien+'</strong> ('+r.no_rkm_medis+') &mdash; No. Rawat: '+r.no_rawat+'<br>Poli: '+r.nm_poli+' / Dokter: '+(r.nm_dokter||'-');
+    $('#mInfo').html(infoHtml+'<br><small><i class="fa fa-spinner fa-spin"></i> Mengambil data pemeriksaan...</small>');
+
+    // Reset
+    $('#mk_keluhan').val('');$('#mk_anamnesa').val('');$('#mk_terapi').val('');
+    $('#mk_kd_poli').val('');$('#mk_kd_dokter').val('');
+    $('#mk_diag1').val('');$('#mk_diag1_nama').text('');
+    $('#mk_diag2').val('');$('#mk_diag2_nama').text('');
+    $('#mk_diag3').val('');$('#mk_diag3_nama').text('');
+    $('#mk_kesadaran').val('01');$('#mk_status_pulang').val('3');
+    $('#mk_prognosa').val('01');$('#mk_kunj_sakit').val('1');
+    $('#mk_sistole').val('120');$('#mk_diastole').val('80');
+    $('#mk_nadi').val('80');$('#mk_respirasi').val('20');
+    $('#mk_suhu').val('36');$('#mk_lingkar').val('70');
+    $('#mk_berat').val('50');$('#mk_tinggi').val('160');
+    $('#mk_terapi_obat').val('tidak ada');$('#mk_terapi_nonobat').val('tidak ada');
+    // Reset rujukan
+    $('#mk_rujukan_cb').prop('checked',false);$('#rujukanBody').hide();
+    $('#mk_tacc').val('-1');$('#mk_alasan_tacc').val('');
+    $('#mk_sarana').val('1');$('#mk_catatan').val('');$('#mk_tgl_rujuk').val('');
+
+    // Load alergi + spesialis dropdowns
+    loadAlergi();
+    loadSpesialis();
+
+    $('#modalKunjungan').modal('show');
+
+    // Fetch prefill from server
+    apiCall('GET','/bridging/prefill-kunjungan?no_rawat='+encodeURIComponent(r.no_rawat)).done(function(pf){
+        if(pf.keluhan) $('#mk_keluhan').val(pf.keluhan);
+        if(pf.anamnesa) $('#mk_anamnesa').val(pf.anamnesa);
+        if(pf.kdPoli) $('#mk_kd_poli').val(pf.kdPoli);
+        if(pf.kdDokter) $('#mk_kd_dokter').val(pf.kdDokter);
+        if(pf.kdDiagnosa1){$('#mk_diag1').val(pf.kdDiagnosa1);$('#mk_diag1_nama').text(pf.nmDiagnosa1||'');}
+        if(pf.kdDiagnosa2){$('#mk_diag2').val(pf.kdDiagnosa2);$('#mk_diag2_nama').text(pf.nmDiagnosa2||'');}
+        if(pf.kdDiagnosa3){$('#mk_diag3').val(pf.kdDiagnosa3);$('#mk_diag3_nama').text(pf.nmDiagnosa3||'');}
+        if(pf.kdKesadaran) $('#mk_kesadaran').val(pf.kdKesadaran);
+        if(pf.sistole && pf.sistole!='0') $('#mk_sistole').val(pf.sistole);
+        if(pf.diastole && pf.diastole!='0') $('#mk_diastole').val(pf.diastole);
+        if(pf.nadi && pf.nadi!='0') $('#mk_nadi').val(pf.nadi);
+        if(pf.respirasi && pf.respirasi!='0') $('#mk_respirasi').val(pf.respirasi);
+        if(pf.suhu && pf.suhu!='0') $('#mk_suhu').val(pf.suhu);
+        if(pf.lingkarPerut && pf.lingkarPerut!='0') $('#mk_lingkar').val(pf.lingkarPerut);
+        if(pf.berat && pf.berat!='0') $('#mk_berat').val(pf.berat);
+        if(pf.tinggi && pf.tinggi!='0') $('#mk_tinggi').val(pf.tinggi);
+        if(pf.terapiObat) $('#mk_terapi_obat').val(pf.terapiObat);
+        if(pf.terapiNonObat) $('#mk_terapi_nonobat').val(pf.terapiNonObat);
+        if(pf.terapi) $('#mk_terapi').val(pf.terapi);
+        // Pre-select alergi after dropdown loaded
+        prefillAlergi={makan:pf.alergiMakan||'00',udara:pf.alergiUdara||'00',obat:pf.alergiObat||'00'};
+        applyAlergiPrefill();
+        var statusHtml=pf.hasPemeriksaan?'<span class="text-success"><i class="fa fa-check"></i> Data SOAP ditemukan</span>':'<span class="text-warning"><i class="fa fa-exclamation-triangle"></i> Belum ada data SOAP, menggunakan default</span>';
+        $('#mInfo').html(infoHtml+'<br><small>'+statusHtml+'</small>');
+    }).fail(function(){
+        $('#mInfo').html(infoHtml+'<br><small class="text-danger"><i class="fa fa-times"></i> Gagal mengambil data pemeriksaan</small>');
+    });
+}
+
+// === Alergi ===
+var alergiData={makan:null,udara:null,obat:null};
+var prefillAlergi={makan:'00',udara:'00',obat:'00'};
+
+function loadAlergi(){
+    var types=['makan','udara','obat'];
+    $.each(types,function(_,jns){
+        if(alergiData[jns]) return; // already loaded
+        var selId=jns==='makan'?'mk_alergi_makan':jns==='udara'?'mk_alergi_udara':'mk_alergi_obat';
+        $('#'+selId).html('<option value="">Memuat...</option>');
+        apiCall('GET','/alergi/'+jns).done(function(r){
+            var list=pcare.list(r);
+            alergiData[jns]=list||[];
+            var opts='<option value="00">00: Tidak Ada</option>';
+            if(Array.isArray(list)){
+                $.each(list,function(_,a){
+                    var kd=a.kdAlergi||a.code||'';
+                    var nm=a.nmAlergi||a.name||kd;
+                    opts+='<option value="'+kd+'">'+kd+': '+nm+'</option>';
+                });
+            }
+            $('#'+selId).html(opts);
+            applyAlergiPrefill();
+        }).fail(function(){
+            var selId2=jns==='makan'?'mk_alergi_makan':jns==='udara'?'mk_alergi_udara':'mk_alergi_obat';
+            $('#'+selId2).html('<option value="00">00: Tidak Ada</option>');
+        });
+    });
+}
+
+function applyAlergiPrefill(){
+    if(prefillAlergi.makan && alergiData.makan) $('#mk_alergi_makan').val(prefillAlergi.makan);
+    if(prefillAlergi.udara && alergiData.udara) $('#mk_alergi_udara').val(prefillAlergi.udara);
+    if(prefillAlergi.obat && alergiData.obat) $('#mk_alergi_obat').val(prefillAlergi.obat);
+}
+
+// === Diagnosa Autocomplete ===
+var diagTimers={};
+$(document).on('input','.mk-diag-input',function(){
+    var inp=$(this), id=inp.attr('id'), dd=$('#'+id+'_dd');
+    var q=inp.val().trim();
+    clearTimeout(diagTimers[id]);
+    if(q.length<2){dd.hide();return;}
+    dd.html('<div class="mk-diag-loading"><i class="fa fa-spinner fa-spin"></i> Mencari...</div>').show();
+    diagTimers[id]=setTimeout(function(){
+        apiCall('GET','/diagnosa/'+encodeURIComponent(q)+'/0/20').done(function(r){
+            var list=pcare.list(r);
+            if(!Array.isArray(list)||list.length===0){dd.html('<div class="mk-diag-loading">Tidak ditemukan</div>').show();return;}
+            var html='';
+            $.each(list,function(_,d){
+                var kd=d.kdDiag||d.code||'';
+                var nm=d.nmDiag||d.name||'';
+                html+='<div class="mk-diag-item" data-kd="'+kd+'" data-nm="'+nm+'"><b>'+kd+'</b> - '+nm+'</div>';
+            });
+            dd.html(html).show();
+        }).fail(function(){dd.hide();});
+    },350);
+});
+
+$(document).on('click','.mk-diag-item',function(){
+    var item=$(this), kd=item.data('kd'), nm=item.data('nm');
+    var dd=item.closest('.mk-diag-dropdown'), inp=dd.prev('small').length?dd.prevAll('.mk-diag-input:first'):dd.siblings('.mk-diag-input');
+    // Find the input by going to the parent form-group
+    var fg=item.closest('.form-group');
+    fg.find('.mk-diag-input').val(kd);
+    fg.find('small').text(nm);
+    dd.hide();
+});
+
+$(document).on('blur','.mk-diag-input',function(){
+    var dd=$('#'+$(this).attr('id')+'_dd');
+    setTimeout(function(){dd.hide();},200);
+});
+
+// === Spesialis & Rujukan Cascade ===
+var spesialisLoaded=false;
+function loadSpesialis(){
+    if(spesialisLoaded) return;
+    apiCall('GET','/spesialis').done(function(r){
+        var list=pcare.list(r);
+        var opts='<option value="">-- Pilih Spesialis --</option>';
+        if(Array.isArray(list)){
+            $.each(list,function(_,s){
+                var kd=s.kdSpesialis||s.code||'';
+                var nm=s.nmSpesialis||s.name||kd;
+                opts+='<option value="'+kd+'">'+kd+': '+nm+'</option>';
+            });
+        }
+        $('#mk_spesialis').html(opts);
+        spesialisLoaded=true;
+    });
+}
+
+$('#mk_spesialis').change(function(){
+    var kd=$(this).val();
+    $('#mk_subspesialis').html('<option value="">Memuat...</option>');
+    $('#mk_faskes').html('<option value="">-- Pilih Sub Spesialis --</option>');
+    if(!kd){$('#mk_subspesialis').html('<option value="">-- Pilih Spesialis dulu --</option>');return;}
+    apiCall('GET','/subspesialis/'+encodeURIComponent(kd)).done(function(r){
+        var list=pcare.list(r);
+        var opts='<option value="">-- Pilih --</option>';
+        if(Array.isArray(list)){
+            $.each(list,function(_,s){
+                var kd2=s.kdSubSpesialis||s.code||'';
+                var nm2=s.nmSubSpesialis||s.name||kd2;
+                opts+='<option value="'+kd2+'">'+kd2+': '+nm2+'</option>';
+            });
+        }
+        $('#mk_subspesialis').html(opts);
+    });
+});
+
+$('#mk_subspesialis').change(function(){
+    loadFaskes();
+});
+
+$('#mk_sarana').change(function(){
+    if($('#mk_subspesialis').val()) loadFaskes();
+});
+
+function loadFaskes(){
+    var kdSp=$('#mk_spesialis').val()||'';
+    var kdSub=$('#mk_subspesialis').val()||'';
+    var sarana=$('#mk_sarana').val()||'1';
+    if(!kdSp){$('#mk_faskes').html('<option value="">-- Pilih Spesialis dulu --</option>');return;}
+    $('#mk_faskes').html('<option value="">Memuat...</option>');
+    var endpoint=sarana==='2'?'/faskes-khusus/':'/faskes-rujukan/';
+    apiCall('GET',endpoint+encodeURIComponent(kdSp)+'/'+encodeURIComponent(kdSub||'0')+'/'+encodeURIComponent(sarana)+'/0/50').done(function(r){
+        var list=pcare.list(r);
+        var opts='<option value="">-- Pilih Faskes --</option>';
+        if(Array.isArray(list)){
+            $.each(list,function(_,f){
+                var kd=f.kdPPK||f.kdProvider||f.code||'';
+                var nm=f.nmPPK||f.nmProvider||f.name||kd;
+                opts+='<option value="'+kd+'" data-nm="'+nm+'">'+kd+': '+nm+'</option>';
+            });
+        }
+        $('#mk_faskes').html(opts);
+    });
+}
+
+// === Submit ===
+$('#btnKirimKunjungan').click(function(){
+    var btn=$(this);
+    btn.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> Mengirim...');
+
+    var data={
+        id: parseInt($('#mk_id').val())||0,
+        no_rawat: $('#mk_no_rawat').val(),
+        no_rkm_medis: $('#mk_no_rkm_medis').val(),
+        nomor_jaminan: $('#mk_nomor_jaminan').val(),
+        kdDokter: $('#mk_kd_dokter').val(),
+        tgl_kunjungan: $('#mk_tgl_kunjungan').val(),
+        tgl_pulang: $('#mk_tgl_pulang').val(),
+        subyektif: $('#mk_keluhan').val(),
+        anamnesa: $('#mk_anamnesa').val(),
+        terapi: $('#mk_terapi').val(),
+        kdPoli: $('#mk_kd_poli').val(),
+        kdDiagnosa1: $('#mk_diag1').val(),
+        kdDiagnosa2: $('#mk_diag2').val(),
+        kdDiagnosa3: $('#mk_diag3').val(),
+        kdKesadaran: $('#mk_kesadaran').val(),
+        kdStatusPulang: $('#mk_status_pulang').val(),
+        kdPrognosa: $('#mk_prognosa').val(),
+        kunjungan_sakit: $('#mk_kunj_sakit').val(),
+        sistole: $('#mk_sistole').val(),
+        diastole: $('#mk_diastole').val(),
+        nadi: $('#mk_nadi').val(),
+        respirasi: $('#mk_respirasi').val(),
+        suhu: $('#mk_suhu').val(),
+        lingkar_perut: $('#mk_lingkar').val(),
+        berat: $('#mk_berat').val(),
+        tinggi: $('#mk_tinggi').val(),
+        terapiObat: $('#mk_terapi_obat').val(),
+        terapiNonObat: $('#mk_terapi_nonobat').val(),
+        kdAlergiMakan: $('#mk_alergi_makan').val()||'00',
+        kdAlergiUdara: $('#mk_alergi_udara').val()||'00',
+        kdAlergiObat: $('#mk_alergi_obat').val()||'00'
+    };
+
+    // Rujukan fields
+    if($('#mk_rujukan_cb').is(':checked')){
+        data.kdTacc=parseInt($('#mk_tacc').val())||(-1);
+        data.alasanTacc=$('#mk_alasan_tacc').val();
+        data.kdSarana=$('#mk_sarana').val();
+        data.kdSpesialis=$('#mk_spesialis').val();
+        data.kdSubSpesialis=$('#mk_subspesialis').val();
+        data.kdPPK=$('#mk_faskes').val();
+        data.nmPPK=$('#mk_faskes option:selected').data('nm')||'';
+        data.tglEstRujuk=$('#mk_tgl_rujuk').val();
+        data.catatan=$('#mk_catatan').val();
+    }
+
+    apiCall('POST','/bridging/kirim-kunjungan',data).done(function(r){
+        if(r.status==='success'){
+            addLog('Kirim kunjungan berhasil: '+(r.nomor_kunjungan||''));
+            showAlert('success','Kunjungan berhasil dikirim: '+(r.nomor_kunjungan||''));
+            $('#modalKunjungan').modal('hide');
+            // Update only the affected row instead of full reload
+            if(_kirimRowIndex>=0 && localRows[_kirimRowIndex]){
+                localRows[_kirimRowIndex].nomor_kunjungan=r.nomor_kunjungan||'';
+                renderLocalTable();
+                showBulkButtons();
+            }
+        } else {
+            addLog('ERROR kirim: '+(r.message||'Unknown error'));
+            showAlert('danger',r.message||'Gagal mengirim kunjungan');
+        }
+        btn.prop('disabled',false).html('<i class="fa fa-send"></i> Kirim Kunjungan');
+    }).fail(function(xhr){
+        var msg='Gagal mengirim kunjungan';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        addLog('ERROR kirim: '+msg);
+        showAlert('danger',msg);
+        btn.prop('disabled',false).html('<i class="fa fa-send"></i> Kirim Kunjungan');
+    });
+});
+
+// === Bulk Kirim Pendaftaran ===
+function bulkKirimPendaftaran(){
+    var cntPendaftaran=0;
+    $.each(localRows,function(_,r){
+        if(!r.nomor_urut && r.stts!=='Batal') cntPendaftaran++;
+    });
+    if(cntPendaftaran===0){showAlert('info','Tidak ada pendaftaran yang perlu dikirim');return;}
+    if(!confirm('Kirim '+cntPendaftaran+' pendaftaran ke PCare secara bulk? Proses ini berjalan di server secara paralel.')) return;
+
+    var tglDari=$('#tglDari').val();
+    var tglSampai=$('#tglSampai').val()||'';
+
+    $('#bulkProgressTitle').text('Bulk Kirim Pendaftaran');
+    $('#bulkProgressBar').css('width','10%');$('#bulkProgressLabel').text('Mengirim '+cntPendaftaran+' pendaftaran...');
+    $('#bulkResultPanel').hide().empty();$('#btnBulkClose').hide();
+    $('#modalBulkProgress').modal('show');
+
+    var data={date:tglDari,workers:5};
+    if(tglSampai) data.date_to=tglSampai;
+
+    apiCall('POST','/bridging/kirim-semua-pendaftaran',data).done(function(resp){
+        $('#bulkProgressBar').css('width','100%').removeClass('active');
+        $('#bulkProgressLabel').text(resp.message||'Selesai');
+        var html='';
+        if(resp.results && resp.results.length>0){
+            $.each(resp.results,function(_,r){
+                var cls=r.status==='success'?'text-success':'text-danger';
+                html+='<div class="'+cls+'"><b>'+r.nm_pasien+'</b> ('+r.no_rawat+'): '+r.message+(r.nomor_urut?' → No.Urut: '+r.nomor_urut:'')+'</div>';
+            });
+        }
+        $('#bulkResultPanel').html(html).show();$('#btnBulkClose').show();
+        addLog('Bulk pendaftaran selesai: '+(resp.success||0)+' berhasil, '+(resp.fail||0)+' gagal');
+    }).fail(function(xhr){
+        var msg='Gagal';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        $('#bulkProgressBar').css('width','100%').addClass('progress-bar-danger').removeClass('active');
+        $('#bulkProgressLabel').text(msg);$('#btnBulkClose').show();
+        addLog('Bulk pendaftaran ERROR: '+msg);
+    });
+}
+
+// === Bulk Kirim Kunjungan ===
+function bulkKirimKunjungan(){
+    var cntKunjungan=0;
+    $.each(localRows,function(_,r){
+        if(r.nomor_urut && !r.nomor_kunjungan && r.stts==='Sudah' && r.apotek_served){
+            var noKartu=r.no_peserta||r.nomor_jaminan||'';
+            var tgl=r.tgl_registrasi||'';
+            var key=noKartu+'_'+tgl;
+            if(!localRiwayatMap[key]) cntKunjungan++;
+        }
+    });
+    if(cntKunjungan===0){showAlert('info','Tidak ada kunjungan yang memenuhi syarat untuk dikirim');return;}
+    if(!confirm('Kirim '+cntKunjungan+' kunjungan ke PCare secara bulk?\nSyarat: Status=Sudah, Apotek selesai, Belum ada kunjungan.\nProses berjalan di server secara paralel.')) return;
+
+    var tglDari=$('#tglDari').val();
+    var tglSampai=$('#tglSampai').val()||'';
+
+    $('#bulkProgressTitle').text('Bulk Kirim Kunjungan');
+    $('#bulkProgressBar').css('width','10%').removeClass('progress-bar-danger').addClass('progress-bar-info active');
+    $('#bulkProgressLabel').text('Mengirim '+cntKunjungan+' kunjungan...');
+    $('#bulkResultPanel').hide().empty();$('#btnBulkClose').hide();
+    $('#modalBulkProgress').modal('show');
+
+    var data={date:tglDari,workers:5};
+    if(tglSampai) data.date_to=tglSampai;
+
+    apiCall('POST','/bridging/kirim-semua-kunjungan',data).done(function(resp){
+        $('#bulkProgressBar').css('width','100%').removeClass('active');
+        $('#bulkProgressLabel').text(resp.message||'Selesai');
+        var html='';
+        if(resp.results && resp.results.length>0){
+            $.each(resp.results,function(_,r){
+                var cls=r.status==='success'?'text-success':'text-danger';
+                html+='<div class="'+cls+'"><b>'+r.nm_pasien+'</b> ('+r.no_rawat+'): '+r.message+(r.nomor_kunjungan?' → '+r.nomor_kunjungan:'')+'</div>';
+            });
+        }
+        $('#bulkResultPanel').html(html).show();$('#btnBulkClose').show();
+        addLog('Bulk kunjungan selesai: '+(resp.success||0)+' berhasil, '+(resp.fail||0)+' gagal');
+    }).fail(function(xhr){
+        var msg='Gagal';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        $('#bulkProgressBar').css('width','100%').addClass('progress-bar-danger').removeClass('active');
+        $('#bulkProgressLabel').text(msg);$('#btnBulkClose').show();
+        addLog('Bulk kunjungan ERROR: '+msg);
+    });
+}
+
+// === Riwayat Pasien ===
+function escHtml(s){
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+function escJs(s){
+    return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');
+}
+
+function openRiwayat(nama,noRm,noKartu){
+    $('#riwNamaPasien').text(nama);
+    $('#riwInfoPasien').text('No. RM: '+(noRm||'-')+' | No. Kartu: '+(noKartu||'-'));
+    $('#riwLoading').show();$('#riwTabs').hide();
+    $('#riwLocalBody').empty();$('#riwPcareBody').empty();
+    $('#modalRiwayat').modal('show');
+
+    var params=[];
+    if(noRm) params.push('no_rkm_medis='+encodeURIComponent(noRm));
+    if(noKartu) params.push('no_kartu='+encodeURIComponent(noKartu));
+
+    apiCall('GET','/bridging/riwayat-pasien?'+params.join('&')).done(function(resp){
+        $('#riwLoading').hide();$('#riwTabs').show();
+
+        // Update RM info if resolved from backend
+        if(resp.no_rkm_medis){
+            $('#riwInfoPasien').text('No. RM: '+resp.no_rkm_medis+' | No. Kartu: '+(noKartu||'-'));
+        }
+
+        // === Render Local History (mLITE) ===
+        var local=resp.local||[];
+        $('#riwLocalCount').text(local.length);
+        if(local.length===0){
+            $('#riwLocalBody').html('<div class="text-center text-muted" style="padding:30px"><i class="fa fa-inbox fa-2x"></i><br>Tidak ada riwayat lokal</div>');
+        } else {
+            var html='';
+            $.each(local,function(idx,v){
+                var pemList=v.pemeriksaan||[];
+                var diagList=v.diagnosa||[];
+                var nurse=null, doctor=null;
+                $.each(pemList,function(_,p){ if(p.tipe==='Perawat') nurse=p; if(p.tipe==='Dokter') doctor=p; });
+
+                // Status badge
+                var stsBadge='<span class="label label-default">'+v.stts+'</span>';
+                if(v.stts==='Sudah') stsBadge='<span class="label label-success">Sudah</span>';
+                else if(v.stts==='Belum') stsBadge='<span class="label label-warning">Belum</span>';
+
+                // PCare sync badge
+                var pcBadge='';
+                if(v.nomor_kunjungan) pcBadge=' <span class="label label-info" title="No. Kunjungan PCare: '+escHtml(v.nomor_kunjungan)+'"><i class="fa fa-cloud"></i> '+v.nomor_kunjungan+'</span>';
+                else if(v.nomor_urut) pcBadge=' <span class="label label-primary" title="No. Urut PCare"><i class="fa fa-cloud-upload"></i> Urut: '+v.nomor_urut+'</span>';
+
+                // Diagnosa
+                var diagHtml='-';
+                if(diagList.length>0){
+                    diagHtml='';
+                    $.each(diagList,function(di,dg){
+                        var pri=dg.prioritas==='1'?'<b>':'';
+                        var priC=dg.prioritas==='1'?'</b>':'';
+                        diagHtml+=pri+'<span class="label label-'+(dg.prioritas==='1'?'danger':'default')+'" style="font-weight:normal">'+dg.kd_penyakit+'</span> '+escHtml(dg.nm_penyakit)+priC+'<br>';
+                    });
+                }
+
+                html+='<div class="panel panel-default" style="margin-bottom:8px;font-size:12px">';
+                html+='<div class="panel-heading" style="padding:6px 10px;cursor:pointer" data-toggle="collapse" data-target="#localVisit'+idx+'">';
+                html+='<div class="row">';
+                html+='<div class="col-xs-3"><i class="fa fa-calendar"></i> <strong>'+v.tgl+' '+v.jam+'</strong></div>';
+                html+='<div class="col-xs-2">'+v.poli+'</div>';
+                html+='<div class="col-xs-3"><i class="fa fa-user-md"></i> '+v.dokter+'</div>';
+                html+='<div class="col-xs-2">'+stsBadge+pcBadge+'</div>';
+                html+='<div class="col-xs-2 text-right"><i class="fa fa-chevron-down"></i></div>';
+                html+='</div></div>';
+                html+='<div id="localVisit'+idx+'" class="panel-collapse collapse'+(idx===0?' in':'')+'">';
+                html+='<div class="panel-body" style="padding:8px">';
+
+                // Diagnosa section
+                html+='<div style="margin-bottom:8px"><strong><i class="fa fa-stethoscope"></i> Diagnosa:</strong><br>'+diagHtml+'</div>';
+
+                // --- Nurse TTV section ---
+                if(nurse){
+                    html+='<div class="well well-sm" style="margin-bottom:8px;background:#f0f9ff;border-color:#bee5eb">';
+                    html+='<strong style="color:#0c5460"><i class="fa fa-heartbeat"></i> TTV — Perawat: '+escHtml(nurse.nama_petugas)+'</strong>';
+                    html+=' <small class="text-muted">('+nurse.tgl_perawatan+' '+nurse.jam_rawat+')</small><br>';
+                    html+='<div class="row" style="margin-top:4px">';
+                    html+='<div class="col-xs-2"><small class="text-muted">Tensi</small><br><strong>'+(nurse.tensi||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">Suhu</small><br><strong>'+(nurse.suhu||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">Nadi</small><br><strong>'+(nurse.nadi||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">RR</small><br><strong>'+(nurse.respirasi||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">SpO2</small><br><strong>'+(nurse.spo2||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">BB</small><br><strong>'+(nurse.berat||'-')+'</strong></div>';
+                    html+='<div class="col-xs-1"><small class="text-muted">TB</small><br><strong>'+(nurse.tinggi||'-')+'</strong></div>';
+                    html+='<div class="col-xs-2"><small class="text-muted">LP</small><br><strong>'+(nurse.lingkar_perut||'-')+'</strong></div>';
+                    html+='<div class="col-xs-2"><small class="text-muted">Kesadaran</small><br><strong>'+(nurse.kesadaran||'-')+'</strong></div>';
+                    html+='</div>';
+                    if(nurse.keluhan) html+='<div style="margin-top:4px"><small class="text-muted">Keluhan:</small> '+escHtml(nurse.keluhan)+'</div>';
+                    if(nurse.alergi) html+='<div><small class="text-muted">Alergi:</small> '+escHtml(nurse.alergi)+'</div>';
+                    html+='</div>';
+                }
+
+                // --- Doctor SOAP section ---
+                if(doctor){
+                    html+='<div class="well well-sm" style="margin-bottom:8px;background:#fff8e1;border-color:#ffeeba">';
+                    html+='<strong style="color:#856404"><i class="fa fa-user-md"></i> SOAP — Dokter: '+escHtml(doctor.nama_petugas)+'</strong>';
+                    html+=' <small class="text-muted">('+doctor.tgl_perawatan+' '+doctor.jam_rawat+')</small>';
+                    html+='<table class="table table-condensed" style="margin:6px 0 0 0;font-size:12px;background:transparent">';
+                    html+='<tr><td style="width:30px;font-weight:bold;color:#856404;border-top:0">S</td><td style="border-top:0">'+(escHtml(doctor.keluhan)||'-')+'</td></tr>';
+                    html+='<tr><td style="font-weight:bold;color:#856404">O</td><td>'+(escHtml(doctor.pemeriksaan)||'-')+'</td></tr>';
+                    html+='<tr><td style="font-weight:bold;color:#856404">A</td><td>'+(escHtml(doctor.penilaian)||'-')+'</td></tr>';
+                    html+='<tr><td style="font-weight:bold;color:#856404">P</td><td>'+(escHtml(doctor.rtl)||'-')+'</td></tr>';
+                    if(doctor.instruksi) html+='<tr><td style="font-weight:bold;color:#856404">I</td><td>'+escHtml(doctor.instruksi)+'</td></tr>';
+                    if(doctor.evaluasi) html+='<tr><td style="font-weight:bold;color:#856404">E</td><td>'+escHtml(doctor.evaluasi)+'</td></tr>';
+                    html+='</table></div>';
+                }
+
+                if(!nurse && !doctor){
+                    html+='<div class="text-muted"><i class="fa fa-info-circle"></i> Belum ada data pemeriksaan</div>';
+                }
+
+                html+='</div></div></div>'; // end panel
+            });
+            $('#riwLocalBody').html(html);
+        }
+
+        // === Render PCare History ===
+        var pcare=resp.pcare||[];
+        $('#riwPcareCount').text(pcare.length);
+        if(!Array.isArray(pcare)||pcare.length===0){
+            $('#riwPcareBody').html('<div class="text-center text-muted" style="padding:30px"><i class="fa fa-cloud fa-2x"></i><br>Tidak ada riwayat PCare</div>');
+        } else {
+            var html2='';
+            $.each(pcare,function(pi,k){
+                var noKunj=k.noKunjungan||'-';
+                var tgl=k.tglKunjungan||k.tglDaftar||'-';
+                var diag1='', diag2='', diag3='';
+                if(k.diagnosa1 && k.diagnosa1.kdDiag) diag1=k.diagnosa1.kdDiag+' - '+(k.diagnosa1.nmDiag||'');
+                if(k.diagnosa2 && k.diagnosa2.kdDiag) diag2=k.diagnosa2.kdDiag+' - '+(k.diagnosa2.nmDiag||'');
+                if(k.diagnosa3 && k.diagnosa3.kdDiag) diag3=k.diagnosa3.kdDiag+' - '+(k.diagnosa3.nmDiag||'');
+                var dokter=k.dokter?(k.dokter.nmDokter||k.dokter.kdDokter||'-'):(k.kdDokter||'-');
+                var poli2=k.poli?(k.poli.nmPoli||k.poli.kdPoli||'-'):(k.kdPoli||'-');
+                var stsPulang=k.statusPulang?(k.statusPulang.nmStatusPulang||'-'):(k.kdStatusPulang||'-');
+                var kesadaran=k.kesadaran?(k.kesadaran.nmSadar||''):'';
+                var tkp=k.tkp?(k.tkp.nmTkp||''):'';
+
+                // Status pulang color
+                var stsColor='default';
+                if(stsPulang==='Berobat Jalan') stsColor='success';
+                else if(stsPulang.indexOf('Rujuk')>=0) stsColor='warning';
+
+                html2+='<div class="panel panel-default" style="margin-bottom:8px;font-size:12px">';
+                html2+='<div class="panel-heading" style="padding:6px 10px;cursor:pointer" data-toggle="collapse" data-target="#pcareVisit'+pi+'">';
+                html2+='<div class="row">';
+                html2+='<div class="col-xs-2"><i class="fa fa-calendar"></i> <strong>'+tgl+'</strong></div>';
+                html2+='<div class="col-xs-2">'+poli2+'</div>';
+                html2+='<div class="col-xs-3"><i class="fa fa-user-md"></i> '+dokter+'</div>';
+                html2+='<div class="col-xs-3"><span class="label label-'+stsColor+'">'+stsPulang+'</span>';
+                if(tkp) html2+=' <span class="label label-info">'+tkp+'</span>';
+                html2+='</div>';
+                html2+='<div class="col-xs-2 text-right"><i class="fa fa-chevron-down"></i></div>';
+                html2+='</div></div>';
+                html2+='<div id="pcareVisit'+pi+'" class="panel-collapse collapse'+(pi===0?' in':'')+'">';
+                html2+='<div class="panel-body" style="padding:8px">';
+
+                // No kunjungan
+                html2+='<div style="margin-bottom:6px"><small class="text-muted">No. Kunjungan:</small> <code>'+escHtml(noKunj)+'</code></div>';
+
+                // Diagnosa
+                html2+='<div style="margin-bottom:8px"><strong><i class="fa fa-stethoscope"></i> Diagnosa:</strong><br>';
+                if(diag1) html2+='<span class="label label-danger">1</span> '+escHtml(diag1)+'<br>';
+                if(diag2) html2+='<span class="label label-default">2</span> '+escHtml(diag2)+'<br>';
+                if(diag3) html2+='<span class="label label-default">3</span> '+escHtml(diag3)+'<br>';
+                if(!diag1) html2+='-';
+                html2+='</div>';
+
+                // TTV
+                html2+='<div class="well well-sm" style="margin-bottom:8px;background:#f0f9ff;border-color:#bee5eb">';
+                html2+='<strong style="color:#0c5460"><i class="fa fa-heartbeat"></i> Tanda Vital</strong>';
+                if(kesadaran) html2+=' &mdash; Kesadaran: <strong>'+escHtml(kesadaran)+'</strong>';
+                html2+='<div class="row" style="margin-top:4px">';
+                html2+='<div class="col-xs-2"><small class="text-muted">Sistole</small><br><strong>'+(k.sistole||'-')+'</strong></div>';
+                html2+='<div class="col-xs-2"><small class="text-muted">Diastole</small><br><strong>'+(k.diastole||'-')+'</strong></div>';
+                html2+='<div class="col-xs-1"><small class="text-muted">Nadi</small><br><strong>'+(k.heartRate||'-')+'</strong></div>';
+                html2+='<div class="col-xs-1"><small class="text-muted">RR</small><br><strong>'+(k.respRate||'-')+'</strong></div>';
+                html2+='<div class="col-xs-1"><small class="text-muted">Suhu</small><br><strong>'+(k.suhu||'-')+'</strong></div>';
+                html2+='<div class="col-xs-1"><small class="text-muted">BB</small><br><strong>'+(k.beratBadan||'-')+'</strong></div>';
+                html2+='<div class="col-xs-1"><small class="text-muted">TB</small><br><strong>'+(k.tinggiBadan||'-')+'</strong></div>';
+                html2+='<div class="col-xs-2"><small class="text-muted">L.Perut</small><br><strong>'+(k.lingkarPerut||'-')+'</strong></div>';
+                html2+='</div></div>';
+
+                // SOAP
+                html2+='<div class="well well-sm" style="margin-bottom:8px;background:#fff8e1;border-color:#ffeeba">';
+                html2+='<strong style="color:#856404"><i class="fa fa-file-text-o"></i> Catatan Kunjungan</strong>';
+                html2+='<table class="table table-condensed" style="margin:6px 0 0 0;font-size:12px;background:transparent">';
+                html2+='<tr><td style="width:100px;font-weight:bold;color:#856404;border-top:0">Keluhan</td><td style="border-top:0">'+(escHtml(k.keluhan)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">Anamnesa</td><td>'+(escHtml(k.anamnesa)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">Catatan</td><td>'+(escHtml(k.catatan)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">Terapi Obat</td><td>'+(escHtml(k.terapiObat||k.terpiObat)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">Terapi Non Obat</td><td>'+(escHtml(k.terapiNonObat)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">BMHP</td><td>'+(escHtml(k.bmhp)||'-')+'</td></tr>';
+                html2+='<tr><td style="font-weight:bold;color:#856404">Pem. Fisik</td><td>'+(escHtml(k.pemFisikLain)||'-')+'</td></tr>';
+                html2+='</table></div>';
+
+                // Alergi
+                var amk=k.alergiMakan||'', aud=k.alergiUdara||'', aob=k.alergiObat||'';
+                if(amk||aud||aob){
+                    html2+='<div style="margin-bottom:8px"><strong><i class="fa fa-warning"></i> Alergi:</strong> ';
+                    html2+='Makan: '+(amk==='00'?'Tidak ada':escHtml(amk))+' | ';
+                    html2+='Udara: '+(aud==='00'?'Tidak ada':escHtml(aud))+' | ';
+                    html2+='Obat: '+(aob==='00'?'Tidak ada':escHtml(aob));
+                    html2+='</div>';
+                }
+
+                // Prognosa
+                var progMap={'01':'Sanam (Baik)','02':'Dubia ad bonam','03':'Dubia ad malam','04':'Malam (Buruk)'};
+                if(k.kdPrognosa) html2+='<div style="margin-bottom:8px"><strong>Prognosa:</strong> '+(progMap[k.kdPrognosa]||k.kdPrognosa)+'</div>';
+
+                // Rujuk info
+                if(k.providerRujukLanjut && k.providerRujukLanjut.kdProvider){
+                    html2+='<div class="alert alert-warning" style="padding:6px;margin-bottom:8px"><i class="fa fa-share"></i> <strong>Rujuk ke:</strong> ';
+                    html2+=escHtml(k.providerRujukLanjut.nmProvider||k.providerRujukLanjut.kdProvider);
+                    if(k.poliRujukLanjut && k.poliRujukLanjut.nmPoli) html2+=' &mdash; Poli: '+escHtml(k.poliRujukLanjut.nmPoli);
+                    html2+='</div>';
+                }
+
+                // Tindakan
+                var tindakan=k.tindakan||[];
+                if(tindakan.length>0){
+                    html2+='<div class="well well-sm" style="margin-bottom:8px;background:#e8f5e9;border-color:#c8e6c9">';
+                    html2+='<strong style="color:#2e7d32"><i class="fa fa-medkit"></i> Tindakan ('+tindakan.length+')</strong>';
+                    html2+='<table class="table table-condensed table-bordered" style="margin:6px 0 0 0;font-size:11px;background:white">';
+                    html2+='<thead><tr><th>Kode</th><th>Nama Tindakan</th><th>Biaya</th></tr></thead><tbody>';
+                    $.each(tindakan,function(_,t){
+                        html2+='<tr><td>'+escHtml(t.kdTindakan||'')+'</td><td>'+escHtml(t.nmTindakan||'')+'</td>';
+                        html2+='<td class="text-right">'+(t.biaya?Number(t.biaya).toLocaleString('id-ID'):'-')+'</td></tr>';
+                    });
+                    html2+='</tbody></table></div>';
+                }
+
+                html2+='</div></div></div>'; // end panel
+            });
+            $('#riwPcareBody').html(html2);
+        }
+    }).fail(function(){
+        $('#riwLoading').html('<span class="text-danger"><i class="fa fa-times"></i> Gagal memuat riwayat</span>');
+    });
+}
+
+function hapusPcare(noKartu,tglDaftar,noUrut,kdPoli,btn){
+    if(!confirm('Hapus pendaftaran '+noUrut+' ('+noKartu+') dari PCare?')) return;
+    $(btn).prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i>');
+    apiCall('DELETE','/pendaftaran/'+encodeURIComponent(noUrut)+'/'+encodeURIComponent(noKartu)+'/'+encodeURIComponent(tglDaftar)+'/'+encodeURIComponent(kdPoli)).done(function(r){
+        addLog('Hapus pendaftaran '+noUrut+': berhasil');
+        showAlert('success','Pendaftaran '+noUrut+' berhasil dihapus dari PCare');
+        $(btn).closest('tr').fadeOut();
+        var c=parseInt($('#cntOnlyPcare').text())||0;
+        $('#cntOnlyPcare').text(Math.max(0,c-1));
+    }).fail(function(xhr){
+        var msg='Gagal menghapus';
+        try{var j=JSON.parse(xhr.responseText);if(j.error)msg=j.error;}catch(e){}
+        addLog('ERROR hapus '+noUrut+': '+msg);
+        showAlert('danger',msg);
+        $(btn).prop('disabled',false).html('<i class="fa fa-trash"></i> Hapus');
+    });
+}
+</script>
+{{end}}

@@ -88,6 +88,7 @@ class Admin extends AdminModule
       'Mapping Laboratorium'   => 'mappinglab',
       'Mapping Radiologi'   => 'mappingrad',
       'Data Response'   => 'response',
+      'Monitor Cron'   => 'cron',
       'Verifikasi KYC' => 'kyc',
       'Pengaturan'   => 'settings',
     ];
@@ -106,6 +107,7 @@ class Admin extends AdminModule
       ['name' => 'Mapping Laboratorium', 'url' => url([ADMIN, 'satu_sehat', 'mappinglab']), 'icon' => 'heart', 'desc' => 'Mapping laboratorium satu sehat'],
       ['name' => 'Mapping Radiologi', 'url' => url([ADMIN, 'satu_sehat', 'mappingrad']), 'icon' => 'heart', 'desc' => 'Mapping radiologi satu sehat'],
       ['name' => 'Data Response', 'url' => url([ADMIN, 'satu_sehat', 'response']), 'icon' => 'heart', 'desc' => 'Data encounter satu sehat'],
+      ['name' => 'Monitor Cron', 'url' => url([ADMIN, 'satu_sehat', 'cron']), 'icon' => 'clock-o', 'desc' => 'Monitor & pengaturan cron batch malam'],
       ['name' => 'Verifikasi KYC', 'url' => url([ADMIN, 'satu_sehat', 'kyc']), 'icon' => 'heart', 'desc' => 'Verifikasi KYC satu sehat'],
       ['name' => 'Pengaturan', 'url' => url([ADMIN, 'satu_sehat', 'settings']), 'icon' => 'heart', 'desc' => 'Pengaturan satu sehat'],
     ];
@@ -7446,5 +7448,282 @@ $nama_praktisi_apoteker = $this->core->getPegawaiInfo('nama', $id_praktisi_apote
     $this->core->addCSS(url('assets/css/bootstrap-datetimepicker.css'));
     $this->core->addJS(url('assets/jscripts/moment-with-locales.js'));
     $this->core->addJS(url('assets/jscripts/bootstrap-datetimepicker.js'));
+  }
+
+  // =========================================================================
+  //  Cron Monitor & Settings
+  // =========================================================================
+
+  private function getCronPaths(): array
+  {
+    return [
+      'progress' => BASE_DIR . '/tmp/cron_satusehat_progress.json',
+      'lock'     => BASE_DIR . '/tmp/cron_satusehat.lock',
+      'log'      => BASE_DIR . '/tmp/cron_satusehat.log',
+      'script'   => BASE_DIR . '/cron_satusehat.php',
+      'settings' => BASE_DIR . '/tmp/cron_satusehat_settings.json',
+    ];
+  }
+
+  private function getCronSettings(): array
+  {
+    $paths = $this->getCronPaths();
+    $defaults = [
+      'jam_mulai'        => 23,
+      'jam_berhenti'     => 5,
+      'delay_ms'         => 500,
+      'max_errors'       => 20,
+      'tanggal_dari'     => '',
+      'crontab_schedule' => '0 23 * * *',
+      'enabled'          => true,
+    ];
+    if (file_exists($paths['settings'])) {
+      $saved = json_decode(file_get_contents($paths['settings']), true);
+      if (is_array($saved)) {
+        return array_merge($defaults, $saved);
+      }
+    }
+    return $defaults;
+  }
+
+  private function getCronProgress(): array
+  {
+    $paths = $this->getCronPaths();
+    $defaults = [
+      'last_completed_date' => '-',
+      'start_date'          => '-',
+      'end_date'            => '-',
+      'last_run'            => '-',
+      'total_processed'     => 0,
+      'total_success'       => 0,
+      'total_failed'        => 0,
+      'sessions'            => 0,
+    ];
+    if (file_exists($paths['progress'])) {
+      $data = json_decode(file_get_contents($paths['progress']), true);
+      if (is_array($data)) {
+        return array_merge($defaults, $data);
+      }
+    }
+    return $defaults;
+  }
+
+  private function isCronRunning(): bool
+  {
+    $paths = $this->getCronPaths();
+    if (!file_exists($paths['lock'])) return false;
+    $pid = (int)file_get_contents($paths['lock']);
+    return ($pid > 0 && file_exists("/proc/$pid"));
+  }
+
+  private function getHutangPerBulan(): array
+  {
+    $sql = "SELECT DATE_FORMAT(rp.tgl_registrasi, '%Y-%m') as bulan,
+                   COUNT(*) as total,
+                   SUM(CASE WHEN sr.no_rawat IS NULL THEN 1 ELSE 0 END) as belum_kirim
+            FROM reg_periksa rp
+            LEFT JOIN mlite_satu_sehat_response sr ON rp.no_rawat = sr.no_rawat
+            WHERE rp.stts != 'Batal'
+              AND rp.tgl_registrasi >= '2024-01-01'
+            GROUP BY DATE_FORMAT(rp.tgl_registrasi, '%Y-%m')
+            ORDER BY bulan";
+    $rows = $this->db()->pdo()->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
+    $result = [];
+    foreach ($rows as $row) {
+      $sudah = $row['total'] - $row['belum_kirim'];
+      $persen = $row['total'] > 0 ? round(($sudah / $row['total']) * 100, 1) : 100;
+      $result[] = [
+        'bulan'        => $row['bulan'],
+        'total'        => $row['total'],
+        'belum_kirim'  => $row['belum_kirim'],
+        'sudah_kirim'  => $sudah,
+        'persen'       => $persen,
+      ];
+    }
+    return $result;
+  }
+
+  public function getCron()
+  {
+    header('Location: ' . url('/satu-sehat/cron-monitor'));
+    exit();
+  }
+
+  public function postSavecron()
+  {
+    $paths = $this->getCronPaths();
+    $input = $_POST['cron'] ?? [];
+
+    $settings = [
+      'jam_mulai'        => (int)($input['jam_mulai'] ?? 23),
+      'jam_berhenti'     => (int)($input['jam_berhenti'] ?? 5),
+      'delay_ms'         => max(200, (int)($input['delay_ms'] ?? 500)),
+      'max_errors'       => max(5, (int)($input['max_errors'] ?? 20)),
+      'tanggal_dari'     => $input['tanggal_dari'] ?? '',
+      'crontab_schedule' => $input['crontab_schedule'] ?? '0 23 * * *',
+      'enabled'          => !empty($input['enabled']),
+    ];
+
+    // Save settings to JSON file
+    @mkdir(BASE_DIR . '/tmp', 0755, true);
+    file_put_contents($paths['settings'], json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+
+    // Update crontab
+    $this->updateCrontab($settings);
+
+    $this->notify('success', 'Pengaturan cron telah disimpan');
+    redirect(url([ADMIN, 'satu_sehat', 'cron']));
+  }
+
+  private function updateCrontab(array $settings): void
+  {
+    $cronLine = $settings['crontab_schedule'] . ' /usr/bin/php ' . BASE_DIR . '/cron_satusehat.php';
+
+    // Build args from settings
+    $args = [];
+    $args[] = '--jam-mulai=' . $settings['jam_mulai'];
+    $args[] = '--jam-berhenti=' . $settings['jam_berhenti'];
+    $args[] = '--delay=' . $settings['delay_ms'];
+    $args[] = '--max-errors=' . $settings['max_errors'];
+    if (!empty($settings['tanggal_dari'])) {
+      $args[] = '--tanggal-dari=' . $settings['tanggal_dari'];
+    }
+    $cronLine .= ' ' . implode(' ', $args);
+    $cronLine .= ' >> ' . BASE_DIR . '/tmp/cron_satusehat.log 2>&1';
+
+    // Read existing crontab, remove old satu sehat entries, add new one
+    $existing = shell_exec('crontab -l 2>/dev/null') ?: '';
+    $lines = explode("\n", trim($existing));
+    $newLines = [];
+    foreach ($lines as $line) {
+      if (strpos($line, 'cron_satusehat') !== false) continue;
+      if (strpos($line, 'Satu Sehat Batch Cron') !== false) continue;
+      $newLines[] = $line;
+    }
+
+    if ($settings['enabled']) {
+      $newLines[] = '# Satu Sehat Batch Cron';
+      $newLines[] = $cronLine;
+    }
+
+    $tmpFile = tempnam(sys_get_temp_dir(), 'cron');
+    file_put_contents($tmpFile, implode("\n", $newLines) . "\n");
+    shell_exec('crontab ' . escapeshellarg($tmpFile) . ' 2>&1');
+    @unlink($tmpFile);
+  }
+
+  public function getCronlog()
+  {
+    header('Content-Type: text/plain; charset=utf-8');
+    $paths = $this->getCronPaths();
+    $lines = (int)($_GET['lines'] ?? 100);
+    if (file_exists($paths['log'])) {
+      $content = $this->tailFile($paths['log'], $lines);
+      echo implode("\n", $content);
+    } else {
+      echo '(Log file belum ada)';
+    }
+    exit();
+  }
+
+  public function postCronaction()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    $paths = $this->getCronPaths();
+    $action = $_POST['action'] ?? '';
+
+    switch ($action) {
+      case 'start':
+        if ($this->isCronRunning()) {
+          echo json_encode(['status' => 'error', 'message' => 'Cron sudah berjalan']);
+          exit();
+        }
+        $settings = $this->getCronSettings();
+        $cmd = '/usr/bin/php ' . escapeshellarg($paths['script'])
+             . ' --no-time-fence'
+             . ' --delay=' . $settings['delay_ms']
+             . ' --max-errors=' . $settings['max_errors'];
+        if (!empty($settings['tanggal_dari'])) {
+          $cmd .= ' --tanggal-dari=' . escapeshellarg($settings['tanggal_dari']);
+        }
+        $cmd .= ' >> ' . escapeshellarg($paths['log']) . ' 2>&1 &';
+        shell_exec($cmd);
+        sleep(1);
+        echo json_encode(['status' => 'ok', 'message' => 'Cron manual dimulai']);
+        break;
+
+      case 'stop':
+        if (!$this->isCronRunning()) {
+          echo json_encode(['status' => 'error', 'message' => 'Cron tidak sedang berjalan']);
+          exit();
+        }
+        $pid = (int)file_get_contents($paths['lock']);
+        if ($pid > 0) {
+          posix_kill($pid, SIGTERM);
+          sleep(2);
+          if (file_exists("/proc/$pid")) {
+            posix_kill($pid, SIGKILL);
+          }
+        }
+        @unlink($paths['lock']);
+        echo json_encode(['status' => 'ok', 'message' => 'Cron dihentikan']);
+        break;
+
+      case 'reset':
+        $resetData = [
+          'last_completed_date' => '2024-01-01',
+          'start_date'          => '2024-01-01',
+          'end_date'            => date('Y-m-d', strtotime('-1 day')),
+          'last_run'            => '',
+          'total_processed'     => 0,
+          'total_success'       => 0,
+          'total_failed'        => 0,
+          'sessions'            => 0,
+        ];
+        file_put_contents($paths['progress'], json_encode($resetData, JSON_PRETTY_PRINT) . "\n");
+        echo json_encode(['status' => 'ok', 'message' => 'Progress direset ke 2024-01-01']);
+        break;
+
+      case 'clearlog':
+        if (file_exists($paths['log'])) {
+          file_put_contents($paths['log'], '');
+        }
+        echo json_encode(['status' => 'ok', 'message' => 'Log dihapus']);
+        break;
+
+      default:
+        echo json_encode(['status' => 'error', 'message' => 'Aksi tidak dikenal']);
+    }
+    exit();
+  }
+
+  /**
+   * Read the last N lines of a file efficiently.
+   */
+  private function tailFile(string $filepath, int $lines = 100): array
+  {
+    if (!file_exists($filepath)) return [];
+    $f = @fopen($filepath, 'rb');
+    if (!$f) return [];
+
+    $buffer = '';
+    $result = [];
+    $chunk = 4096;
+
+    fseek($f, 0, SEEK_END);
+    $pos = ftell($f);
+
+    while ($pos > 0 && count($result) < $lines + 1) {
+      $readSize = min($chunk, $pos);
+      $pos -= $readSize;
+      fseek($f, $pos);
+      $buffer = fread($f, $readSize) . $buffer;
+      $result = explode("\n", $buffer);
+    }
+    fclose($f);
+
+    // Remove empty last element and trim to requested lines
+    if (end($result) === '') array_pop($result);
+    return array_slice($result, -$lines);
   }
 }

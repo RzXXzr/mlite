@@ -1,0 +1,43 @@
+Prognosa
+Get Prognosa New
+{Base URL}/{Service Name}/prognosa
+Fungsi : Get Data Alergi
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                    
+{
+    "response": {
+        "list": [
+            {
+                "kdPrognosa": "01",
+                "nmPrognosa": "Sanam (Sembuh)"
+            },
+            {
+                "kdPrognosa": "02",
+                "nmPrognosa": "Bonam (Baik)"
+            },
+            {
+                "kdPrognosa": "03",
+                "nmPrognosa": "Malam (Buruk/Jelek)"
+            },
+            {
+                "kdPrognosa": "04",
+                "nmPrognosa": "Dubia Ad Sanam/Bolam (Tidak tentu/Ragu-ragu, Cenderung Sembuh/Baik)"
+            },
+            {
+                "kdPrognosa": "05",
+                "nmPrognosa": "Dubia Ad Malam (Tidak tentu/Ragu-ragu, Cenderung Sembuh/Baik)"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+

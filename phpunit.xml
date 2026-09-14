@@ -8,5 +8,8 @@
         <testsuite name="Race Condition Tests">
             <directory>tests</directory>
         </testsuite>
+        <testsuite name="Dokter Ralan Tests">
+            <file>tests/DokterRalanTest.php</file>
+        </testsuite>
     </testsuites>
 </phpunit>

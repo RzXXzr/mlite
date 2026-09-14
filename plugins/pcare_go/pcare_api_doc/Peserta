@@ -1,0 +1,118 @@
+Get Peserta
+{Base URL}/{Service Name}/peserta/{Parameter 1}
+Fungsi : Get Data Peserta
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kartu Peserta
+
+                                    
+{
+    "response": {
+        "noKartu": "0000039043765",
+        "nama": "SUSIAMINI IMAM SOERADI",
+        "hubunganKeluarga": "Peserta",
+        "sex": "P",
+        "tglLahir": "25-10-1939",
+        "tglMulaiAktif": "12-11-2014",
+        "tglAkhirBerlaku": "01-01-2050",
+        "kdProviderPst": {
+            "kdProvider": "0114U163",
+            "nmProvider": "Klinik Cempaka Putih"
+        },
+        "kdProviderGigi": {
+            "kdProvider": null,
+            "nmProvider": null
+        },
+        "jnsKelas": {
+            "nama": "KELAS I",
+            "kode": "1"
+        },
+        "jnsPeserta": {
+            "nama": "PENERIMA PENSIUN PNS",
+            "kode": "15"
+        },
+        "golDarah": "0",
+        "noHP": "",
+        "noKTP": "",
+        "pstProl": "HT",
+        "pstPrb": "HT",
+        "aktif": true,
+        "ketAktif": "AKTIF",
+        "asuransi": {
+            "kdAsuransi": null,
+            "nmAsuransi": null,
+            "noAsuransi": null,
+            "cob": false
+        },
+        "tunggakan": 0
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+Get Peserta by Jenis Kartu
+{Base URL}/{Service Name}/peserta/{Parameter 1}/{Parameter 2}
+Fungsi : Get Data Peserta
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Jenis Kartu: nik / noka
+
+Parameter 2 : Nomor NIK atau kartu peserta sesuai dengan Parameter 1
+
+                                    
+{
+  "response": {
+    "noKartu": "0001261832477",
+    "nama": "TRI ARNI",
+    "hubunganKeluarga": "Istri",
+    "sex": "P",
+    "tglLahir": "29-09-1965",
+    "tglMulaiAktif": "09-01-2014",
+    "tglAkhirBerlaku": "31-12-2050",
+    "kdProviderPst": {
+      "kdProvider": "09020107",
+      "nmProvider": "KEL. MANGGARAI SELATAN"
+    },
+    "kdProviderGigi": {
+      "kdProvider": null,
+      "nmProvider": null
+    },
+    "jnsKelas": {
+      "kode": "3",
+      "nama": "KELAS III"
+    },
+    "jnsPeserta": {
+      "kode": "22",
+      "nama": "PBI (APBD)"
+    },
+    "golDarah": "0",
+    "noHP": "083876592594",
+    "noKTP": "3174016909650001",
+    "aktif": true,
+    "ketAktif": "AKTIF",
+    "asuransi": {
+      "kdAsuransi": null,
+      "nmAsuransi": null,
+      "noAsuransi": null
+    },
+				"tunggakan": 0
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

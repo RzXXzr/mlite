@@ -1,0 +1,49 @@
+Alergi
+Get Alergi New
+{Base URL}/{Service Name}/alergi/jenis/{parameter 1}
+Fungsi : Get Data Alergi
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+parameter 1: 01:Makanan, 02:Udara, 03:Obat
+
+                                    
+{
+  "response": {
+      "list": [
+          {
+              "kdAlergi": "00",
+              "nmAlergi": "Tidak Ada"
+          },
+          {
+              "kdAlergi": "01",
+              "nmAlergi": "Seafood"
+          },
+          {
+              "kdAlergi": "02",
+              "nmAlergi": "Gandum"
+          },
+          {
+              "kdAlergi": "03",
+              "nmAlergi": "Susu Sapi"
+          },
+          {
+              "kdAlergi": "04",
+              "nmAlergi": "Kacang-Kacangan"
+          },
+          {
+              "kdAlergi": "05",
+              "nmAlergi": "Makanan Lain"
+          }
+      ]
+  },
+  "metaData": {
+      "message": "OK",
+      "code": 200
+  }
+}
+

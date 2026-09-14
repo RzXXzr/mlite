@@ -1,0 +1,335 @@
+Spesialis
+Get Referensi Spesialis
+{Base URL}/{Service Name}/spesialis
+Fungsi : Get Data Referensi Spesialis
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "kdSpesialis": "ANA",
+        "nmSpesialis": "ANAK"
+      },
+      {
+        "kdSpesialis": "AND",
+        "nmSpesialis": "ANDROLOGI"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Referensi Sub Spesialis
+{Base URL}/{Service Name}/spesialis/{Parameter 1}/subspesialis
+Fungsi : Get Data Referensi Sub Spesialis
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode Spesialis
+
+                                    
+{
+    "response": {
+        "count": 2,
+        "list": [
+            {
+                "kdSubSpesialis": "26",
+                "nmSubSpesialis": "Anak",
+                "kdPoliRujuk": "ANA"
+            },
+            {
+                "kdSubSpesialis": "27",
+                "nmSubSpesialis": "Anak Alergi Imunologi",
+                "kdPoliRujuk": "027"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+
+Get Referensi Sarana
+{Base URL}/{Service Name}/spesialis/sarana
+Fungsi : Get Data Referensi Sarana
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                    
+{
+    "response": {
+        "count": 2,
+        "list": [
+            {
+                "kdSarana": "1",
+                "nmSarana": "Rekam Medik"
+            },
+            {
+                "kdSarana": "2",
+                "nmSarana": "Laboratorium"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+Get Referensi Khusus
+{Base URL}/{Service Name}/spesialis/khusus
+Fungsi : Get Data Referensi Khusus
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                    
+{
+    "response": {
+        "count": 10,
+        "list": [
+            {
+                "kdKhusus": "HDL",
+                "nmKhusus": "HEMODIALISA"
+            },
+            {
+                "kdKhusus": "THA",
+                "nmKhusus": "THALASEMIA"
+            },
+            {
+                "kdKhusus": "HEM",
+                "nmKhusus": "HEMOFILI"
+            },
+            {
+                "kdKhusus": "IGD",
+                "nmKhusus": "ALIH RAWAT"
+            },
+            {
+                "kdKhusus": "JIW",
+                "nmKhusus": "JIWA"
+            },
+            {
+                "kdKhusus": "KLT",
+                "nmKhusus": "KUSTA"
+            },
+            {
+                "kdKhusus": "PAR",
+                "nmKhusus": "TB-MDR"
+            },
+            {
+                "kdKhusus": "KEM",
+                "nmKhusus": "SARANA KEMOTERAPI"
+            },
+            {
+                "kdKhusus": "RAT",
+                "nmKhusus": "SARANA RADIOTERAPI"
+            },
+            {
+                "kdKhusus": "HIV",
+                "nmKhusus": "HIV-ODHA"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+Get Faskes Rujukan Sub Spesialis
+{Base URL}/{Service Name}/spesialis/rujuk/subspesialis/{Parameter 1}/sarana/{Parameter 2}/tglEstRujuk/{Parameter 3}
+Fungsi : Get Data Faskes Rujukan Sub Spesialis
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode Sub Spesialis
+
+Parameter 2 : Kode Sarana
+
+Parameter 3 : Tanggal Estimasi Rujuk, format: dd-mm-yyyy
+
+                                    
+{
+  "response": {
+    "count": 36,
+    "list": [
+      {
+        "kdppk": "0114R049",
+        "nmppk": "RSUD CEMPAKA PUTIH",
+        "alamatPpk": "JALAN RAWASARI SELATAN NO. 1",
+        "telpPpk": "021-4224243",
+        "kelas": "D",
+        "nmkc": "JAKARTA PUSAT",
+        "distance": 951.0729,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      	"persentase": 0
+      },
+      {
+        "kdppk": "0114R052",
+        "nmppk": "RSUD KEMAYORAN",
+        "alamatPpk": "Jl. Serdang Baru I",
+        "telpPpk": "(021) 4251005",
+        "kelas": "D",
+        "nmkc": "JAKARTA PUSAT",
+        "distance": 2505.416,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      	"persentase": 0
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Faskes Rujukan Khusus ALIH RAWAT, HEMODIALISA, JIWA, KUSTA, TB-MDR, SARANA KEMOTERAPI, SARANA RADIOTERAPI, HIV-ODHA
+{Base URL}/{Service Name}/spesialis/rujuk/khusus/{Parameter 1}/noKartu/{Parameter 2}/tglEstRujuk/{Parameter 3}
+Fungsi : Get Data Faskes Rujukan Khusus ALIH RAWAT, HEMODIALISA, JIWA, KUSTA, TB-MDR, SARANA KEMOTERAPI, SARANA RADIOTERAPI, HIV-ODHA
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode Khusus. kdKhusus = ["IGD","HDL","JIW","KLT","PAR","KEM","RAT","HIV"]
+
+Parameter 2 : Nomor Kartu Peserta
+
+Parameter 3 : Tanggal Estimasi Rujuk, format: dd-mm-yyyy
+
+                                    
+{
+  "response": {
+    "count": 36,
+    "list": [
+      {
+        "kdppk": "0114R049",
+        "nmppk": "RSUD CEMPAKA PUTIH",
+        "alamatPpk": "JALAN RAWASARI SELATAN NO. 1",
+        "telpPpk": "021-4224243",
+        "kelas": "D",
+        "nmkc": "JAKARTA PUSAT",
+        "distance": 951.0729,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      	"persentase": 0
+      },
+      {
+        "kdppk": "0114R052",
+        "nmppk": "RSUD KEMAYORAN",
+        "alamatPpk": "Jl. Serdang Baru I",
+        "telpPpk": "(021) 4251005",
+        "kelas": "D",
+        "nmkc": "JAKARTA PUSAT",
+        "distance": 2505.416,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      	"persentase": 0
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Faskes Rujukan Khusus THALASEMIA dan HEMOFILI
+{Base URL}/{Service Name}/spesialis/rujuk/khusus/{Parameter 1}/subspesialis/{Parameter 2}/noKartu/{Parameter 3}/tglEstRujuk/{Parameter 4}
+Fungsi : Get Data Faskes Rujukan Khusus THALASEMIA dan HEMOFILI
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode Khusus. kdKhusus = ["THA","HEM"]
+
+Parameter 2 : Kode Sub Spesialis. subspesialis = [{kdSubSpesialis:"3", nmSubSpesialis:"PENYAKIT DALAM"}, {kdSubSpesialis:"8", nmSubSpesialis:"HEMATOLOGI - ONKOLOGI MEDIK"}, {kdSubSpesialis:"26", nmSubSpesialis:"ANAK"}, {kdSubSpesialis:"30", nmSubSpesialis:"ANAK HEMATOLOGI ONKOLOGI"}]
+
+Parameter 3 : Nomor Kartu Peserta
+
+Parameter 4 : Tanggal Estimasi Rujuk, format: dd-mm-yyyy
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "kdppk": "0114R049",
+        "nmppk": "RSUD CEMPAKA PUTIH",
+        "alamatPpk": "JALAN RAWASARI SELATAN NO. 1",
+        "telpPpk": "021-4224243",
+        "kelas": "D",
+        "nmkc": "JAKARTA PUSAT",
+        "distance": 951.0729,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      								"persentase": 0
+      },
+      {
+        "kdppk": "0113R052",
+        "nmppk": "KLINIK HD CIPTA HUSADA 2",
+        "alamatPpk": "Jalan Langit-Langit No.12",
+        "telpPpk": "021-4896807",
+        "kelas": "D",
+        "nmkc": "JAKARTA TIMUR",
+        "distance": 2012.9943,
+        "jadwal": "Senin : 07:30 - 14:00, 08:00 - 17:00;14:00 - 19:00",
+        "jmlRujuk": 0,
+        "kapasitas": 0,
+      								"persentase": 0
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

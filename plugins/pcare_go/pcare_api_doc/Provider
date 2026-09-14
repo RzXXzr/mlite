@@ -1,0 +1,35 @@
+Get Provider Rayonisasi
+{Base URL}/{Service Name}/provider/{Parameter 1}/{Parameter 2}
+Fungsi : Get Data Provider Rayonisasi
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Row data awal yang akan ditampilkan
+
+Parameter 2 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 47,
+    "list": [
+      {
+        "kdProvider": "0195R001",
+        "nmProvider": "RUMKITBAN SIDOARJO"
+      },
+      {
+        "kdProvider": "0195R027",
+        "nmProvider": "RSU AL-Islam HM Mawardi"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

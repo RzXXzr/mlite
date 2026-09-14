@@ -1,0 +1,264 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-clock-o"></i> Monitor Cron Satu Sehat</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="col-md-3">
+        <div class="panel panel-{if: $cron_running}success{else}default{/if}">
+            <div class="panel-body text-center">
+                <h1><i class="fa fa-{if: $cron_running}spinner fa-spin{else}stop-circle{/if}"></i></h1>
+                <h4>{if: $cron_running}<span class="text-success">RUNNING</span>{else}<span class="text-muted">IDLE</span>{/if}</h4>
+                <small>Status Cron</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="panel panel-info">
+            <div class="panel-body text-center">
+                <h1>{$total_hutang}</h1>
+                <h4>Belum Kirim</h4>
+                <small>dari {$total_kunjungan} total kunjungan</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="panel panel-success">
+            <div class="panel-body text-center">
+                <h1>{$progress_total_success}</h1>
+                <h4>Sukses (Cron)</h4>
+                <small>{$progress_sessions} sesi berjalan</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="panel panel-warning">
+            <div class="panel-body text-center">
+                <h1>{$progress_last_date}</h1>
+                <h4>Terakhir Diproses</h4>
+                <small>{$progress_last_run}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overview -->
+    <div class="col-md-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-bar-chart"></i> Hutang Data Per Bulan</h3>
+            </div>
+            <div class="panel-body" style="max-height:400px;overflow-y:auto;">
+                <table class="table table-striped table-condensed" id="tblHutang">
+                    <thead>
+                        <tr>
+                            <th>Bulan</th>
+                            <th>Total</th>
+                            <th>Belum Kirim</th>
+                            <th>Sudah Kirim</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loop: $hutang_per_bulan}
+                        <tr>
+                            <td>{$value.bulan}</td>
+                            <td>{$value.total}</td>
+                            <td><span class="label label-{if: $value.belum_kirim > 0}danger{else}success{/if}">{$value.belum_kirim}</span></td>
+                            <td>{$value.sudah_kirim}</td>
+                            <td>
+                                <div class="progress" style="margin-bottom:0;min-width:100px;">
+                                    <div class="progress-bar progress-bar-success" style="width:{$value.persen}%;" title="{$value.persen}%">
+                                        {$value.persen}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {/loop}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cron Settings -->
+    <div class="col-md-4">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-cog"></i> Pengaturan Cron</h3>
+            </div>
+            <div class="panel-body">
+                <form action="{?=url(ADMIN.'/satu_sehat/savecron')?}" method="POST">
+                    <div class="form-group">
+                        <label>Jam Mulai (WIB)</label>
+                        <select name="cron[jam_mulai]" class="form-control">
+                            {loop: $jam_options}
+                            <option value="{$value.val}" {if: $value.val == $cron_settings.jam_mulai}selected{/if}>{$value.label}</option>
+                            {/loop}
+                        </select>
+                        <small class="text-muted">Cron mulai jalan di jam ini</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Jam Berhenti (WIB)</label>
+                        <select name="cron[jam_berhenti]" class="form-control">
+                            {loop: $jam_options}
+                            <option value="{$value.val}" {if: $value.val == $cron_settings.jam_berhenti}selected{/if}>{$value.label}</option>
+                            {/loop}
+                        </select>
+                        <small class="text-muted">Cron berhenti di jam ini</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Delay Antar Kunjungan (ms)</label>
+                        <input type="number" name="cron[delay_ms]" class="form-control" value="{$cron_settings.delay_ms}" min="200" max="5000" step="100">
+                        <small class="text-muted">Jeda antar pengiriman (ms)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Max Error Berturut-turut</label>
+                        <input type="number" name="cron[max_errors]" class="form-control" value="{$cron_settings.max_errors}" min="5" max="100">
+                        <small class="text-muted">Berhenti jika error berturut-turut sebanyak ini</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Mulai Override</label>
+                        <input type="date" name="cron[tanggal_dari]" class="form-control" value="{$cron_settings.tanggal_dari}">
+                        <small class="text-muted">Kosongkan untuk resume otomatis</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Crontab Schedule</label>
+                        <input type="text" name="cron[crontab_schedule]" class="form-control" value="{$cron_settings.crontab_schedule}" placeholder="0 23 * * *">
+                        <small class="text-muted">Format crontab (menit jam hari bulan hari-minggu)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="cron[enabled]" value="1" {if: $cron_settings.enabled}checked{/if}> Aktifkan Cron
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-save"></i> Simpan Pengaturan</button>
+                </form>
+                <hr>
+                <button class="btn btn-success btn-block" onclick="runCronManual()" id="btnRunManual">
+                    <i class="fa fa-play"></i> Jalankan Manual Sekarang
+                </button>
+                <button class="btn btn-danger btn-block" onclick="stopCron()" id="btnStop" {if: !$cron_running}disabled{/if}>
+                    <i class="fa fa-stop"></i> Stop Cron
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress File Info -->
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-file-text-o"></i> Progress Tracking</h3>
+            </div>
+            <div class="panel-body">
+                <table class="table table-condensed">
+                    <tr><td>Start Date</td><td><strong>{$progress_start_date}</strong></td></tr>
+                    <tr><td>Last Completed</td><td><strong>{$progress_last_date}</strong></td></tr>
+                    <tr><td>Last Run</td><td><strong>{$progress_last_run}</strong></td></tr>
+                    <tr><td>Total Processed</td><td><strong>{$progress_total_processed}</strong></td></tr>
+                    <tr><td>Total Success</td><td><strong>{$progress_total_success}</strong></td></tr>
+                    <tr><td>Total Failed</td><td><strong>{$progress_total_failed}</strong></td></tr>
+                    <tr><td>Sessions</td><td><strong>{$progress_sessions}</strong></td></tr>
+                </table>
+                <button class="btn btn-warning btn-sm" onclick="resetProgress()"><i class="fa fa-refresh"></i> Reset Progress</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Viewer -->
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <i class="fa fa-terminal"></i> Log Cron
+                    <button class="btn btn-xs btn-default pull-right" onclick="refreshLog()"><i class="fa fa-refresh"></i> Refresh</button>
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="form-inline" style="margin-bottom:10px;">
+                    <label>Tampilkan </label>
+                    <select id="logLines" class="form-control input-sm" onchange="refreshLog()">
+                        <option value="50">50 baris</option>
+                        <option value="100" selected>100 baris</option>
+                        <option value="200">200 baris</option>
+                        <option value="500">500 baris</option>
+                    </select>
+                    <label> terakhir</label>
+                    <button class="btn btn-xs btn-danger" onclick="clearLog()" style="margin-left:10px;"><i class="fa fa-trash"></i> Hapus Log</button>
+                </div>
+                <pre id="logContent" style="max-height:400px;overflow-y:auto;background:#1e1e1e;color:#d4d4d4;padding:10px;font-size:12px;border-radius:4px;">{$log_content}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshLog() {
+    var lines = document.getElementById('logLines').value;
+    $.get('{?=url(ADMIN.'/satu_sehat/cronlog')?>?lines=' + lines, function(data) {
+        $('#logContent').text(data);
+        var el = document.getElementById('logContent');
+        el.scrollTop = el.scrollHeight;
+    });
+}
+
+function runCronManual() {
+    if (!confirm('Jalankan cron manual sekarang? Ini akan mengirim data hutang ke Satu Sehat.')) return;
+    var btn = document.getElementById('btnRunManual');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menjalankan...';
+    $.post('{?=url(ADMIN.'/satu_sehat/cronaction')?>',  {action: 'start'}, function(data) {
+        if (data.status === 'ok') {
+            alert('Cron manual dimulai di background. Cek log untuk progress.');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-play"></i> Jalankan Manual Sekarang';
+        }
+    }, 'json').fail(function() {
+        alert('Error menjalankan cron');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-play"></i> Jalankan Manual Sekarang';
+    });
+}
+
+function stopCron() {
+    if (!confirm('Hentikan cron yang sedang berjalan?')) return;
+    $.post('{?=url(ADMIN.'/satu_sehat/cronaction')?>',  {action: 'stop'}, function(data) {
+        alert(data.message || 'OK');
+        location.reload();
+    }, 'json');
+}
+
+function resetProgress() {
+    if (!confirm('Reset progress ke awal? Semua tracking akan dihapus.')) return;
+    $.post('{?=url(ADMIN.'/satu_sehat/cronaction')?>',  {action: 'reset'}, function(data) {
+        alert(data.message || 'OK');
+        location.reload();
+    }, 'json');
+}
+
+function clearLog() {
+    if (!confirm('Hapus semua log cron?')) return;
+    $.post('{?=url(ADMIN.'/satu_sehat/cronaction')?>',  {action: 'clearlog'}, function(data) {
+        alert(data.message || 'OK');
+        refreshLog();
+    }, 'json');
+}
+
+// Auto-refresh log every 10 seconds if cron is running
+{if: $cron_running}
+setInterval(function() {
+    refreshLog();
+}, 10000);
+{/if}
+
+// Scroll log to bottom on load
+$(function() {
+    var el = document.getElementById('logContent');
+    if (el) el.scrollTop = el.scrollHeight;
+});
+</script>

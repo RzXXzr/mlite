@@ -1,0 +1,472 @@
+{{define "content"}}
+<h4><i class="fa fa-medkit"></i> Mapping Obat Satu Sehat</h4>
+
+<!-- Summary Cards -->
+<div class="mapping-stats">
+    <div class="stat-card">
+        <h3 style="color:#3498db" id="statTotal">{{.TotalObat}}</h3>
+        <small>Total Obat</small>
+    </div>
+    <div class="stat-card">
+        <h3 style="color:#27ae60" id="statMapped">{{.TotalMapped}}</h3>
+        <small>Sudah Mapping</small>
+    </div>
+    <div class="stat-card">
+        <h3 style="color:#e74c3c" id="statUnmapped">{{.TotalUnmapped}}</h3>
+        <small>Belum Mapping</small>
+    </div>
+    <div class="stat-card">
+        <h3 style="color:#8e44ad" id="statPushed">{{.TotalPushed}}</h3>
+        <small>Pushed</small>
+    </div>
+    <div class="stat-card">
+        <h3 style="color:#f39c12" id="statRepush">{{.TotalRepush}}</h3>
+        <small>Perlu Re-push</small>
+    </div>
+</div>
+
+<!-- Auto Mapping Collapsible -->
+<div class="panel panel-default" style="margin-bottom:12px;">
+    <div class="panel-heading auto-panel-toggle" id="toggleAutoPanel">
+        <i class="fa fa-magic"></i> <strong>Auto Mapping</strong>
+        <span class="pull-right"><i class="fa fa-chevron-down" id="autoChevron"></i></span>
+    </div>
+    <div class="panel-body auto-panel-body" id="autoPanelBody">
+        <div class="row">
+            <div class="col-md-3">
+                <label>Tipe</label>
+                <select id="auto_type" class="form-control input-sm">
+                    <option value="obat">Obat</option>
+                    <option value="vaksin">Vaksin</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>Jeda (ms)</label>
+                <input type="number" id="auto_delay" class="form-control input-sm" value="1500" min="500" max="10000" step="100">
+            </div>
+            <div class="col-md-6" style="padding-top:22px;">
+                <button type="button" id="btnAutoMapping" class="btn btn-sm btn-primary"><i class="fa fa-play"></i> Mulai</button>
+                <button type="button" id="btnStopMapping" class="btn btn-sm btn-danger" style="display:none;"><i class="fa fa-stop"></i> Stop</button>
+                <button type="button" id="btnToggleLog" class="btn btn-sm btn-default" style="display:none;"><i class="fa fa-list"></i> Log</button>
+            </div>
+        </div>
+        <div id="autoMappingProgress" style="display:none;margin-top:10px;">
+            <div class="progress" style="height:20px;margin-bottom:5px;">
+                <div class="progress-bar progress-bar-striped active" role="progressbar" style="width:0%;line-height:20px;font-size:12px;">0%</div>
+            </div>
+            <small id="autoMappingStatus" class="text-muted">Mempersiapkan...</small>
+        </div>
+        <div id="autoMappingLog"></div>
+    </div>
+</div>
+
+<!-- Filter & Add Button -->
+<div class="filter-bar">
+    <button class="btn btn-sm btn-default active" data-filter="all"><i class="fa fa-list"></i> Semua</button>
+    <button class="btn btn-sm btn-default" data-filter="unmapped"><i class="fa fa-times-circle text-danger"></i> Belum Mapping</button>
+    <button class="btn btn-sm btn-default" data-filter="mapped"><i class="fa fa-check-circle text-success"></i> Sudah Mapping</button>
+    <button class="btn btn-sm btn-default" data-filter="pushed"><i class="fa fa-cloud-upload text-info"></i> Pushed</button>
+    <button class="btn btn-sm btn-default" data-filter="repush"><i class="fa fa-refresh text-warning"></i> Perlu Re-push</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-sm btn-success" id="btnAddMapping"><i class="fa fa-plus"></i> Mapping Manual</button>
+</div>
+
+<!-- Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-bordered table-condensed nowrap" id="tblObat" width="100%">
+        <thead>
+            <tr>
+                <th>Kode Obat</th>
+                <th>Nama Obat</th>
+                <th>Status</th>
+                <th>Kode KFA</th>
+                <th>Nama KFA</th>
+                <th>Tipe</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .AllObat}}
+            <tr data-kode_brng="{{.KodeBrng}}" data-mapped="{{if .Mapped}}1{{else}}0{{end}}" data-pushed="{{if .IDMedication}}1{{else}}0{{end}}" data-repush="{{if .UpdatedAfterPush}}1{{else}}0{{end}}">
+                <td>{{.KodeBrng}}</td>
+                <td>{{.NamaBrng}}</td>
+                <td>
+                    {{if .IDMedication}}
+                    <span class="label badge-pushed">Pushed</span>
+                    {{else if .Mapped}}
+                    <span class="label badge-mapped">Mapped</span>
+                    {{else}}
+                    <span class="label badge-unmapped">Belum</span>
+                    {{end}}
+                </td>
+                <td>{{.KodeKFA}}</td>
+                <td>{{.NamaKFA}}</td>
+                <td>{{.Type}}</td>
+                <td style="white-space:nowrap;">
+                    {{if .Mapped}}
+                    <button type="button" class="btn btn-xs btn-info btn-edit-mapping" data-kode_brng="{{.KodeBrng}}" data-kode_kfa="{{.KodeKFA}}" data-type="{{.Type}}" title="Edit"><i class="fa fa-pencil"></i></button>
+                    <button type="button" class="btn btn-xs btn-danger btn-hapus-mapping" data-kode_brng="{{.KodeBrng}}" title="Hapus"><i class="fa fa-trash"></i></button>
+                    {{if not .IDMedication}}
+                    <button type="button" class="btn btn-xs btn-warning btn-push" data-kode_brng="{{.KodeBrng}}" title="Push ke Satu Sehat"><i class="fa fa-cloud-upload"></i></button>
+                    {{else}}
+                    <button type="button" class="btn btn-xs btn-default btn-push" data-kode_brng="{{.KodeBrng}}" title="Re-push"><i class="fa fa-refresh"></i></button>
+                    {{end}}
+                    {{else}}
+                    <button type="button" class="btn btn-xs btn-success btn-map-now" data-kode_brng="{{.KodeBrng}}" data-nama_brng="{{.NamaBrng}}" title="Mapping Sekarang"><i class="fa fa-link"></i></button>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+<!-- Mapping Modal -->
+<div class="modal fade" id="mappingModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formMapping">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title" id="mappingModalTitle">Mapping Obat</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Obat Lokal</label>
+                        <select name="kode_brng" id="kode_brng" class="form-control">
+                            {{range .DataBarang}}
+                            <option value="{{.KodeBrng}}">[{{.KodeBrng}}] {{.NamaBrng}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipe</label>
+                        <select name="type" id="type" class="form-control">
+                            <option value="obat">Obat</option>
+                            <option value="vaksin">Vaksin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Obat KFA <small class="text-muted">(min 4 karakter, cari dengan kode, nama obat, atau bahan aktif)</small></label>
+                        <input type="text" name="kode_kfa" id="kode_kfa" class="form-control" placeholder="Ketik kode KFA, nama obat, atau bahan aktif...">
+                    </div>
+                    <div class="form-group">
+                        <label>Nama KFA</label>
+                        <input type="text" name="nama_kfa" id="nama_kfa" class="form-control" readonly>
+                    </div>
+                    <div id="kfa_results" style="max-height:400px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;display:none;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Push Modal -->
+<div class="modal fade" id="pushModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Push Medication</h4>
+            </div>
+            <div class="modal-body" id="pushModalBody"><i class="fa fa-spinner fa-spin"></i> Loading...</div>
+            <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button></div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$(document).ready(function(){
+    // DataTable
+    var table = $('#tblObat').DataTable({
+        language: { search: "", searchPlaceholder: "Cari obat..." },
+        lengthChange: false,
+        pageLength: 25,
+        scrollX: true,
+        order: [[2, 'asc'], [1, 'asc']],
+        dom: "<<'datatable-search'f>><'row'<'col-sm-12'tr>><<'pmd-datatable-pagination' l i p>>"
+    });
+
+    // Filter buttons
+    var currentFilter = 'all';
+    $('.filter-bar .btn[data-filter]').on('click', function(){
+        $('.filter-bar .btn[data-filter]').removeClass('active');
+        $(this).addClass('active');
+        currentFilter = $(this).data('filter');
+        $.fn.dataTable.ext.search.pop();
+        if(currentFilter !== 'all') {
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex){
+                if(settings.nTable.id !== 'tblObat') return true;
+                var row = table.row(dataIndex).node();
+                var mapped = $(row).data('mapped');
+                var pushed = $(row).data('pushed');
+                var repush = $(row).data('repush');
+                if(currentFilter === 'unmapped') return mapped == '0';
+                if(currentFilter === 'mapped') return mapped == '1';
+                if(currentFilter === 'pushed') return pushed == '1';
+                if(currentFilter === 'repush') return repush == '1';
+                return true;
+            });
+        }
+        table.draw();
+    });
+
+    // Auto panel toggle
+    $('#toggleAutoPanel').on('click', function(){
+        $('#autoPanelBody').slideToggle(200);
+        $('#autoChevron').toggleClass('fa-chevron-down fa-chevron-up');
+    });
+
+    // Add mapping
+    $('#btnAddMapping').on('click', function(){
+        $('#mappingModalTitle').text('Mapping Obat Manual');
+        $('#kode_brng').val('');
+        $('#kode_kfa').val('');
+        $('#nama_kfa').val('');
+        $('#type').val('obat');
+        $('#mappingModal').modal('show');
+    });
+
+    // Map now
+    $('#tblObat').on('click', '.btn-map-now', function(){
+        var kode = $(this).data('kode_brng');
+        $('#mappingModalTitle').text('Mapping: ' + kode);
+        $('#kode_brng').val(kode).change();
+        $('#kode_kfa').val('');
+        $('#nama_kfa').val('');
+        $('#type').val('obat');
+        $('#mappingModal').modal('show');
+    });
+
+    // Edit mapping
+    $('#tblObat').on('click', '.btn-edit-mapping', function(){
+        var kode = $(this).data('kode_brng');
+        var kfa = $(this).data('kode_kfa');
+        var type = $(this).data('type');
+        $('#mappingModalTitle').text('Edit: ' + kode);
+        $('#kode_brng').val(kode).change();
+        $('#kode_kfa').val(kfa);
+        $('#nama_kfa').val('');
+        $('#type').val(type);
+        kfaSelected = !!kfa;
+        $('#mappingModal').modal('show');
+    });
+
+    // Delete mapping
+    $('#tblObat').on('click', '.btn-hapus-mapping', function(){
+        var kode = $(this).data('kode_brng');
+        if(!confirm('Hapus mapping untuk [' + kode + ']?')) return;
+        $.ajax({
+            url: '/api/mapping/obat?action=hapus&kode_brng=' + encodeURIComponent(kode),
+            type: 'GET',
+            dataType: 'json',
+            success: function(r){ location.reload(); },
+            error: function(){ alert('Error menghapus mapping'); }
+        });
+    });
+
+    // Push medication
+    $('#tblObat').on('click', '.btn-push', function(){
+        var kode = $(this).data('kode_brng');
+        $('#pushModalBody').html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+        $('#pushModal').modal('show');
+        $.get('/api/medication/' + encodeURIComponent(kode) + '/mapping', function(resp){
+            var data = typeof resp === 'string' ? JSON.parse(resp) : resp;
+            var isSuccess = data.status === 'success';
+            var html = '<div style="text-align:center;padding:20px;">';
+            if(isSuccess) {
+                html += '<div style="font-size:60px;color:#27ae60;margin-bottom:10px;"><i class="fa fa-check-circle"></i></div>';
+                html += '<h4 style="color:#27ae60;">Berhasil!</h4>';
+                html += '<p>' + (data.pesan||'Sukses mengirim medication') + '</p>';
+                if(data.id) html += '<p><strong>Medication ID:</strong> <code style="font-size:13px;">' + data.id + '</code></p>';
+            } else {
+                html += '<div style="font-size:60px;color:#e74c3c;margin-bottom:10px;"><i class="fa fa-times-circle"></i></div>';
+                html += '<h4 style="color:#e74c3c;">Gagal</h4>';
+                html += '<p>' + (data.pesan||data.error||'Gagal mengirim medication') + '</p>';
+            }
+            if(data.response) {
+                var r = data.response;
+                var details = [];
+                if(r.resourceType) details.push('<b>Resource:</b> ' + r.resourceType);
+                if(r.id) details.push('<b>ID:</b> ' + r.id);
+                if(r.code && r.code.coding && r.code.coding[0]) {
+                    details.push('<b>Kode KFA:</b> ' + r.code.coding[0].code);
+                    details.push('<b>Nama:</b> ' + (r.code.coding[0].display||''));
+                }
+                if(r.status) details.push('<b>Status:</b> ' + r.status);
+                if(r.form && r.form.coding && r.form.coding[0]) {
+                    details.push('<b>Bentuk:</b> ' + (r.form.coding[0].display||r.form.coding[0].code));
+                }
+                if(r.identifier && r.identifier[0]) details.push('<b>Identifier:</b> ' + r.identifier[0].value);
+                if(details.length) {
+                    html += '<div style="text-align:left;background:#f8f9fa;border-radius:6px;padding:12px 16px;margin-top:15px;font-size:13px;line-height:1.8;">';
+                    html += details.join('<br>');
+                    html += '</div>';
+                }
+                // Show diagnostics on error
+                if(!isSuccess && r.issue) {
+                    html += '<div style="text-align:left;background:#fff3f3;border:1px solid #e74c3c;border-radius:6px;padding:12px 16px;margin-top:10px;font-size:12px;">';
+                    html += '<b>Diagnostik:</b><br>';
+                    r.issue.forEach(function(iss){ html += '- ' + (iss.diagnostics||iss.details||JSON.stringify(iss)) + '<br>'; });
+                    html += '</div>';
+                }
+            }
+            html += '</div>';
+            $('#pushModalBody').html(html);
+            if(isSuccess) {
+                html += '<p style="margin-top:10px;color:#888;font-size:12px;">Halaman akan diperbarui otomatis...</p>';
+                setTimeout(function(){ location.reload(); }, 2000);
+            }
+        }).fail(function(xhr){
+            var errMsg = 'Terjadi kesalahan';
+            try { var e = JSON.parse(xhr.responseText); errMsg = e.error || e.pesan || errMsg; } catch(ex){ errMsg = xhr.responseText || errMsg; }
+            $('#pushModalBody').html('<div style="text-align:center;padding:20px;"><div style="font-size:60px;color:#e74c3c;"><i class="fa fa-times-circle"></i></div><h4 style="color:#e74c3c;">Error</h4><p>'+errMsg+'</p></div>');
+        });
+    });
+
+    // KFA search
+    var searchTimer;
+    $('#kode_kfa').on('keyup', function(){
+        clearTimeout(searchTimer);
+        var query = $(this).val();
+        if(query.length < 4) { $('#kfa_results').hide(); return; }
+        searchTimer = setTimeout(function(){
+            // Use code param for numeric input, keyword param for text
+            var param = /^\d+$/.test(query) ? 'code' : 'keyword';
+            $.get('/api/kfa?' + param + '=' + encodeURIComponent(query), function(resp){
+                var items = [];
+                if(resp.items && resp.items.data) {
+                    items = resp.items.data;
+                } else if(resp.items && Array.isArray(resp.items)) {
+                    items = resp.items;
+                } else if(Array.isArray(resp)) {
+                    items = resp;
+                }
+                if(items.length === 0) {
+                    $('#kfa_results').html('<div class="p-2 text-muted" style="padding:8px;">Tidak ditemukan</div>').show();
+                    return;
+                }
+                var html = '';
+                items.slice(0,50).forEach(function(item){
+                    var e = function(s){ return $('<span>').text(s||'').html(); };
+                    var details = [];
+                    if(item.nama_dagang) details.push('<b>Nama Dagang:</b> '+e(item.nama_dagang));
+                    if(item.manufacturer) details.push('<b>Produsen:</b> '+e(item.manufacturer));
+                    if(item.registrar && item.registrar !== item.manufacturer) details.push('<b>Registrar:</b> '+e(item.registrar));
+                    if(item.nie) details.push('<b>NIE:</b> '+e(item.nie));
+                    if(item.dosage_form && item.dosage_form.name) details.push('<b>Bentuk:</b> '+e(item.dosage_form.name));
+                    if(item.farmalkes_type && item.farmalkes_type.name) details.push('<b>Tipe:</b> '+e(item.farmalkes_type.name));
+                    if(item.produksi_buatan) details.push('<b>Produksi:</b> '+e(item.produksi_buatan));
+                    if(item.generik !== undefined) details.push('<b>Generik:</b> '+(item.generik?'Ya':'Tidak'));
+                    if(item.uom && item.uom.name) details.push('<b>Satuan:</b> '+e(item.uom.name));
+                    if(item.fix_price) details.push('<b>HET:</b> Rp '+Number(item.fix_price).toLocaleString('id-ID'));
+                    if(item.active_ingredients && item.active_ingredients.length) {
+                        var zat = item.active_ingredients.map(function(z){ return e(z.zat_aktif)+' '+e(z.kekuatan_zat_aktif); }).join(', ');
+                        details.push('<b>Zat Aktif:</b> '+zat);
+                    }
+                    html += '<a href="#" class="list-group-item kfa-item" style="padding:8px 12px;border-bottom:1px solid #eee;" data-code="'+item.kfa_code+'" data-name="'+e(item.name)+'">' +
+                        '<div style="font-weight:bold;color:#2c3e50;margin-bottom:2px;"><span style="color:#8e44ad;">'+e(item.kfa_code)+'</span> &mdash; '+e(item.name)+'</div>' +
+                        '<div style="font-size:11px;color:#555;line-height:1.5;">'+details.join(' &bull; ')+'</div>' +
+                        '</a>';
+                });
+                $('#kfa_results').html(html).show();
+            });
+        }, 300);
+    });
+
+    var kfaSelected = false;
+
+    $(document).on('click', '.kfa-item', function(e){
+        e.preventDefault();
+        $('#kode_kfa').val($(this).data('code'));
+        $('#nama_kfa').val($(this).data('name'));
+        $('#kfa_results').hide();
+        kfaSelected = true;
+    });
+
+    // Reset selection flag when user types in kode_kfa
+    $('#kode_kfa').on('input', function(){ kfaSelected = false; $('#nama_kfa').val(''); });
+
+    // Save mapping
+    $('#formMapping').on('submit', function(e){
+        e.preventDefault();
+        var kodeKfa = $('#kode_kfa').val().trim();
+        var namaKfa = $('#nama_kfa').val().trim();
+        if(!kodeKfa || !namaKfa || !kfaSelected) {
+            alert('Silakan pilih obat KFA dari hasil pencarian terlebih dahulu.');
+            return;
+        }
+        if(!/^\d+$/.test(kodeKfa)) {
+            alert('Kode KFA tidak valid. Pilih dari hasil pencarian.');
+            return;
+        }
+        var $btn = $(this).find('button[type=submit]');
+        $btn.prop('disabled',true).html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
+        $.post('/api/mapping/obat', $(this).serialize(), function(resp){
+            $('#mappingModal').modal('hide');
+            location.reload();
+        }).fail(function(xhr){
+            $btn.prop('disabled',false).html('Simpan');
+            var msg = 'Error';
+            try { var e = JSON.parse(xhr.responseText); msg = e.error || e.pesan || msg; } catch(ex){ msg = xhr.responseText || msg; }
+            alert(msg);
+        });
+    });
+
+    // Auto Mapping
+    var autoRunning = false, autoStop = false;
+    function addLog(msg, cls){ $('#autoMappingLog').show().prepend('<div class="log-entry '+(cls||'log-info')+'">'+msg+'</div>'); }
+    function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+    $('#btnAutoMapping').on('click', function(){
+        if(autoRunning) return;
+        if(!confirm('Mulai auto mapping?')) return;
+        autoRunning = true; autoStop = false;
+        $(this).hide(); $('#btnStopMapping').show(); $('#btnToggleLog').show();
+        $('#autoMappingProgress').show(); $('#autoMappingLog').empty().hide();
+        $('#autoMappingStatus').text('Mengambil daftar obat...');
+        var type = $('#auto_type').val();
+        var delay = parseInt($('#auto_delay').val())||1500;
+        $.get('/api/mapping/obat?action=autolist', function(data){
+            if(!data.items || data.items.length === 0){
+                addLog('Semua obat sudah ter-mapping!','log-success');
+                finishAuto(); return;
+            }
+            addLog('Ditemukan '+data.items.length+' obat','log-info');
+            processAuto(data.items, 0, type, delay, {success:0,not_found:0,error:0});
+        });
+    });
+
+    function processAuto(items, i, type, delay, stats){
+        if(autoStop || i >= items.length){ finishAuto(); return; }
+        var pct = Math.round((i+1)/items.length*100);
+        $('#autoMappingProgress .progress-bar').css('width',pct+'%').text(pct+'%');
+        $('#autoMappingStatus').text('('+(i+1)+'/'+items.length+') '+items[i].nama_brng);
+        $.get('/api/mapping/obat?action=autoprocess&kode_brng='+encodeURIComponent(items[i].kode_brng)+'&nama_brng='+encodeURIComponent(items[i].nama_brng)+'&type='+type, function(r){
+            var t = r.status==='success'?'log-success':'log-error';
+            stats[r.status==='success'?'success':'error']++;
+            addLog('['+items[i].kode_brng+'] '+r.message, t);
+        }).fail(function(){ stats.error++; }).always(function(){
+            sleep(delay).then(function(){ processAuto(items, i+1, type, delay, stats); });
+        });
+    }
+
+    function finishAuto(){
+        autoRunning = false;
+        $('#btnAutoMapping').show().html('<i class="fa fa-play"></i> Mulai Ulang');
+        $('#btnStopMapping').hide();
+        $('#autoMappingProgress .progress-bar').removeClass('active');
+    }
+
+    $('#btnStopMapping').on('click', function(){ autoStop = true; });
+    $('#btnToggleLog').on('click', function(){ $('#autoMappingLog').toggle(); });
+});
+</script>
+{{end}}

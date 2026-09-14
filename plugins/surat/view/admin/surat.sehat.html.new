@@ -1,0 +1,175 @@
+<style>
+  body { margin: 0 60px 40px 80px; font-size: 16px; font-family: 'Times New Roman', Times, serif; }
+  input, textarea, select { font-size: 16px; font-family: 'Times New Roman', Times, serif; }
+  @media print {
+    #btnSimpan, #btnCetak { display: none; }
+    #status_surat { display: none; }
+    input, select { border: none !important; background: transparent !important; }
+  }
+  .status-badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; margin-left:10px; vertical-align:middle; font-family:sans-serif; }
+  .status-draft   { background:#fff3cd; color:#856404; border:1px solid #ffc107; }
+  .status-saved   { background:#d1e7dd; color:#0f5132; border:1px solid #198754; }
+  .status-changed { background:#ffe0b2; color:#7b3f00; border:1px solid #fd7e14; }
+</style>
+<script type="text/javascript" src="{?=url()?}/assets/jscripts/jquery.min.js"></script>
+<script type="text/javascript" src="{?=url()?}/assets/jscripts/jquery.qrcode.js"></script>
+<script type="text/javascript" src="{?=url()?}/assets/jscripts/qrcode.js"></script>
+<script>
+  var savedNomor = "{?=isset_or($surat.nomor_surat)?}";
+  var preNomor   = "{$pre_nomor}";
+  var initNomor  = savedNomor || preNomor;
+  var initToken  = "{$pre_token}";
+
+  function updateStatus(state) {
+    var map = {
+      draft:   { text: "Belum Disimpan", cls: "status-draft" },
+      saved:   { text: "Tersimpan",      cls: "status-saved" },
+      changed: { text: "Ada Perubahan",  cls: "status-changed" }
+    };
+    var s = map[state] || map.draft;
+    $("#status_surat").text(s.text).attr("class", "status-badge " + s.cls);
+  }
+  
+  var verifyBase = "{?=url(['surat','verifikasi-sehat'])?}";
+
+  function renderQR(token) {
+    if (!token) return;
+    $("#qrcode_verifikasi").empty();
+    jQuery("#qrcode_verifikasi").qrcode({ text: verifyBase + "/" + token, width: 120, height: 120 });
+  }
+
+  function Cetak() { window.print(); }
+  
+  function Simpan() {
+    var keperluan = $("#keperluan").val();
+    var berlaku_sampai = $("#berlaku_sampai").val();
+    if (!keperluan) { alert("Keperluan harus diisi."); return; }
+    if (!berlaku_sampai) { alert("Tanggal berlaku sampai harus diisi."); return; }
+    
+    $.post("{?=url([ADMIN,'surat','simpansuratsehat'])?}", {
+      no_rawat: "{$no_rawat}",
+      no_rkm_medis: "{$pasien.no_rkm_medis}",
+      nm_pasien: "{$pasien.nm_pasien}",
+      tgl_lahir: "{$pasien.tgl_lahir}",
+      jk: "{$pasien.jk}",
+      alamat: "{$pasien.alamat}, {$pasien.nm_kel}, {$pasien.nm_kec}, {$pasien.nm_kab}, {$pasien.nm_prop}",
+      berat_badan: $("#berat_badan").val(),
+      tinggi_badan: $("#tinggi_badan").val(),
+      tensi: $("#tensi").val(),
+      suhu_badan: $("#suhu_badan").val(),
+      agama: $("#agama").val(),
+      pekerjaan: $("#pekerjaan").val(),
+      keperluan: keperluan,
+      berlaku_sampai: berlaku_sampai,
+      riwayat_penyakit: $("#riwayat_penyakit").val() || "-",
+      dokter: "{$nm_dokter}",
+      petugas: "{?=$this->core->getUserInfo('username', $_SESSION['mlite_user'])?}",
+      pre_token: "{$pre_token}"
+    }, function(resp) {
+      var data = JSON.parse(resp);
+      if (data.status === "success") {
+        $("#nomor_surat_display").text(data.nomor_surat);
+        renderQR(data.verification_token);
+        updateStatus("saved");
+        alert("Surat berhasil disimpan.");
+      } else {
+        alert(data.msg || "Gagal menyimpan surat.");
+      }
+    });
+  }
+
+  jQuery(document).ready(function() {
+    if (initNomor) $("#nomor_surat_display").text(initNomor);
+    updateStatus(savedNomor ? "saved" : "draft");
+    
+    if (savedNomor) {
+      $("#keperluan, #berlaku_sampai, #berat_badan, #tinggi_badan, #tensi, #suhu_badan, #agama, #pekerjaan").on("change", function() {
+        updateStatus("changed");
+      });
+    }
+    
+    renderQR(initToken);
+  });
+</script>
+
+<div style="width:960px;">
+  <table><thead>
+    <tr>
+      <th><img src="{?=url()?}/{$settings.logo}" height="100px" style="margin-right:20px;" alt=""></th>
+      <th colspan="2" width="100%">
+        <p><span style="font-size:28px;"><strong>{$settings.nama_instansi}</strong></span><br>
+        <span style="font-size:16px;">Alamat: {$settings.alamat} - {$settings.kota} - {$settings.propinsi}, Telp. {$settings.nomor_telepon}</span><br>
+        <span style="font-size:14px;">SIPK. No. {$settings.nomor_ijin_sarana}</span></p>
+      </th>
+    </tr>
+    <tr><th colspan="3"><hr style="border-bottom:2px solid #000;padding-top:3px;"></th></tr>
+  </thead></table>
+  
+  <center>
+    <h2 style="margin-bottom:0 !important;border-bottom:2px solid #000;width:500px;">SURAT KETERANGAN DOKTER</h2>
+    <span>No. <strong id="nomor_surat_display">-</strong></span>
+    <span id="status_surat" class="status-badge status-draft">Belum Disimpan</span><br><br>
+  </center>
+  
+  <table><tbody>
+    <tr><td colspan="3" width="100%"><p style="text-align:justify;">Yang bertanda tangan dibawah ini</p></td></tr>
+  </tbody></table>
+  
+  <table><tbody>
+    <tr><td width="180">Nama</td><td width="10">:</td><td><strong>{$pasien.nm_pasien}</strong></td></tr>
+    <tr><td>TTL</td><td>:</td><td><strong>{?=strtoupper($pasien.tmp_lahir)?}, {?=strtoupper(date('d F Y', strtotime($pasien.tgl_lahir)))?}</strong></td></tr>
+    <tr><td>Jenis Kelamin</td><td>:</td><td><strong>{if: $pasien.jk == 'L'}Laki-laki{/if}{if: $pasien.jk == 'P'}Perempuan{/if}</strong></td></tr>
+    <tr><td>Berat badan</td><td>:</td><td><input type="number" id="berat_badan" value="{?=isset_or($surat.berat_badan)?}" style="width:60px;border:0;padding:2px;background:#eee;"> Kg</td></tr>
+    <tr><td>Tinggi badan</td><td>:</td><td><input type="number" id="tinggi_badan" value="{?=isset_or($surat.tinggi_badan)?}" style="width:60px;border:0;padding:2px;background:#eee;"> cm</td></tr>
+    <tr><td>Tensi Darah</td><td>:</td><td><input type="text" id="tensi" value="{?=isset_or($surat.tensi)?}" placeholder="120/80" style="width:100px;border:0;padding:2px;background:#eee;"> mmhg</td></tr>
+    <tr><td>Suhu Badan</td><td>:</td><td><input type="text" id="suhu_badan" value="{?=isset_or($surat.suhu_badan)?}" placeholder="36.5" style="width:60px;border:0;padding:2px;background:#eee;"> ° C</td></tr>
+    <tr><td>Agama</td><td>:</td><td>
+      <select id="agama" style="border:0;padding:2px;background:#eee;">
+        <option value="">- Pilih -</option>
+        <option value="ISLAM" {if: $surat.agama == 'ISLAM'}selected{/if}>ISLAM</option>
+        <option value="KRISTEN" {if: $surat.agama == 'KRISTEN'}selected{/if}>KRISTEN</option>
+        <option value="KATOLIK" {if: $surat.agama == 'KATOLIK'}selected{/if}>KATOLIK</option>
+        <option value="HINDU" {if: $surat.agama == 'HINDU'}selected{/if}>HINDU</option>
+        <option value="BUDHA" {if: $surat.agama == 'BUDHA'}selected{/if}>BUDHA</option>
+        <option value="KONGHUCU" {if: $surat.agama == 'KONGHUCU'}selected{/if}>KONGHUCU</option>
+        <option value="LAINNYA" {if: $surat.agama == 'LAINNYA'}selected{/if}>LAINNYA</option>
+      </select>
+    </td></tr>
+    <tr><td>Pekerjaan</td><td>:</td><td><input type="text" id="pekerjaan" value="{?=isset_or($surat.pekerjaan)?}" placeholder="PNS/Swasta/Wiraswasta/dll" style="width:300px;border:0;padding:2px;background:#eee;"></td></tr>
+    <tr><td>Alamat</td><td>:</td><td><strong>{$pasien.alamat}, {$pasien.nm_kel}, {$pasien.nm_kec}, {$pasien.nm_kab}, {$pasien.nm_prop}</strong></td></tr>
+  </tbody></table>
+  <br>
+  
+  <p style="text-align:justify;">Setelah kami lakuan pemeriksaan fisik terhadap orang tersebut ternyata keadaan kesehatannya saat ini adalah: <strong>SEHAT</strong></p>
+  
+  <p style="text-align:justify;">Surat keterangan ini dipergunakan untuk keperluan: <input type="text" id="keperluan" value="{?=isset_or($surat.keperluan)?}" placeholder="Contoh: PERSYARATAN PENGURUSAN SIP" style="width:450px;border:0;border-bottom:1px solid #000;padding:2px;"></p>
+  
+  <p style="text-align:justify;">Surat keterangan ini berlaku sampai dengan tanggal: <input type="date" id="berlaku_sampai" value="{?=isset_or($surat.berlaku_sampai, date('Y-m-d', strtotime('+30 days')))?}" style="border:0;padding:3px;background:#eee;"></p>
+  
+  <p style="text-align:justify;">Demikian Surat Keterangan tentang kesehatan ini dibuat atas permintaan sendiri untuk dipergunakan sebagaimana mestinya.</p>
+  
+  <br>
+  <table>
+    <tr>
+      <td width="350" style="text-align:center;">
+        <br><br><br><br>
+        <strong>{$pasien.nm_pasien}</strong>
+      </td>
+      <td width="50"></td>
+      <td width="350" style="text-align:center;">
+        {$settings.kota}, {?=date('d F Y')?}<br>
+        Dokter Yang Memeriksa<br>
+        <div id="qrcode_verifikasi" style="margin:10px auto;width:120px;"></div>
+        <strong>{$nm_dokter}</strong><br>
+        <small>{$sip_dokter}</small>
+      </td>
+    </tr>
+  </table>
+  <br>
+  <p><small><strong>NB:</strong> Silakan verifikasi menggunakan scan QR Code terkait.</small></p>
+  
+  <input type="hidden" id="riwayat_penyakit" value="{?=isset_or($surat.riwayat_penyakit)?}">
+</div>
+<br>
+<button id="btnSimpan" onclick="Simpan()">&#9635; Simpan</button>&nbsp;
+<button id="btnCetak" onclick="Cetak()">&#128424; Cetak</button>

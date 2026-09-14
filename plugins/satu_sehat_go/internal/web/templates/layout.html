@@ -1,0 +1,154 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - Satu Sehat Go</title>
+    <!-- Bootstrap 3 -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <!-- Font Awesome 4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.bootstrap.min.css">
+    <!-- Selectator -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectator/3.2/fm.selectator.jquery.min.css">
+    <!-- Datetimepicker -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css">
+    <style>
+        body { background-color: #ecf0f5; padding-top: 0; font-family: 'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; }
+        .wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: #222d32; color: #b8c7ce; min-height: 100vh; position: fixed; z-index: 100; }
+        .sidebar .brand { display: block; padding: 15px 20px; font-size: 20px; color: #fff; background: #1a2226; text-decoration: none; font-weight: bold; }
+        .sidebar .brand i { margin-right: 8px; color: #3c8dbc; }
+        .sidebar .nav-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar .nav-menu li a, .sidebar .nav-menu li a:visited { display: block; padding: 12px 20px; color: #b8c7ce; text-decoration: none !important; border-left: 3px solid transparent; transition: all 0.2s; font-size: 14px; }
+        .sidebar .nav-menu li a:hover, .sidebar .nav-menu li a:focus, .sidebar .nav-menu li a.active { background: #1e282c; color: #fff; border-left-color: #3c8dbc; text-decoration: none !important; }
+        .sidebar .nav-menu li a i { width: 20px; margin-right: 10px; text-align: center; }
+        .sidebar .nav-menu .section-title { padding: 15px 20px 5px; text-transform: uppercase; font-size: 11px; color: #4b646f; letter-spacing: 1px; }
+        .content-wrapper { flex: 1; margin-left: 250px; padding: 15px; }
+        .content-header { padding: 10px 0; margin-bottom: 15px; }
+        .content-header h1 { font-size: 24px; margin: 0; }
+        .content-header h1 small { font-size: 14px; color: #888; }
+        .breadcrumb-bar { background: #fff; padding: 8px 15px; border-radius: 3px; margin-bottom: 15px; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
+        .breadcrumb-bar a { color: #3c8dbc; text-decoration: none; }
+        .breadcrumb-bar a:hover { text-decoration: underline; }
+        /* Module cards grid */
+        .modules { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
+        .modules .module { width: 180px; }
+        .modules .module .panel { margin-bottom: 0; transition: box-shadow 0.2s; }
+        .modules .module .panel:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .modules .module .panel-body { text-decoration: none !important; color: #333; display: block; }
+        .modules .module .panel-body:hover, .modules .module .panel-body:focus { text-decoration: none !important; color: #333; }
+        .modules .module .panel-thumb { font-size: 40px; color: #3c8dbc; margin-bottom: 8px; }
+        .modules .module .panel-thumb .desc { font-size: 12px; color: #888; margin-top: 5px; }
+        .modules .module h4 { font-size: 13px; margin: 5px 0 0; }
+        /* Badge colors */
+        .badge-error, .label-error { background-color: #dd4b39; }
+        .badge-success, .label-success { background-color: #00a65a; }
+        .badge-warning, .label-warning { background-color: #f39c12; }
+        .badge-info, .label-info { background-color: #00c0ef; }
+        /* Responsive */
+        @media (max-width: 767px) {
+            .sidebar { width: 0; overflow: hidden; transition: width 0.3s; }
+            .sidebar.open { width: 250px; }
+            .content-wrapper { margin-left: 0; }
+            .mobile-toggle { display: block !important; }
+        }
+        .mobile-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 200; background: #3c8dbc; color: #fff; border: none; padding: 8px 12px; border-radius: 3px; }
+        /* DataTables override */
+        .dataTables_wrapper .dataTables_paginate { float: right; }
+        .dataTables_wrapper .dataTables_length { display: inline; }
+        .dataTables_wrapper .dataTables_filter input { border-radius: 3px; border: 1px solid #d2d6de; padding: 4px 8px; }
+        /* Mapping stats */
+        .mapping-stats { display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap; }
+        .stat-card { flex:1; min-width:120px; text-align:center; padding:12px 8px; border-radius:6px; background:#fff; border:1px solid #e0e0e0; }
+        .stat-card h3 { margin:0 0 2px; font-size:22px; }
+        .stat-card small { color:#888; font-size:11px; }
+        .filter-bar { margin-bottom:12px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+        .filter-bar .btn.active { box-shadow:inset 0 2px 4px rgba(0,0,0,.15); }
+        .badge-mapped { background:#27ae60; }
+        .badge-unmapped { background:#e74c3c; }
+        .badge-pushed { background:#8e44ad; }
+        .nowrap th, .nowrap td { white-space:nowrap; }
+        .auto-panel-toggle { cursor:pointer; }
+        .auto-panel-body { display:none; }
+        #autoMappingLog { max-height:220px; overflow-y:auto; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:8px; font-size:11px; display:none; margin-top:8px; }
+        #autoMappingLog .log-entry { padding:2px 0; border-bottom:1px solid #eee; }
+        #autoMappingLog .log-success { color:#27ae60; }
+        #autoMappingLog .log-error { color:#e74c3c; }
+        #autoMappingLog .log-skipped { color:#f39c12; }
+        #autoMappingLog .log-notfound { color:#95a5a6; }
+        #autoMappingLog .log-info { color:#3498db; }
+        .selected { background-color: #d0ebff !important; }
+        /* Fix selectator inside modal */
+        .modal .selectator_element { z-index:1060 !important; position:relative; }
+        .modal .selectator_options { z-index:1070 !important; position:absolute; background:#fff; width:100%; box-shadow:0 4px 12px rgba(0,0,0,.25); max-height:250px; overflow-y:auto; }
+    </style>
+</head>
+<body>
+    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <i class="fa fa-bars"></i>
+    </button>
+    <div class="wrapper">
+        <div class="sidebar">
+            <a href="/web" class="brand"><i class="fa fa-heartbeat"></i> Satu Sehat Go</a>
+            <ul class="nav-menu">
+                <li class="section-title">Menu Utama</li>
+                <li><a href="/web" class="{{if eq .Page "manage"}}active{{end}}"><i class="fa fa-th-large"></i> Dashboard</a></li>
+                <li><a href="/web/response" class="{{if eq .Page "response"}}active{{end}}"><i class="fa fa-list"></i> Response</a></li>
+                <li><a href="/web/bulk" class="{{if eq .Page "bulk"}}active{{end}}"><i class="fa fa-paper-plane"></i> Kirim Massal</a></li>
+                <li><a href="/web/cron" class="{{if eq .Page "cron"}}active{{end}}"><i class="fa fa-clock-o"></i> Cron Monitor</a></li>
+                <li class="section-title">Mapping</li>
+                <li><a href="/web/departemen" class="{{if eq .Page "departemen"}}active{{end}}"><i class="fa fa-building"></i> Departemen</a></li>
+                <li><a href="/web/lokasi" class="{{if eq .Page "lokasi"}}active{{end}}"><i class="fa fa-map-marker"></i> Lokasi</a></li>
+                <li><a href="/web/mapping/praktisi" class="{{if eq .Page "mapping_praktisi"}}active{{end}}"><i class="fa fa-user-md"></i> Praktisi</a></li>
+                <li><a href="/web/mapping/obat" class="{{if eq .Page "mapping_obat"}}active{{end}}"><i class="fa fa-medkit"></i> Obat</a></li>
+                <li><a href="/web/mapping/lab" class="{{if eq .Page "mapping_lab"}}active{{end}}"><i class="fa fa-flask"></i> Laboratorium</a></li>
+                <li><a href="/web/mapping/rad" class="{{if eq .Page "mapping_rad"}}active{{end}}"><i class="fa fa-film"></i> Radiologi</a></li>
+                <li class="section-title">Referensi</li>
+                <li><a href="/web/praktisi" class="{{if eq .Page "praktisi"}}active{{end}}"><i class="fa fa-stethoscope"></i> Praktisi</a></li>
+                <li class="section-title">Pengaturan</li>
+                <li><a href="/web/settings" class="{{if eq .Page "settings"}}active{{end}}"><i class="fa fa-cog"></i> Settings</a></li>
+            </ul>
+        </div>
+        <div class="content-wrapper">
+            <div class="breadcrumb-bar">
+                <a href="/web"><i class="fa fa-home"></i> Home</a>
+                {{if ne .Page "manage"}} &raquo; <span>{{.Title}}</span>{{end}}
+            </div>
+            <div id="main-content">
+                {{template "content" .}}
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap 3 -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <!-- Moment.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
+    <!-- Datetimepicker -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+    <!-- Selectator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/selectator/3.2/fm.selectator.jquery.min.js"></script>
+    <script>
+        // Global config (like mlite object)
+        var ssgo = {
+            apiBase: '/api',
+            webBase: '/web'
+        };
+    </script>
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}
+
+{{define "scripts"}}{{end}}

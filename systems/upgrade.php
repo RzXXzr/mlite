@@ -1714,10 +1714,48 @@ switch ($version) {
     case '6.0.0':
         $return = '6.2.0'; 
         break;
+
+    case '6.2.0':
+        // Tambah kolom pendukung nomor harian dan QR verifikasi surat sakit
+        $this->core->db()->pdo()->exec("ALTER TABLE `mlite_surat_sakit`
+            ADD COLUMN `tanggal_surat`      DATE        NULL DEFAULT NULL,
+            ADD COLUMN `nomor_urut_harian`  INT         NULL DEFAULT NULL,
+            ADD COLUMN `verification_token` VARCHAR(64) NULL DEFAULT NULL,
+            ADD COLUMN `created_at`         DATETIME    NULL DEFAULT NULL,
+            ADD COLUMN `updated_at`         DATETIME    NULL DEFAULT NULL");
+        $this->core->db()->pdo()->exec("ALTER TABLE `mlite_surat_sakit`
+            ADD UNIQUE KEY `uq_surat_harian` (`tanggal_surat`, `nomor_urut_harian`),
+            ADD UNIQUE KEY `uq_verification_token` (`verification_token`)");
+        $return = '6.3.0';
+        break;
+        $return = '6.3.0';
+        break;
+
+    case '6.3.0':
+        // Tambah kolom pendukung nomor harian dan QR verifikasi surat sehat
+        $this->core->db()->pdo()->exec("ALTER TABLE `mlite_surat_sehat`
+            ADD COLUMN `tanggal_surat`      DATE        NULL DEFAULT NULL,
+            ADD COLUMN `nomor_urut_harian`  INT         NULL DEFAULT NULL,
+            ADD COLUMN `verification_token` VARCHAR(64) NULL DEFAULT NULL,
+            ADD COLUMN `berlaku_sampai`     DATE        NULL DEFAULT NULL,
+            ADD COLUMN `suhu_badan`         VARCHAR(10) NULL DEFAULT NULL,
+            ADD COLUMN `agama`              VARCHAR(50) NULL DEFAULT NULL,
+            ADD COLUMN `pekerjaan`          VARCHAR(100) NULL DEFAULT NULL,
+            ADD COLUMN `created_at`         DATETIME    NULL DEFAULT NULL,
+            ADD COLUMN `updated_at`         DATETIME    NULL DEFAULT NULL");
+        $this->core->db()->pdo()->exec("ALTER TABLE `mlite_surat_sehat`
+            ADD UNIQUE KEY `uq_sehat_harian` (`tanggal_surat`, `nomor_urut_harian`),
+            ADD UNIQUE KEY `uq_sehat_verification_token` (`verification_token`)");
+        $return = '6.4.0';
+        break;
+
+    case '6.4.0':
+        $return = '6.4.0';
+        break;
     }
 
     if (!isset($return) || !$return) {
-        $return = '6.2.0';
+        $return = '6.4.0';
     }
 
 return $return;

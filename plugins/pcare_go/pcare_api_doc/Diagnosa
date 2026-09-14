@@ -1,0 +1,39 @@
+Get Diagnosa
+{Base URL}/{Service Name}/diagnosa/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Get Data Diagnosa
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode atau nama diagnosa
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 33,
+    "list": [
+      {
+        "kdDiag": "A001",
+        "nmDiag": "Cholera due to vibrio cholerae 01, biovar eltor",
+        "nonSpesialis": false
+      },
+      {
+        "kdDiag": "B001",
+        "nmDiag": "Herpesviral vesicular dermatitis",
+        "nonSpesialis": true
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

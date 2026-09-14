@@ -1,0 +1,60 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-medkit"></i> Obat DPHO</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabCari" data-toggle="tab">Cari Obat DPHO</a></li>
+            <li><a href="#tabAdd" data-toggle="tab">Tambah Obat Kunjungan</a></li>
+            <li><a href="#tabList" data-toggle="tab">Obat per Kunjungan</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabCari">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="keyword" placeholder="Nama obat"><span class="input-group-btn"><button class="btn btn-primary" id="btnCari"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered" id="tblObat"><thead><tr><th>Kode</th><th>Nama</th><th>Satuan</th></tr></thead><tbody id="tblObatBody"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabAdd">
+                <form id="formObat">
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>No. Kunjungan</label><input type="text" class="form-control" name="noKunjungan"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kode Obat DPHO</label><input type="text" class="form-control" name="kdObatSK"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Signa 1</label><input type="text" class="form-control" name="signa1" value="1"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Signa 2</label><input type="text" class="form-control" name="signa2" value="1"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Qty</label><input type="text" class="form-control" name="jmlObat" value="10"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Hari</label><input type="text" class="form-control" name="jmlHari" value="3"></div></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan</button>
+                </form>
+                <div id="resAdd" style="display:none;margin-top:15px"><pre id="resAddPre"></pre></div>
+            </div>
+            <div class="tab-pane" id="tabList">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="noKunjunganList" placeholder="No. Kunjungan"><span class="input-group-btn"><button class="btn btn-primary" id="btnList"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div id="resListPre" style="margin-top:15px"><pre id="resList"></pre></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#btnCari').click(function(){
+    var kw=$('#keyword').val();if(!kw)return;
+    apiCall('GET','/obat-dpho/'+encodeURIComponent(kw)+'/0/50').done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,o){b+='<tr><td>'+o.kdObatSK+'</td><td>'+o.nmObat+'</td><td>'+(o.satuan||'-')+'</td></tr>';});}
+        $('#tblObatBody').html(b||'<tr><td colspan="3">Tidak ditemukan</td></tr>');
+    });
+});
+$('#keyword').on('keypress',function(e){if(e.which==13)$('#btnCari').click();});
+$('#formObat').on('submit',function(e){
+    e.preventDefault();var d={};$(this).find('input').each(function(){d[$(this).attr('name')]=$(this).val();});
+    apiCall('POST','/obat',d).done(function(r){$('#resAddPre').text(JSON.stringify(r,null,2));$('#resAdd').show();showAlert('success','Obat berhasil ditambahkan');}).fail(function(){showAlert('danger','Gagal');});
+});
+$('#btnList').click(function(){
+    var no=$('#noKunjunganList').val();if(!no)return;
+    apiCall('GET','/obat/'+encodeURIComponent(no)).done(function(r){$('#resList').text(JSON.stringify(r,null,2));});
+});
+</script>
+{{end}}

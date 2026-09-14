@@ -1,0 +1,70 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-graduation-cap"></i> Referensi Spesialis</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabSpesialis" data-toggle="tab">Spesialis</a></li>
+            <li><a href="#tabSubSpesialis" data-toggle="tab">Sub Spesialis</a></li>
+            <li><a href="#tabSarana" data-toggle="tab">Sarana</a></li>
+            <li><a href="#tabFaskes" data-toggle="tab">Faskes Rujukan</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabSpesialis">
+                <button class="btn btn-primary" id="btnSpesialis"><i class="fa fa-refresh"></i> Muat Spesialis</button>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblSpesialis"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabSubSpesialis">
+                <div class="row"><div class="col-md-4"><div class="input-group"><input type="text" class="form-control" id="kdSpSub" placeholder="Kode Spesialis"><span class="input-group-btn"><button class="btn btn-primary" id="btnSubSp"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblSubSp"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabSarana">
+                <button class="btn btn-primary" id="btnSarana"><i class="fa fa-refresh"></i> Muat Sarana</button>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblSarana"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabFaskes">
+                <div class="row">
+                    <div class="col-md-3"><div class="form-group"><label>Kd Spesialis</label><input type="text" class="form-control" id="fKdSp"></div></div>
+                    <div class="col-md-3"><div class="form-group"><label>Kd Sub Spesialis</label><input type="text" class="form-control" id="fKdSubSp"></div></div>
+                    <div class="col-md-3"><div class="form-group"><label>Kd Sarana</label><input type="text" class="form-control" id="fKdSarana"></div></div>
+                    <div class="col-md-3"><button class="btn btn-primary" id="btnFaskes" style="margin-top:25px"><i class="fa fa-search"></i> Cari</button></div>
+                </div>
+                <div class="table-responsive"><table class="table table-striped table-bordered"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblFaskes"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+$('#btnSpesialis').click(function(){
+    apiCall('GET','/spesialis').done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,s){b+='<tr><td>'+s.kdSpesialis+'</td><td>'+s.nmSpesialis+'</td></tr>';});}
+        $('#tblSpesialis').html(b||'<tr><td colspan="2">Tidak ada data</td></tr>');
+    });
+});
+$('#btnSubSp').click(function(){
+    var kd=$('#kdSpSub').val();if(!kd)return;
+    apiCall('GET','/subspesialis/'+encodeURIComponent(kd)).done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,s){b+='<tr><td>'+s.kdSubSpesialis+'</td><td>'+s.nmSubSpesialis+'</td></tr>';});}
+        $('#tblSubSp').html(b||'<tr><td colspan="2">Tidak ada data</td></tr>');
+    });
+});
+$('#btnSarana').click(function(){
+    apiCall('GET','/sarana').done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,s){b+='<tr><td>'+s.kdSarana+'</td><td>'+s.nmSarana+'</td></tr>';});}
+        $('#tblSarana').html(b||'<tr><td colspan="2">Tidak ada data</td></tr>');
+    });
+});
+$('#btnFaskes').click(function(){
+    var sp=$('#fKdSp').val()||'0',sub=$('#fKdSubSp').val()||'0',sar=$('#fKdSarana').val()||'0';
+    apiCall('GET','/faskes-rujukan/'+sp+'/'+sub+'/'+sar+'/0/50').done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,f){b+='<tr><td>'+f.kdProvider+'</td><td>'+f.nmProvider+'</td></tr>';});}
+        $('#tblFaskes').html(b||'<tr><td colspan="2">Tidak ditemukan</td></tr>');
+    });
+});
+</script>
+{{end}}

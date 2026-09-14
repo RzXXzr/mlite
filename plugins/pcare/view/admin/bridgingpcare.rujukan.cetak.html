@@ -134,14 +134,14 @@
 							</tr>
 							<tr>
 								<td colspan="3"></td>
-								<td colspan="3" align="center">Salam Sejawat<br>{?=dateIndonesia(date('Y-m-d'))?}</td>
+								<td colspan="3" align="center">Salam Sejawat<br>{?=dateIndonesia(date('Y-m-d', strtotime($bridging_pcare.tgl_kunjungan)))?}</td>
 							</tr>
 							<tr>
-								<td colspan="6" style="font-size: 11px;">Tgl. Rencana Berkunjung : {?=date('d-M-Y', strtotime($bridging_pcare.tgl_estimasi_rujuk))?}</td>
+								<td colspan="6" style="font-size: 11px;">Tgl. Rencana Berkunjung : {?=dateIndonesia(date('Y-m-d', strtotime($bridging_pcare.tgl_estimasi_rujuk)))?}</td>
 							</tr>
 							<tr>
 								<td colspan="3" style="font-size: 11px;">Surat rujukan berlaku 1[satu] kali kunjungan.</td>
-								<td colspan="3" align="center">drg. FAISOL BASORO</td>
+								<td colspan="3" align="center">{$bridging_pcare.nama_dokter}</td>
 							</tr>
 						</table>
 					</td>

@@ -37,34 +37,21 @@
 		<center>
 			<table style="font-size: 8pt;" rules='rows'>
 				<tr>
-					<td align="center"><strong style="font-size: 12pt;" > {$settings.nama_instansi} </strong></td>
+					<td align="center"><strong style="font-size: 11pt;" > {$settings.nama_instansi} </strong></td>
 				</tr>
 				<tr style="border-bottom: 1px solid #ddd;">
-					<td  align = "center" >
-						<span style="font-size: 7pt;">
-							<div>{$settings.alamat}</div>
-							{$settings.nomor_telepon} - {$settings.email}
-						</span>
+					<td align="center">
+						<span style="font-size: 6pt;">{$settings.alamat}</span>
 					</td>
 				</tr>
 				<tr>
-					<td align="center" style="padding-top:20px;">
-						<small>BUKTI PENDAFTARAN RAWAT JALAN<br>
-						Tanggal : {?=date('Y-m-d')?}<br></small>
+					<td align="center" style="padding-top:8px;">
+						<small>PENDAFTARAN RAWAT JALAN - {?=date('d/m/Y')?}</small>
 					</td>
 				</tr>
 				<tr>
-					<td align="center" style="font-size:54px;padding-top:15px;">
-						<div class="panel panel-default" style="width:130px;">
-							<div class="pane-body">
-								{$rawat_jalan.no_reg}
-							</div>
-						</div>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						<span class="pull-left">ID Daftar</span><span class="pull-right">{$rawat_jalan.no_rawat}</span>
+					<td align="center" style="font-size:32px;padding-top:5px;padding-bottom:5px;">
+						<strong>{$rawat_jalan.no_reg}</strong>
 					</td>
 				</tr>
 				<tr>
@@ -74,7 +61,7 @@
 				</tr>
 				<tr>
 					<td>
-						<span class="pull-left">Nomor RM</span><span class="pull-right">{$rawat_jalan.no_rkm_medis}</span>
+						<span class="pull-left">No. RM</span><span class="pull-right">{$rawat_jalan.no_rkm_medis}</span>
 					</td>
 				</tr>
 				<tr>
@@ -88,15 +75,13 @@
 					</td>
 				</tr>
 				<tr>
-					<td style="padding-bottom:20px;">
+					<td style="padding-bottom:8px;">
 						<span class="pull-left">Penjamin</span><span class="pull-right">{$rawat_jalan.png_jawab}</span>
 					</td>
 				</tr>
 				<tr style="border-top: 1px solid #ddd;">
-					<td align="center" style="padding-top:10px;padding-bottom:20px;">
-						Terima Kasih Atas kepercayaan Anda.<br>
-						Bawalah kartu Berobat anda<br>
-						dan datang 30 menit sebelumnya.<br>
+					<td align="center" style="padding-top:8px;padding-bottom:8px;font-size:7pt;">
+						Harap datang 30 menit sebelumnya
 					</td>
 				</tr>
 			</table>

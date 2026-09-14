@@ -1,0 +1,82 @@
+{{define "content"}}
+<h4><i class="fa fa-building"></i> Mapping Departemen Satu Sehat</h4>
+<form id="formDepartemen">
+    <input type="hidden" name="id_organisasi_satusehat" id="id_organisasi_satusehat">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>ID Departemen</label>
+                        <select name="dep_id" id="dep_id" class="form-control" onchange="document.getElementById('nama_departemen').value=this.options[this.selectedIndex].text.split('- ')[1]||''">
+                            <option value="">Pilih Departemen</option>
+                            {{range .Departemen}}
+                            <option value="{{.DepID}}">[{{.DepID}}] - {{.Nama}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Departemen</label>
+                        <input type="text" name="nama" id="nama_departemen" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-12" style="padding-top:20px;">
+                    <button type="submit" name="action" value="simpan" class="btn btn-success"><i class="fa fa-save"></i> Simpan</button>
+                    <button type="submit" name="action" value="update" class="btn btn-info"><i class="fa fa-pencil"></i> Update</button>
+                    <button type="submit" name="action" value="hapus" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive" id="mapping_departemen">
+            <table class="table table-striped table-bordered nowrap" id="tblDepartemen" width="100%">
+                <thead>
+                    <tr>
+                        <th>ID Departemen</th>
+                        <th>Nama Departemen</th>
+                        <th>ID Organisasi Satu Sehat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .MappingDepartemen}}
+                    <tr class="mapping_departemen" data-dep_id="{{.DepID}}" data-nama="{{.Nama}}" data-id_organisasi="{{.IDOrganisasi}}">
+                        <td>{{.DepID}}</td>
+                        <td>{{.Nama}}</td>
+                        <td>{{.IDOrganisasi}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#tblDepartemen').DataTable({ lengthChange: false, pageLength: 25 });
+
+$('#mapping_departemen').on('click', '.mapping_departemen', function(){
+    var dep_id = $(this).data('dep_id');
+    var nama = $(this).data('nama');
+    var id_org = $(this).data('id_organisasi');
+    $('#dep_id').val(dep_id).change();
+    $('#nama_departemen').val(nama);
+    $('#id_organisasi_satusehat').val(id_org);
+});
+
+$('#formDepartemen').on('submit', function(e){
+    e.preventDefault();
+    var action = $(document.activeElement).val();
+    if(action === 'hapus' && !confirm('Yakin ingin menghapus?')) return;
+    var data = $(this).serialize() + '&action=' + action;
+    $.post('/api/mapping/departemen', data, function(resp){
+        alert(resp.message || 'Berhasil!');
+        location.reload();
+    }).fail(function(xhr){ alert('Error: ' + xhr.responseText); });
+});
+</script>
+{{end}}

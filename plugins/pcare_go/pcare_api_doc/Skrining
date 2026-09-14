@@ -1,0 +1,208 @@
+Get Skrining Riwayat Kesehatan by Penyakit New
+{Base URL}/{Service Name}/skrinning/rekap
+Fungsi : Mengambil data rekapitulasi hasil Skrining Riwayat Kesehatan per penyakit
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                
+{
+    "response": {
+        "list": [
+            {
+                "nama_penyakit": "penyakit_anemia",
+                "beresiko": 131,
+                "tidak_beresiko": 8881
+            },
+            {
+                "nama_penyakit": "penyakit_diabetes_mellitus",
+                "beresiko": 4842,
+                "tidak_beresiko": 9239
+            },
+            {
+                "nama_penyakit": "penyakit_hepatitis_b",
+                "beresiko": 746,
+                "tidak_beresiko": 14596
+            },
+            {
+                "nama_penyakit": "penyakit_hepatitis_c",
+                "beresiko": 389,
+                "tidak_beresiko": 14953
+            },
+            {
+                "nama_penyakit": "penyakit_hipertensi_stroke_ischemic_heart_disease",
+                "beresiko": 5942,
+                "tidak_beresiko": 7591
+            },
+            {
+                "nama_penyakit": "penyakit_kanker_paru",
+                "beresiko": 352,
+                "tidak_beresiko": 6792
+            },
+            {
+                "nama_penyakit": "penyakit_kanker_payudara",
+                "beresiko": 440,
+                "tidak_beresiko": 9084
+            },
+            {
+                "nama_penyakit": "penyakit_kanker_serviks",
+                "beresiko": 5749,
+                "tidak_beresiko": 3779
+            },
+            {
+                "nama_penyakit": "penyakit_kolorektal",
+                "beresiko": 43,
+                "tidak_beresiko": 5741
+            },
+            {
+                "nama_penyakit": "penyakit_paru_obstruktif_kronis",
+                "beresiko": 826,
+                "tidak_beresiko": 7559
+            },
+            {
+                "nama_penyakit": "penyakit_thalasemia",
+                "beresiko": 90,
+                "tidak_beresiko": 15211
+            },
+            {
+                "nama_penyakit": "penyakit_tuberkulosis",
+                "beresiko": 961,
+                "tidak_beresiko": 14381
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+Get Detail Peserta Skrining Riwayat Kesehatan New
+{Base URL}/{Service Name}/skrinning/peserta/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Mengambil data rekapitulasi Skrining Riwayat Kesehatan per peserta
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor atau Nama Peserta
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                
+{
+    "response": {
+        "count": 1,
+        "list": [
+            {
+                "nomor_peserta": "0000127207697",
+                "nama": "A SITI RAHMA SYAHIDAH PUTRI",
+                "usia": 17,
+                "no_hp": "08111789265",
+                "email": "",
+                "status_penyakit": {
+                    "anemia": "Tidak Berisiko",
+                    "hepatitis_b": "Tidak Berisiko",
+                    "hepatitis_c": "Tidak Berisiko",
+                    "hipertensi_stroke_ischemic_heart_disease": "Tidak Berisiko",
+                    "kanker_paru": "Tidak Mengisi",
+                    "kanker_payudara": "Tidak Berisiko",
+                    "kanker_serviks": "Berisiko",
+                    "kolorektal": "Tidak Mengisi",
+                    "paru_obstruktif_kronis": "Tidak Mengisi",
+                    "penyakit_diabetes_mellitus": "Tidak Berisiko",
+                    "thalasemia": "Tidak Berisiko",
+                    "tuberkulosis": "Tidak Berisiko"
+                }
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+Get Data Prolanis Diabetes Mellitus New
+{Base URL}/{Service Name}/skrinning/prolanis/dm/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Mengambil data peserta prolanis DM sejak tahun 2017
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor atau Nama Peserta
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                
+{
+    "response": {
+        "count": 1,
+        "list": [
+            {
+                "nomor_peserta": "0001222114487",
+                "nama": "ABDUL BASIT",
+                "usia": 52,
+                "jenis_kelamin": "Laki-laki",
+                "diagnosa_terakhir": "E119;Non-insulin-dependent diabetes mellitus without complications;",
+                "status_prolanis": "Sudah"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+
+Get Data Prolanis Hipertensi New
+{Base URL}/{Service Name}/skrinning/prolanis/ht/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Mengambil data peserta prolanis HT sejak tahun 2017
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor atau Nama Peserta
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                
+{
+    "response": {
+        "count": 1,
+        "list": [
+            {
+                "nomor_peserta": "0001222114487",
+                "nama": "ABDUL BASIT",
+                "usia": 52,
+                "jenis_kelamin": "Laki-laki",
+                "diagnosa_terakhir": "I10;Essential (primary) hypertension;",
+                "status_prolanis": "Sudah"
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+

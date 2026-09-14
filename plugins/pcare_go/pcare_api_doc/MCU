@@ -1,0 +1,216 @@
+Get MCU
+{Base URL}/{Service Name}/MCU/kunjungan/{Parameter 1}
+Fungsi : Get Data MCU
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kunjungan
+
+                                    
+{
+  "response": {
+    "count": 1,
+    "list": [
+      {
+        "kdMCU": 43,
+        "noKunjungan": "0114U1630316Y000003",
+        "kdProvider": "0114u163",
+        "tglPelayanan": "22-03-2016",
+        "tekananDarahSistole": 0,
+        "tekananDarahDiastole": 0,
+        "radiologiFoto": null,
+        "darahRutinHemo": 0,
+        "darahRutinLeu": 0,
+        "darahRutinErit": 7,
+        "darahRutinLaju": 0,
+        "darahRutinHema": 0,
+        "darahRutinTrom": 0,
+        "lemakDarahHDL": 0,
+        "lemakDarahLDL": 0,
+        "lemakDarahChol": 0,
+        "lemakDarahTrigli": 0,
+        "gulaDarahSewaktu": 0,
+        "gulaDarahPuasa": 0,
+        "gulaDarahPostPrandial": 0,
+        "gulaDarahHbA1c": 0,
+        "fungsiHatiSGOT": 0,
+        "fungsiHatiSGPT": 0,
+        "fungsiHatiGamma": 0,
+        "fungsiHatiProtKual": 0,
+        "fungsiHatiAlbumin": 0,
+        "fungsiGinjalCrea": 0,
+        "fungsiGinjalUreum": 0,
+        "fungsiGinjalAsam": 0,
+        "fungsiJantungABI": 0,
+        "fungsiJantungEKG": null,
+        "fungsiJantungEcho": null,
+        "funduskopi": null,
+        "pemeriksaanLain": null,
+        "keterangan": null
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Add MCU
+{Base URL}/{Service Name}/MCU
+Fungsi : Add Data MCU
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                                
+{
+  "kdMCU": 0,
+  "noKunjungan": "0114U1630316Y000003",
+  "kdProvider": "0114u163",
+  "tglPelayanan": "22-03-2016",
+  "tekananDarahSistole": 0,
+  "tekananDarahDiastole": 0,
+  "radiologiFoto": null,
+  "darahRutinHemo": 0,
+  "darahRutinLeu": 0,
+  "darahRutinErit": 7,
+  "darahRutinLaju": 0,
+  "darahRutinHema": 0,
+  "darahRutinTrom": 0,
+  "lemakDarahHDL": 0,
+  "lemakDarahLDL": 0,
+  "lemakDarahChol": 0,
+  "lemakDarahTrigli": 0,
+  "gulaDarahSewaktu": 0,
+  "gulaDarahPuasa": 0,
+  "gulaDarahPostPrandial": 0,
+  "gulaDarahHbA1c": 0,
+  "fungsiHatiSGOT": 0,
+  "fungsiHatiSGPT": 0,
+  "fungsiHatiGamma": 0,
+  "fungsiHatiProtKual": 0,
+  "fungsiHatiAlbumin": 0,
+  "fungsiGinjalCrea": 0,
+  "fungsiGinjalUreum": 0,
+  "fungsiGinjalAsam": 0,
+  "fungsiJantungABI": 0,
+  "fungsiJantungEKG": null,
+  "fungsiJantungEcho": null,
+  "funduskopi": null,
+  "pemeriksaanLain": null,
+  "keterangan": null
+}
+
+Response
+                                            
+{
+  "response": {
+    "field": "kdMCU",
+    "message": "33"
+  },
+  "metaData": {
+    "message": "CREATED",
+    "code": 201
+  }
+}
+
+
+Edit MCU
+{Base URL}/{Service Name}/MCU
+Fungsi : Edit Data MCU
+
+Method : PUT
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                                
+{
+  "kdMCU": 44,
+  "noKunjungan": "0114U1630316Y000003",
+  "kdProvider": "1301U007",
+  "tglPelayanan": "22-03-2016",
+  "tekananDarahSistole": 20,
+  "tekananDarahDiastole": 0,
+  "radiologiFoto": null,
+  "darahRutinHemo": 0,
+  "darahRutinLeu": 0,
+  "darahRutinErit": 0,
+  "darahRutinLaju": 0,
+  "darahRutinHema": 0,
+  "darahRutinTrom": 0,
+  "lemakDarahHDL": 0,
+  "lemakDarahLDL": 0,
+  "lemakDarahChol": 0,
+  "lemakDarahTrigli": 0,
+  "gulaDarahSewaktu": 0,
+  "gulaDarahPuasa": 0,
+  "gulaDarahPostPrandial": 0,
+  "gulaDarahHbA1c": 0,
+  "fungsiHatiSGOT": 0,
+  "fungsiHatiSGPT": 0,
+  "fungsiHatiGamma": 0,
+  "fungsiHatiProtKual": 0,
+  "fungsiHatiAlbumin": 0,
+  "fungsiGinjalCrea": 0,
+  "fungsiGinjalUreum": 0,
+  "fungsiGinjalAsam": 0,
+  "fungsiJantungABI": 0,
+  "fungsiJantungEKG": null,
+  "fungsiJantungEcho": null,
+  "funduskopi": null,
+  "pemeriksaanLain": null,
+  "keterangan": null
+}
+
+
+Response
+                                            
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Delete MCU
+{Base URL}/{Service Name}/MCU/{Parameter 1}/kunjungan/{Parameter 2}
+Fungsi : Delete Data MCU
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode MCU
+
+Parameter 2 : Nomor Kunjungan
+
+                                    
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

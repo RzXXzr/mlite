@@ -281,7 +281,7 @@ $("#form_soap").on("click", "#simpan_soap", function(event){
       $('input:text[name=berat]').val("");
       $('input:text[name=gcs]').val("");
       $('input:text[name=kesadaran]').val("");
-      $('input:text[name=alergi]').val("");
+      $('input:text[name=alergi]').val(window._pcareAlergiText || '');
       $('input:text[name=lingkar_perut]').val("");
       $('textarea[name=keluhan]').val("");
       $('textarea[name=pemeriksaan]').val("");
@@ -327,23 +327,42 @@ $("#soap").on("click",".copy_soap", function(event){
   var evaluasi        = $(this).attr("data-evaluasi");
   var spo2            = $(this).attr("data-spo2");
 
-  $('input:text[name=suhu_tubuh]').val(suhu_tubuh);
-  $('input:text[name=tensi]').val(tensi);
-  $('input:text[name=nadi]').val(nadi);
-  $('input:text[name=respirasi]').val(respirasi);
-  $('input:text[name=tinggi]').val(tinggi);
-  $('input:text[name=berat]').val(berat);
-  $('input:text[name=gcs]').val(gcs);
-  $('input:text[name=kesadaran]').val(kesadaran);
-  $('input:text[name=alergi]').val(alergi);
-  $('input:text[name=lingkar_perut]').val(lingkar_perut);
-  $('textarea[name=keluhan]').val(keluhan);
-  $('textarea[name=pemeriksaan]').val(pemeriksaan);
-  $('textarea[name=penilaian]').val(penilaian);
-  $('textarea[name=rtl]').val(rtl);
-  $('textarea[name=instruksi]').val(instruksi);
-  $('textarea[name=evaluasi]').val(evaluasi);
-  $('input:text[name=spo2]').val(spo2);
+  // Salin ke Form: hanya isi field yang masih kosong atau hanya berisi "-"
+  function fillIfEmpty(selector, value) {
+    var $el = $(selector);
+    var cur = $el.val().trim();
+    if (cur === '' || cur === '-') $el.val(value);
+  }
+  fillIfEmpty('input:text[name=suhu_tubuh]', suhu_tubuh);
+  fillIfEmpty('input:text[name=tensi]', tensi);
+  fillIfEmpty('input:text[name=nadi]', nadi);
+  fillIfEmpty('input:text[name=respirasi]', respirasi);
+  fillIfEmpty('input:text[name=tinggi]', tinggi);
+  fillIfEmpty('input:text[name=berat]', berat);
+  fillIfEmpty('input:text[name=gcs]', gcs);
+  fillIfEmpty('input:text[name=kesadaran]', kesadaran);
+  // alergi selalu dari PCare — baca window._pcareAlergiText, fallback baca dropdown langsung
+  var _pcareText = window._pcareAlergiText;
+  if (!_pcareText && typeof buildAlergiTextFromPcare === 'function') {
+    _pcareText = buildAlergiTextFromPcare(
+      $('#alergi_makanan').val() || '00',
+      $('#alergi_makanan_lainnya').val() || '',
+      $('#alergi_udara').val() || '00',
+      $('#alergi_udara_lainnya').val() || '',
+      $('#alergi_obat').val() || '00',
+      $('#alergi_obat_lainnya').val() || ''
+    );
+    window._pcareAlergiText = _pcareText; // cache untuk berikutnya
+  }
+  $('input:text[name=alergi]').val(_pcareText || '');
+  fillIfEmpty('input:text[name=lingkar_perut]', lingkar_perut);
+  fillIfEmpty('textarea[name=keluhan]', keluhan);
+  fillIfEmpty('textarea[name=pemeriksaan]', pemeriksaan);
+  fillIfEmpty('textarea[name=penilaian]', penilaian);
+  fillIfEmpty('textarea[name=rtl]', rtl);
+  fillIfEmpty('textarea[name=instruksi]', instruksi);
+  fillIfEmpty('textarea[name=evaluasi]', evaluasi);
+  fillIfEmpty('input:text[name=spo2]', spo2);
 
 });
 
@@ -427,7 +446,7 @@ $("#soap").on("click",".hapus_soap", function(event){
         $('input:text[name=berat]').val("");
         $('input:text[name=gcs]').val("");
         $('input:text[name=kesadaran]').val("");
-        $('input:text[name=alergi]').val("");
+        $('input:text[name=alergi]').val(window._pcareAlergiText || '');
         $('input:text[name=lingkar_perut]').val("");
         $('textarea[name=keluhan]').val("");
         $('textarea[name=pemeriksaan]').val("");
@@ -1678,7 +1697,12 @@ $("#form_soap").on("click",".resume", function(event){
       output = JSON.parse(response.data);
       if(output['action'] == 'simpan'){
         if(output['modul'] == 'rawat_jalan' || output['modul'] == 'igd'){
-          $("#pemeriksaan_ralan #display").show().load(baseURL + '/pemeriksaan_ralan/display?t=' + mlite.token);
+          // Jangan reload display jika form SOAP sedang terbuka (mencegah form rusak)
+          // #form_soap adalah sibling dari #pemeriksaan_ralan, bukan child
+          if (!$('#form_soap').is(':visible')) {
+            // Load ke parent container agar tidak ada nested #display duplikat
+            $("#pemeriksaan_ralan").load(baseURL + '/pemeriksaan_ralan/display?t=' + mlite.token);
+          }
         }
       }
       

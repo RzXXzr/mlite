@@ -1,0 +1,104 @@
+{{define "content"}}
+<h4><i class="fa fa-map-marker"></i> Mapping Lokasi Satu Sehat</h4>
+<form id="formLokasi">
+    <input type="hidden" name="id_lokasi_satusehat" id="id_lokasi_satusehat">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Poli/Unit</label>
+                        <select name="kode" id="kode" class="form-control" onchange="document.getElementById('lokasi').value=this.options[this.selectedIndex].text.split('- ')[1]||''">
+                            <option value="">Pilih Poli/Unit</option>
+                            {{range .Lokasi}}
+                            <option value="{{.Kode}}">{{.Kode}} - {{.Nama}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Poli/Unit</label>
+                        <input type="text" name="lokasi" id="lokasi" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Departemen</label>
+                        <select name="dep_id" id="dep_id" class="form-control" onchange="document.getElementById('nama').value=this.options[this.selectedIndex].text.split('- ')[1]||''">
+                            <option value="">Pilih Departemen</option>
+                            {{range .SatuSehatDepartemen}}
+                            <option value="{{.DepID}}">{{.DepID}} - {{.Nama}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Departemen</label>
+                        <input type="text" name="nama" id="nama" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-12" style="padding-top:20px;">
+                    <button type="submit" name="action" value="simpan" class="btn btn-success"><i class="fa fa-save"></i> Simpan</button>
+                    <button type="submit" name="action" value="update" class="btn btn-info"><i class="fa fa-pencil"></i> Update</button>
+                    <button type="submit" name="action" value="hapus" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<div class="row">
+    <div class="col-md-12">
+        <div class="table-responsive" id="mapping_lokasi">
+            <table class="table table-striped table-bordered nowrap" id="tblLokasi" width="100%">
+                <thead>
+                    <tr>
+                        <th>Kode Lokasi</th>
+                        <th>Nama Lokasi</th>
+                        <th>ID Organisasi Satu Sehat</th>
+                        <th>ID Lokasi Satu Sehat</th>
+                        <th>Longitude</th>
+                        <th>Latitude</th>
+                        <th>Altitude</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .SatuSehatLokasi}}
+                    <tr class="mapping_lokasi" data-kode="{{.Kode}}" data-lokasi="{{.Lokasi}}" data-dep_id="{{.DepID}}" data-id_lokasi="{{.IDLokasi}}" data-nama="{{.Nama}}">
+                        <td>{{.Kode}}</td>
+                        <td>{{.Lokasi}}</td>
+                        <td>{{.IDOrganisasi}}</td>
+                        <td>{{.IDLokasi}}</td>
+                        <td>{{.Longitude}}</td>
+                        <td>{{.Latitude}}</td>
+                        <td>{{.Altitude}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#tblLokasi').DataTable({ lengthChange: false, pageLength: 25, scrollX: true });
+
+$('#mapping_lokasi').on('click', '.mapping_lokasi', function(){
+    $('#kode').val($(this).data('kode')).change();
+    $('#lokasi').val($(this).data('lokasi'));
+    $('#dep_id').val($(this).data('dep_id')).change();
+    $('#id_lokasi_satusehat').val($(this).data('id_lokasi'));
+    $('#nama').val($(this).data('nama'));
+});
+
+$('#formLokasi').on('submit', function(e){
+    e.preventDefault();
+    var action = $(document.activeElement).val();
+    if(action === 'hapus' && !confirm('Yakin ingin menghapus?')) return;
+    var data = $(this).serialize() + '&action=' + action;
+    $.post('/api/mapping/lokasi', data, function(resp){
+        alert(resp.message || 'Berhasil!');
+        location.reload();
+    }).fail(function(xhr){ alert('Error: ' + xhr.responseText); });
+});
+</script>
+{{end}}

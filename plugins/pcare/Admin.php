@@ -43,6 +43,7 @@ class Admin extends AdminModule
           'Dashboard' => 'dashboard',
           'Data Kunjungan BPJS' => 'datakunjunganbpjs',
           'Cek Sinkronisasi' => 'ceksinkronisasi',
+          'Cek Pendaftaran Provider' => 'cekpendaftaranprovider',
           'Diagnosa' => 'refdiagnosa',
           'Dokter' => 'refdokter',
           'Kesadaran' => 'refkesadaran',
@@ -2134,7 +2135,62 @@ class Admin extends AdminModule
     $alergi_makan_prefill = '00: Tidak Ada';
     $alergi_udara_prefill = '00: Tidak Ada';
     $alergi_obat_prefill = '00: Tidak Ada';
+
+    // Ambil data alergi dari tabel alergi_pasien untuk prefill
+    $alergi_pasien_data = $this->db('alergi_pasien')->where('no_rkm_medis', $no_rkm_medis)->oneArray();
+    if (!empty($alergi_pasien_data)) {
+      $mapMakanan = ['00'=>'Tidak Ada','01'=>'Seafood','02'=>'Gandum','03'=>'Susu Sapi','04'=>'Kacang-Kacangan','05'=>'Makanan Lain'];
+      $mapUdara = ['00'=>'Tidak Ada','01'=>'Udara Panas','02'=>'Udara Dingin','03'=>'Udara Kotor'];
+      $mapObat = ['00'=>'Tidak Ada','01'=>'Antibiotik','02'=>'Antiinflamasi','03'=>'Non Steroid','04'=>'Aspirin','05'=>'Kortikosteroid','06'=>'Insulin','07'=>'Obat-Obatan Lain'];
+
+      $kdMakanan = $alergi_pasien_data['alergi_makanan'] ?? '00';
+      $kdUdara = $alergi_pasien_data['alergi_udara'] ?? '00';
+      $kdObat = $alergi_pasien_data['alergi_obat'] ?? '00';
+
+      $nmMakanan = $mapMakanan[$kdMakanan] ?? 'Tidak Ada';
+      $nmUdara = $mapUdara[$kdUdara] ?? 'Tidak Ada';
+      $nmObat = $mapObat[$kdObat] ?? 'Tidak Ada';
+
+      // Jika ada keterangan "lainnya", tambahkan
+      if ($kdMakanan == '05' && !empty($alergi_pasien_data['alergi_makanan_lainnya'])) {
+        $nmMakanan .= ' (' . $alergi_pasien_data['alergi_makanan_lainnya'] . ')';
+      }
+      if (!empty($alergi_pasien_data['alergi_udara_lainnya'])) {
+        $nmUdara .= ' (' . $alergi_pasien_data['alergi_udara_lainnya'] . ')';
+      }
+      if ($kdObat == '07' && !empty($alergi_pasien_data['alergi_obat_lainnya'])) {
+        $nmObat .= ' (' . $alergi_pasien_data['alergi_obat_lainnya'] . ')';
+      }
+
+      $alergi_makan_prefill = $kdMakanan . ': ' . $nmMakanan;
+      $alergi_udara_prefill = $kdUdara . ': ' . $nmUdara;
+      $alergi_obat_prefill = $kdObat . ': ' . $nmObat;
+    }
     
+    // Prefill Terapi Obat dari tabel detail_pemberian_obat (data apotek)
+    $terapi_obat_prefill = 'tidak ada';
+    $pemberian_obat = $this->db('detail_pemberian_obat')
+      ->join('databarang', 'databarang.kode_brng=detail_pemberian_obat.kode_brng')
+      ->where('detail_pemberian_obat.no_rawat', $pendaftaran['no_rawat'])
+      ->desc('detail_pemberian_obat.tgl_perawatan')
+      ->desc('detail_pemberian_obat.jam')
+      ->toArray();
+    if (!empty($pemberian_obat)) {
+      $obat_list = [];
+      foreach ($pemberian_obat as $obat) {
+        // Ambil aturan pakai dari tabel aturan_pakai
+        $aturan = $this->db('aturan_pakai')
+          ->where('no_rawat', $obat['no_rawat'])
+          ->where('kode_brng', $obat['kode_brng'])
+          ->where('tgl_perawatan', $obat['tgl_perawatan'])
+          ->where('jam', $obat['jam'])
+          ->oneArray();
+        $aturan_text = !empty($aturan['aturan']) ? ' ' . $aturan['aturan'] : '';
+        $obat_list[] = $obat['nama_brng'] . ' (' . $obat['jml'] . ')' . $aturan_text;
+      }
+      $terapi_obat_prefill = implode(', ', $obat_list);
+    }
+
     // Ambil tanggal dari no_rawat (format: YYYY/MM/DD/XXXXXX)
     $tgl_dari_norawat = date('d-m-Y');
     if (!empty($pendaftaran['no_rawat'])) {
@@ -2157,6 +2213,7 @@ class Admin extends AdminModule
       'alergi_makan_prefill' => $alergi_makan_prefill,
       'alergi_udara_prefill' => $alergi_udara_prefill,
       'alergi_obat_prefill' => $alergi_obat_prefill,
+      'terapi_obat_prefill' => $terapi_obat_prefill,
       'tgl_dari_norawat' => $tgl_dari_norawat
     ]);
     exit();
@@ -2228,7 +2285,10 @@ class Admin extends AdminModule
     $bridging_pcare = $this->db('mlite_bridging_pcare')
       ->join('pasien', 'pasien.no_rkm_medis=mlite_bridging_pcare.no_rkm_medis')
       ->where('mlite_bridging_pcare.no_rkm_medis', $no_rkm_medis)
-      ->where("(kode_faskeskhusus <> '' OR kode_ppk <> '')")
+      ->where(function($q) {
+          $q->where('kode_ppk', '<>', '')
+            ->orWhere('kode_faskeskhusus', '<>', '');
+      })
       ->desc("STR_TO_DATE(mlite_bridging_pcare.tgl_kunjungan, '%d-%m-%Y')")
       ->toArray();
     echo $this->draw('bridgingpcare.rujukan.tampil.html', ['bridging_pcare' => $bridging_pcare]);
@@ -4241,6 +4301,101 @@ class Admin extends AdminModule
           // Tetap return success karena lokal sudah diupdate
           echo json_encode(['status' => 'success', 'message' => 'Pendaftaran dihapus (PCare response: ' . $errorDetail . ')']);
       }
+      exit();
+  }
+
+  public function getCekpendaftaranprovider()
+  {
+      $this->_addHeaderFiles();
+      return $this->draw('cekpendaftaranprovider.html');
+  }
+
+  public function getCekpendaftaranproviderdisplay()
+  {
+      $date_input = isset($_GET['date']) ? $_GET['date'] : date('d-m-Y');
+      $offset = isset($_GET['offset']) ? intval($_GET['offset']) : 0;
+      $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
+
+      // Konversi format tanggal dari dd-mm-yyyy ke dd-mm-yyyy (PCare format)
+      $date_parts = explode('-', $date_input);
+      if (count($date_parts) == 3) {
+          $tglDaftar = $date_parts[0] . '-' . $date_parts[1] . '-' . $date_parts[2];
+      } else {
+          $tglDaftar = date('d-m-Y');
+      }
+
+      date_default_timezone_set('UTC');
+      $tStamp = strval(time() - strtotime("1970-01-01 00:00:00"));
+      $key = $this->consumerID . $this->consumerSecret . $tStamp;
+
+      $url = $this->api_url . 'pendaftaran/tglDaftar/' . $tglDaftar . '/' . $offset . '/' . $limit;
+      $output = PcareService::get($url, NULL, $this->consumerID, $this->consumerSecret, $this->consumerUserKey, $this->usernamePcare, $this->passwordPcare, $this->kdAplikasi);
+      $json = json_decode($output, true);
+
+      $code = isset($json['metaData']['code']) ? $json['metaData']['code'] : '5000';
+      $message = isset($json['metaData']['message']) ? $json['metaData']['message'] : 'ERROR';
+
+      $stringDecrypt = stringDecrypt($key, isset($json['response']) ? $json['response'] : '');
+      $decompress = '';
+      if (!empty($stringDecrypt)) {
+          $decompress = \LZCompressor\LZString::decompressFromEncodedURIComponent($stringDecrypt);
+      }
+
+      $response = json_decode($decompress, true);
+
+      $error = false;
+      $count = 0;
+      $list = [];
+
+      if ($code != '200' && $code != '201') {
+          $error = true;
+      } else {
+          if (isset($response['count'])) {
+              $count = $response['count'];
+          }
+          if (isset($response['list']) && is_array($response['list'])) {
+              $no = $offset + 1;
+              foreach ($response['list'] as &$item) {
+                  $item['no'] = $no++;
+                  // Pastikan sub-array ada
+                  if (!isset($item['peserta'])) $item['peserta'] = [];
+                  if (!isset($item['poli'])) $item['poli'] = [];
+                  if (!isset($item['tkp'])) $item['tkp'] = [];
+                  // Default values
+                  $item['peserta']['noKartu'] = isset($item['peserta']['noKartu']) ? $item['peserta']['noKartu'] : '-';
+                  $item['peserta']['nama'] = isset($item['peserta']['nama']) ? $item['peserta']['nama'] : '-';
+                  $item['peserta']['sex'] = isset($item['peserta']['sex']) ? $item['peserta']['sex'] : '-';
+                  $item['peserta']['tglLahir'] = isset($item['peserta']['tglLahir']) ? $item['peserta']['tglLahir'] : '-';
+                  $item['poli']['nmPoli'] = isset($item['poli']['nmPoli']) ? $item['poli']['nmPoli'] : '-';
+                  $item['tkp']['nmTkp'] = isset($item['tkp']['nmTkp']) ? $item['tkp']['nmTkp'] : '-';
+                  $item['noUrut'] = isset($item['noUrut']) ? $item['noUrut'] : '-';
+                  $item['tglDaftar'] = isset($item['tglDaftar']) ? $item['tglDaftar'] : '-';
+                  $item['keluhan'] = isset($item['keluhan']) ? $item['keluhan'] : '-';
+                  $item['kunjSakit'] = isset($item['kunjSakit']) ? $item['kunjSakit'] : false;
+                  $item['status'] = isset($item['status']) ? $item['status'] : '-';
+                  $item['sistole'] = isset($item['sistole']) ? $item['sistole'] : 0;
+                  $item['diastole'] = isset($item['diastole']) ? $item['diastole'] : 0;
+                  $item['beratBadan'] = isset($item['beratBadan']) ? $item['beratBadan'] : 0;
+                  $item['tinggiBadan'] = isset($item['tinggiBadan']) ? $item['tinggiBadan'] : 0;
+                  $item['respRate'] = isset($item['respRate']) ? $item['respRate'] : 0;
+                  $item['heartRate'] = isset($item['heartRate']) ? $item['heartRate'] : 0;
+                  $item['providerPelayanan'] = isset($item['providerPelayanan']) ? $item['providerPelayanan'] : '-';
+              }
+              unset($item);
+              $list = $response['list'];
+          }
+      }
+
+      echo $this->draw('cekpendaftaranprovider.display.html', [
+          'error' => $error,
+          'code' => $code,
+          'message' => $message,
+          'count' => $count,
+          'list' => $list,
+          'date_display' => $tglDaftar,
+          'offset' => $offset,
+          'limit' => $limit
+      ]);
       exit();
   }
 

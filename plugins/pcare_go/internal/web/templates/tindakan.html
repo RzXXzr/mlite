@@ -1,0 +1,87 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-hand-paper-o"></i> Tindakan</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabCari" data-toggle="tab">Cari Referensi</a></li>
+            <li><a href="#tabAdd" data-toggle="tab">Tambah Tindakan</a></li>
+            <li><a href="#tabList" data-toggle="tab">List per Kunjungan</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabCari">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="keyword" placeholder="Nama tindakan"><span class="input-group-btn"><button class="btn btn-primary" id="btnCari"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div class="table-responsive" style="margin-top:15px"><table class="table table-striped table-bordered" id="tblRef"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblRefBody"></tbody></table></div>
+            </div>
+            <div class="tab-pane" id="tabAdd">
+                <form id="formTindakan">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>No. Kunjungan</label><input type="text" class="form-control" name="noKunjungan"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Kode Tindakan</label><input type="text" class="form-control" name="kdTindakanSK"></div></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan</button>
+                </form>
+                <div id="resAdd" style="display:none;margin-top:15px"><pre id="resAddPre"></pre></div>
+            </div>
+            <div class="tab-pane" id="tabList">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="noKunjList" placeholder="No. Kunjungan"><span class="input-group-btn"><button class="btn btn-primary" id="btnList"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div id="listLoading" style="display:none;margin-top:15px;text-align:center"><i class="fa fa-spinner fa-spin"></i> Memuat data...</div>
+                <div id="listError" class="alert alert-danger" style="display:none;margin-top:15px"></div>
+                <div class="table-responsive" style="margin-top:15px">
+                    <table class="table table-striped table-bordered" id="tblList">
+                        <thead><tr><th>No</th><th>Kode Tindakan</th><th>Nama Tindakan</th><th>Biaya</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+                        <tbody id="tblListBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#btnCari').click(function(){
+    var kw=$('#keyword').val();if(!kw)return;
+    apiCall('GET','/tindakan-ref/'+encodeURIComponent(kw)+'/0/50').done(function(r){
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)){$.each(list,function(i,t){b+='<tr><td>'+t.kdTindakanSK+'</td><td>'+t.nmTindakan+'</td></tr>';});}
+        $('#tblRefBody').html(b||'<tr><td colspan="2">Tidak ditemukan</td></tr>');
+    });
+});
+$('#keyword').on('keypress',function(e){if(e.which==13)$('#btnCari').click();});
+$('#formTindakan').on('submit',function(e){
+    e.preventDefault();var d={};$(this).find('input').each(function(){d[$(this).attr('name')]=$(this).val();});
+    apiCall('POST','/tindakan',d).done(function(r){$('#resAddPre').text(JSON.stringify(r,null,2));$('#resAdd').show();showAlert('success','Berhasil');}).fail(function(){showAlert('danger','Gagal');});
+});
+$('#btnList').click(function(){
+    var no=$('#noKunjList').val();if(!no)return;
+    $('#listLoading').show();$('#listError').hide();$('#tblListBody').html('');
+    apiCall('GET','/tindakan/'+encodeURIComponent(no)).done(function(r){
+        $('#listLoading').hide();
+        var list=pcare.list(r);var b='';
+        if(Array.isArray(list)&&list.length>0){
+            $.each(list,function(i,t){
+                b+='<tr><td>'+(i+1)+'</td><td>'+pcare.esc(t.kdTindakan||'')+'</td><td>'+pcare.esc(t.nmTindakan||'')+'</td><td>'+pcare.formatRp(t.biaya||0)+'</td><td>'+pcare.esc(t.keterangan||'-')+'</td>';
+                b+='<td><button class="btn btn-xs btn-danger btnDelTindakan" data-sk="'+pcare.esc(String(t.kdTindakanSK||''))+'" data-no="'+pcare.esc(no)+'"><i class="fa fa-trash"></i></button></td></tr>';
+            });
+        } else {
+            b='<tr><td colspan="6" class="text-center">Tidak ada data tindakan untuk kunjungan ini</td></tr>';
+        }
+        $('#tblListBody').html(b);
+    }).fail(function(xhr){
+        $('#listLoading').hide();
+        var msg='Gagal memuat data tindakan';
+        try{var err=JSON.parse(xhr.responseText);msg=err.error||err.message||msg;}catch(e){}
+        $('#listError').text(msg).show();
+    });
+});
+$('#noKunjList').on('keypress',function(e){if(e.which==13)$('#btnList').click();});
+$(document).on('click','.btnDelTindakan',function(){
+    var sk=$(this).data('sk'),no=$(this).data('no');
+    if(!confirm('Hapus tindakan ini?'))return;
+    apiCall('DELETE','/tindakan/'+encodeURIComponent(no)+'/'+encodeURIComponent(sk)).done(function(){
+        showAlert('success','Tindakan berhasil dihapus');$('#btnList').click();
+    }).fail(function(){showAlert('danger','Gagal menghapus tindakan');});
+});
+</script>
+{{end}}

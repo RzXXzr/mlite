@@ -1196,45 +1196,78 @@ class Admin extends AdminModule
         $this->tpl->set('sip_dokter', $sip_dokter);
         $this->tpl->set('no_rawat', revertNoRawat($no_rawat));
         $this->tpl->set('settings', $this->tpl->noParse_array(htmlspecialchars_array($this->settings('settings'))));
-        $this->tpl->set('surat', $this->db('mlite_surat_sakit')->where('no_rawat', revertNoRawat($no_rawat))->oneArray());
-        $this->tpl->set('nomor_surat', $this->settings->get('settings.set_nomor_surat').'/'.$this->settings->get('settings.prefix_surat').'/'.getRomawi(date('m')).'/'.date('Y'));
+        $kd_poli  = $this->core->getRegPeriksaInfo('kd_poli', revertNoRawat($no_rawat));
+        $poli     = $this->db('poliklinik')->where('kd_poli', $kd_poli)->oneArray();
+        $this->tpl->set('nm_poli', isset($poli['nm_poli']) ? $poli['nm_poli'] : '');
+        $surat     = $this->db('mlite_surat_sakit')->where('no_rawat', revertNoRawat($no_rawat))->oneArray();
+        $pre_token = !empty($surat['verification_token']) ? $surat['verification_token'] : bin2hex(random_bytes(32));
+        if (empty($surat['nomor_surat'])) {
+            $ni = generateNomorSuratSakit($this->db()->pdo(), date('Y-m-d'));
+            $pre_nomor = $ni['nomor_surat'];
+        } else {
+            $pre_nomor = $surat['nomor_surat'];
+        }
+        $this->tpl->set('surat', $surat);
+        $this->tpl->set('pre_token', $pre_token);
+        $this->tpl->set('pre_nomor', $pre_nomor);
         echo $this->tpl->draw(MODULES.'/igd/view/admin/surat.sakit.html', true);
         exit();
     }
 
     public function postSimpanSuratSakit()
     {
-      $query = $this->db('mlite_surat_sakit')->save([
-        'nomor_surat' => $_POST['nomor_surat'], 
-        'no_rawat' => $_POST['no_rawat'], 
-        'no_rkm_medis' => $_POST['no_rkm_medis'], 
-        'nm_pasien' => $_POST['nm_pasien'], 
-        'tgl_lahir' => $_POST['tgl_lahir'], 
-        'umur' => $_POST['umur'], 
-        'jk' => $_POST['jk'], 
-        'alamat' => $_POST['alamat'], 
-        'keadaan' => $_POST['keadaan'], 
-        'diagnosa' => $_POST['diagnosa'], 
-        'lama_angka' => $_POST['lama_angka'], 
-        'lama_huruf' => $_POST['lama_huruf'], 
-        'tanggal_mulai' => $_POST['tanggal_mulai'], 
-        'tanggal_selesai' => $_POST['tanggal_selesai'], 
-        'dokter' => $_POST['dokter'], 
-        'petugas' => $_POST['petugas']
-      ]);
-
-      if($query) {
-        $nomor_surat = ltrim($this->settings->get('settings.set_nomor_surat'));
-        $nomor_surat = sprintf('%03s', ($nomor_surat + 1));
-        $this->db('mlite_settings')->where('module', 'settings')->where('field', 'set_nomor_surat')->set('value', $nomor_surat)->update();
-        $data['status'] = 'success';
-        echo json_encode($data);
-      } else {
-        $data['status'] = 'error';
-        $data['msg'] = $query->errorInfo()['2'];
-        echo json_encode($data);
+      $no_rawat        = $_POST['no_rawat'] ?? '';
+      $tgl_lahir       = $_POST['tgl_lahir'] ?? '';
+      $tanggal_surat   = date('Y-m-d');
+      $tanggal_selesai = $_POST['tanggal_selesai'] ?? $tanggal_surat;
+      if ($tanggal_selesai < $tanggal_surat) $tanggal_selesai = $tanggal_surat;
+      $max_selesai     = date('Y-m-d', strtotime('+3 days', strtotime($tanggal_surat)));
+      if ($tanggal_selesai > $max_selesai) {
+        echo json_encode(['status' => 'error', 'msg' => 'Tanggal selesai maksimal 3 hari dari tanggal surat.']);
+        exit();
       }
-
+      $lama_angka = (new \DateTime($tanggal_surat))->diff(new \DateTime($tanggal_selesai))->days + 1;
+      $lama_huruf = strtolower(terbilang($lama_angka));
+      $umur       = hitungUmurPadaTanggal($tgl_lahir, $tanggal_surat);
+      $existing   = $this->db('mlite_surat_sakit')->where('no_rawat', $no_rawat)->oneArray();
+      if ($existing) {
+        // Surat lama tanpa token: generate dan simpan sekarang
+        if (empty($existing['verification_token'])) {
+          $verification_token = (!empty($_POST['pre_token']) && preg_match('/^[a-f0-9]{64}$/', $_POST['pre_token']))
+              ? $_POST['pre_token'] : bin2hex(random_bytes(32));
+          $extra_update = ['verification_token' => $verification_token, 'tanggal_surat' => $tanggal_surat, 'created_at' => date('Y-m-d H:i:s')];
+        } else {
+          $verification_token = $existing['verification_token'];
+          $extra_update = [];
+        }
+        $this->db('mlite_surat_sakit')->where('no_rawat', $no_rawat)->save(array_merge([
+          'no_rkm_medis' => $_POST['no_rkm_medis'] ?? '', 'nm_pasien' => $_POST['nm_pasien'] ?? '',
+          'tgl_lahir' => $tgl_lahir, 'umur' => $umur, 'jk' => $_POST['jk'] ?? '',
+          'alamat' => $_POST['alamat'] ?? '', 'lama_angka' => $lama_angka, 'lama_huruf' => $lama_huruf,
+          'tanggal_mulai' => $tanggal_surat, 'tanggal_selesai' => $tanggal_selesai,
+          'dokter' => $_POST['dokter'] ?? '', 'petugas' => $_POST['petugas'] ?? '',
+          'updated_at' => date('Y-m-d H:i:s'),
+        ], $extra_update));
+        $nomor_surat = $existing['nomor_surat'];
+      } else {
+        $info               = generateNomorSuratSakit($this->db()->pdo(), $tanggal_surat);
+        $nomor_surat        = $info['nomor_surat'];
+        $verification_token = (!empty($_POST['pre_token']) && preg_match('/^[a-f0-9]{64}$/', $_POST['pre_token']))
+            ? $_POST['pre_token'] : bin2hex(random_bytes(32));
+        $this->db('mlite_surat_sakit')->save([
+          'nomor_surat' => $nomor_surat, 'no_rawat' => $no_rawat,
+          'no_rkm_medis' => $_POST['no_rkm_medis'] ?? '', 'nm_pasien' => $_POST['nm_pasien'] ?? '',
+          'tgl_lahir' => $tgl_lahir, 'umur' => $umur, 'jk' => $_POST['jk'] ?? '',
+          'alamat' => $_POST['alamat'] ?? '', 'keadaan' => '', 'diagnosa' => '',
+          'lama_angka' => $lama_angka, 'lama_huruf' => $lama_huruf,
+          'tanggal_mulai' => $tanggal_surat, 'tanggal_selesai' => $tanggal_selesai,
+          'dokter' => $_POST['dokter'] ?? '', 'petugas' => $_POST['petugas'] ?? '',
+          'tanggal_surat' => $tanggal_surat, 'nomor_urut_harian' => $info['nomor_urut_harian'],
+          'verification_token' => $verification_token,
+          'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+      }
+      echo json_encode(['status' => 'success', 'nomor_surat' => $nomor_surat, 'verification_token' => $verification_token]);
       exit();
     }
 

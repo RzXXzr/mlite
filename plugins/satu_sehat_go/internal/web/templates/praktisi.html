@@ -1,0 +1,223 @@
+{{define "content"}}
+<style>
+.praktisi-card { background:#fff; border-radius:6px; border:1px solid #ddd; margin-bottom:15px; overflow:hidden; }
+.praktisi-card .card-header { background:linear-gradient(135deg,#2c3e50,#3498db); color:#fff; padding:18px 20px; }
+.praktisi-card .card-header h4 { margin:0 0 4px; font-size:20px; }
+.praktisi-card .card-header small { opacity:0.85; font-size:13px; }
+.praktisi-card .card-body { padding:0; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; }
+.info-item { padding:12px 20px; border-bottom:1px solid #f0f0f0; }
+.info-item:nth-child(odd) { border-right:1px solid #f0f0f0; }
+.info-item .label-title { font-size:11px; text-transform:uppercase; color:#888; letter-spacing:0.5px; margin-bottom:3px; }
+.info-item .label-value { font-size:14px; color:#2c3e50; font-weight:500; word-break:break-all; }
+.qual-table { width:100%; margin:0; }
+.qual-table th { background:#f8f9fa; font-size:12px; text-transform:uppercase; color:#666; padding:10px 15px; }
+.qual-table td { padding:10px 15px; font-size:13px; border-top:1px solid #eee; }
+.badge-ihs { display:inline-block; background:#27ae60; color:#fff; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+.badge-nik { display:inline-block; background:#2980b9; color:#fff; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+.praktisi-card .section-title { padding:12px 20px; background:#f8f9fa; font-weight:600; color:#2c3e50; border-bottom:1px solid #eee; border-top:1px solid #eee; font-size:13px; }
+.toggle-raw { cursor:pointer; color:#3498db; font-size:12px; }
+.toggle-raw:hover { text-decoration:underline; }
+@media(max-width:768px){ .info-grid { grid-template-columns:1fr; } .info-item:nth-child(odd){border-right:none;} }
+</style>
+
+<h4>Referensi Practitioner</h4>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-inline">
+            <div class="form-group">
+                <input type="text" id="nik_dokter" class="form-control" value="" placeholder="Masukkan NIK Dokter" style="width:500px;" />
+            </div>
+            <button id="btn-cari" class="btn btn-primary"><i class="fa fa-search"></i> Cari</button>
+        </div>
+    </div>
+</div>
+<br>
+<div id="result-container" style="display:none;"></div>
+<div id="error-container" style="display:none;">
+    <div class="alert alert-danger" id="error-msg"></div>
+</div>
+<div id="loading" style="display:none;">
+    <div class="alert alert-info"><i class="fa fa-spinner fa-spin"></i> Mencari data praktisi...</div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$(document).ready(function(){
+
+    function extractPraktisi(data) {
+        if(!data || !data.entry || !data.entry.length) return null;
+        var res = data.entry[0].resource;
+        var p = {
+            id: res.id || '-',
+            name: '-',
+            gender: res.gender || '-',
+            birthDate: res.birthDate || '-',
+            nik: '-',
+            ihsNumber: '-',
+            address: '-',
+            city: '-',
+            country: res.address && res.address[0] ? (res.address[0].country||'-') : '-',
+            qualifications: [],
+            active: res.active !== undefined ? res.active : '-'
+        };
+        // Name
+        if(res.name && res.name.length) {
+            p.name = res.name[0].text || res.name[0].family || '-';
+        }
+        // Identifiers
+        if(res.identifier) {
+            res.identifier.forEach(function(ident){
+                if(ident.system && ident.system.indexOf('/nik') !== -1) p.nik = ident.value;
+                if(ident.system && ident.system.indexOf('/nakes-his-number') !== -1) p.ihsNumber = ident.value;
+            });
+        }
+        // Address
+        if(res.address && res.address[0]) {
+            var a = res.address[0];
+            var parts = [];
+            if(a.line && a.line.length) parts.push(a.line.join(', '));
+            if(a.city) parts.push(a.city);
+            p.address = parts.join(', ') || '-';
+            p.city = a.city || '-';
+            // Extract wilayah codes
+            if(a.extension) {
+                a.extension.forEach(function(ext){
+                    if(ext.extension) {
+                        ext.extension.forEach(function(sub){
+                            if(sub.url === 'province') p.province = sub.valueCode;
+                            if(sub.url === 'city') p.cityCode = sub.valueCode;
+                            if(sub.url === 'district') p.district = sub.valueCode;
+                            if(sub.url === 'village') p.village = sub.valueCode;
+                        });
+                    }
+                });
+            }
+        }
+        // Qualifications (deduplicate by STR number)
+        var seen = {};
+        if(res.qualification) {
+            res.qualification.forEach(function(q){
+                var strNum = q.identifier && q.identifier[0] ? q.identifier[0].value : '';
+                var key = strNum;
+                if(seen[key]) return;
+                seen[key] = true;
+                var code = q.code && q.code.coding && q.code.coding[0] ? q.code.coding[0].display : '-';
+                var period = '';
+                if(q.period) {
+                    period = (q.period.start||'?') + ' s/d ' + (q.period.end||'?');
+                }
+                p.qualifications.push({ code: code, strNumber: strNum, period: period });
+            });
+        }
+        return p;
+    }
+
+    function renderPraktisi(p, rawData) {
+        var html = '<div class="praktisi-card">';
+        // Header
+        html += '<div class="card-header">';
+        html += '<h4><i class="fa fa-user-md"></i> ' + escHtml(p.name) + '</h4>';
+        html += '<small><span class="badge-ihs">IHS: ' + escHtml(p.ihsNumber) + '</span> &nbsp;';
+        html += '<span class="badge-nik">NIK: ' + escHtml(p.nik) + '</span></small>';
+        html += '</div>';
+        // Info
+        html += '<div class="card-body">';
+        html += '<div class="info-grid">';
+        html += infoItem('IHS Number', p.ihsNumber);
+        html += infoItem('NIK', p.nik);
+        html += infoItem('Nama', p.name);
+        html += infoItem('Jenis Kelamin', p.gender === 'female' ? 'Perempuan' : (p.gender === 'male' ? 'Laki-laki' : p.gender));
+        html += infoItem('Tanggal Lahir', p.birthDate);
+        html += infoItem('Alamat', p.address);
+        html += infoItem('Kota', p.city);
+        html += infoItem('Negara', p.country);
+        if(p.province) html += infoItem('Kode Provinsi', p.province);
+        if(p.cityCode) html += infoItem('Kode Kab/Kota', p.cityCode);
+        if(p.district) html += infoItem('Kode Kecamatan', p.district);
+        if(p.village) html += infoItem('Kode Kelurahan', p.village);
+        html += '</div>';
+        // Qualifications
+        if(p.qualifications.length) {
+            html += '<div class="section-title"><i class="fa fa-certificate"></i> Kualifikasi / STR</div>';
+            html += '<table class="qual-table"><thead><tr><th>Jenis</th><th>Nomor STR</th><th>Masa Berlaku</th></tr></thead><tbody>';
+            p.qualifications.forEach(function(q){
+                html += '<tr><td>' + escHtml(q.code) + '</td><td><code>' + escHtml(q.strNumber) + '</code></td><td>' + escHtml(q.period) + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        // Raw JSON toggle
+        html += '<div style="padding:12px 20px;">';
+        html += '<span class="toggle-raw" id="toggleRaw"><i class="fa fa-code"></i> Lihat Raw JSON</span>';
+        html += '<pre id="rawJsonPre" style="display:none;max-height:400px;overflow:auto;background:#1e1e1e;color:#d4d4d4;padding:15px;border-radius:4px;margin-top:10px;font-size:12px;"></pre>';
+        html += '</div>';
+        html += '</div></div>';
+        return html;
+    }
+
+    function infoItem(label, value) {
+        return '<div class="info-item"><div class="label-title">' + escHtml(label) + '</div><div class="label-value">' + escHtml(value||'-') + '</div></div>';
+    }
+
+    function escHtml(s) {
+        if(!s) return '';
+        return $('<span>').text(s).html();
+    }
+
+    function searchPraktisi() {
+        var nik = $('#nik_dokter').val().trim();
+        if(!nik) {
+            alert('Masukkan NIK Dokter terlebih dahulu');
+            return;
+        }
+        $('#result-container').hide().empty();
+        $('#error-container').hide();
+        $('#loading').show();
+        $.ajax({
+            url: '/api/praktisi?nik=' + encodeURIComponent(nik),
+            method: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                $('#loading').hide();
+                var p = extractPraktisi(data);
+                if(!p) {
+                    $('#error-msg').text('Data praktisi tidak ditemukan untuk NIK: ' + nik);
+                    $('#error-container').show();
+                    return;
+                }
+                var html = renderPraktisi(p, data);
+                $('#result-container').html(html).show();
+                // Raw JSON toggle
+                var rawJson = JSON.stringify(data, null, 2);
+                $('#rawJsonPre').text(rawJson);
+                $('#toggleRaw').on('click', function(){
+                    $('#rawJsonPre').slideToggle(200);
+                    var icon = $('#rawJsonPre').is(':visible') ? 'fa-eye-slash' : 'fa-code';
+                    $(this).html('<i class="fa ' + icon + '"></i> ' + ($('#rawJsonPre').is(':visible') ? 'Sembunyikan' : 'Lihat') + ' Raw JSON');
+                });
+            },
+            error: function(xhr) {
+                $('#loading').hide();
+                var msg = 'Gagal mencari data praktisi';
+                if(xhr.responseJSON && xhr.responseJSON.error) {
+                    msg = xhr.responseJSON.error;
+                } else if(xhr.responseText) {
+                    msg = xhr.responseText;
+                }
+                $('#error-msg').text(msg);
+                $('#error-container').show();
+            }
+        });
+    }
+
+    $('#btn-cari').on('click', searchPraktisi);
+    $('#nik_dokter').on('keypress', function(e){
+        if(e.which === 13) {
+            e.preventDefault();
+            searchPraktisi();
+        }
+    });
+});
+</script>
+{{end}}

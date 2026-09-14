@@ -1,0 +1,38 @@
+Get Dokter
+{Base URL}/{Service Name}/dokter/{Parameter 1}/{Parameter 2}
+Fungsi : Get Data Dokter
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Row data awal yang akan ditampilkan
+
+Parameter 2 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 19,
+    "list": [
+      {
+        "kdDokter": "001",
+        "nmDokter": "dr..."
+      },
+      {
+        "kdDokter": "002",
+        "nmDokter": "dr. Muna Hasnita Harahap"
+      },
+      {
+        "kdDokter": "003",
+        "nmDokter": "dr. fauzi"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}

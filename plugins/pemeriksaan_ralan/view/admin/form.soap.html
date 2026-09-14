@@ -132,7 +132,7 @@
         <div class="m-t-xl">
           <button type="button" name="button" class="btn btn-primary" id="simpan_soap"><i class="fa fa-save"></i><span class="hidden-xs"> Simpan</span></button>
           <!-- ICD 10 & 9 dan E-Resep dinonaktifkan untuk paramedis -->
-          <button type="button" name="button" class="btn btn-info" id="buka_riwayat"><i class="fa fa-file-o"></i><span class="hidden-xs"> Riwayat</span></button>
+
           <button type="button" name="button" class="btn btn-success" id="selesai_soap"><i class="fa fa-check"></i><span class="hidden-xs"> Selesai</span></button>
           <span class="pull-right">
             <a href="#" class="btn btn-warning resume"><i class="fa fa-file-text"></i><span class="hidden-xs"> Resume</span></a>
@@ -214,6 +214,31 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Riwayat Pemeriksaan Terintegrasi - Full Width -->
+  <div class="col-md-12" style="padding-left:15px;padding-right:15px;">
+    <div id="riwayat_section">
+      <div class="panel panel-default">
+        <div class="panel-heading" style="cursor:pointer;background:#f8f9fa;border-bottom:2px solid #3c8dbc;padding:14px 18px;" id="toggle_riwayat">
+          <h4 style="margin:0;color:#333;font-size:16px;">
+            <i class="fa fa-history" style="color:#3c8dbc;"></i> Riwayat Pemeriksaan Pasien
+            <span id="riwayat_count" class="badge" style="background:#3c8dbc;margin-left:8px;font-size:14px;">0</span>
+            <span class="pull-right"><i class="fa fa-chevron-down" id="riwayat_chevron"></i></span>
+          </h4>
+        </div>
+        <div class="panel-body" id="riwayat_content" style="display:none;padding:0;">
+          <div id="riwayat_loading" style="text-align:center;padding:30px;display:none;">
+            <i class="fa fa-spinner fa-spin fa-2x" style="color:#3c8dbc;"></i>
+            <p style="margin-top:10px;color:#888;font-size:14px;">Memuat riwayat pemeriksaan...</p>
+          </div>
+          <div id="riwayat_data"></div>
+          <div id="riwayat_empty" style="text-align:center;padding:30px;display:none;">
+            <i class="fa fa-info-circle fa-2x" style="color:#ccc;"></i>
+            <p style="margin-top:10px;color:#999;font-size:14px;">Belum ada riwayat pemeriksaan sebelumnya.</p>
           </div>
         </div>
       </div>
@@ -387,21 +412,277 @@
   });
 </script>
 <script type="text/javascript">
-  $("#form_soap").on("click","#buka_riwayat", function(event){
-    var baseURL = mlite.url + '/' + mlite.admin;
-    event.preventDefault();
-    var no_rkm_medis = $('input:text[name=no_rkm_medis]').val();
-    var loadURL =  baseURL + '/pasien/riwayatperawatan/' + no_rkm_medis + '?t=' + mlite.token;
-
-    var modal = $('#resumeModal');
-    var modalContent = $('#resumeModal .modal-content');
-
-    modal.off('show.bs.modal');
-    modal.on('show.bs.modal', function () {
-        modalContent.load(loadURL);
-    }).modal();
-    return false;
+  // Toggle riwayat section
+  var riwayatLoaded = false;
+  $('#toggle_riwayat').on('click', function() {
+    var content = $('#riwayat_content');
+    var chevron = $('#riwayat_chevron');
+    content.slideToggle(300);
+    chevron.toggleClass('fa-chevron-down fa-chevron-up');
+    if (!riwayatLoaded) {
+      loadRiwayatSoap();
+    }
   });
+
+  function loadRiwayatSoap() {
+    var baseURL = mlite.url + '/' + mlite.admin;
+    var no_rkm_medis = $('input:text[name=no_rkm_medis]').val();
+    var no_rawat = $('input:text[name=no_rawat]').val();
+    if (!no_rkm_medis || !no_rawat) return;
+
+    $('#riwayat_loading').show();
+    $('#riwayat_data').empty();
+    $('#riwayat_empty').hide();
+
+    $.ajax({
+      url: baseURL + '/pemeriksaan_ralan/riwayatsoap?t=' + mlite.token,
+      type: 'POST',
+      data: {
+        no_rkm_medis: no_rkm_medis,
+        no_rawat: no_rawat,
+        limit: 10
+      },
+      timeout: 30000,
+      success: function(response) {
+      $('#riwayat_loading').hide();
+      try {
+        var res = (typeof response === 'string') ? JSON.parse(response) : response;
+        if (res.status === 'ok' && res.data.length > 0) {
+          riwayatLoaded = true;
+          var totalSoap = 0;
+          var html = '';
+
+          // Tampilkan Data Alergi Pasien (dari tabel alergi_pasien) di bagian atas
+          if (res.alergi_pasien) {
+            var al = res.alergi_pasien;
+            var hasAlergi = (al.alergi_makanan !== '00') || (al.alergi_udara !== '00') || (al.alergi_obat !== '00');
+            var alBgColor = hasAlergi ? '#fff3cd' : '#d4edda';
+            var alBorderColor = hasAlergi ? '#ffc107' : '#28a745';
+            var alIcon = hasAlergi ? '<i class="fa fa-exclamation-triangle" style="color:#e67e22;"></i>' : '<i class="fa fa-check-circle" style="color:#28a745;"></i>';
+            html += '<div style="background:' + alBgColor + ';border-left:4px solid ' + alBorderColor + ';padding:14px 20px;margin:0;border-bottom:1px solid #eee;">';
+            html += '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:8px;">' + alIcon + ' Data Alergi Pasien</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:14px 28px;font-size:14px;color:#444;">';
+            var makananText = al.alergi_makanan_nama;
+            if (al.alergi_makanan === '05' && al.alergi_makanan_lainnya) makananText += ' (' + al.alergi_makanan_lainnya + ')';
+            html += '<span><i class="fa fa-cutlery" style="color:#e67e22;"></i> <b>Makanan:</b> ' + makananText + '</span>';
+            var udaraText = al.alergi_udara_nama;
+            if (al.alergi_udara_lainnya) udaraText += ' (' + al.alergi_udara_lainnya + ')';
+            html += '<span><i class="fa fa-cloud" style="color:#3c8dbc;"></i> <b>Udara:</b> ' + udaraText + '</span>';
+            var obatText = al.alergi_obat_nama;
+            if (al.alergi_obat === '07' && al.alergi_obat_lainnya) obatText += ' (' + al.alergi_obat_lainnya + ')';
+            html += '<span><i class="fa fa-medkit" style="color:#dd4b39;"></i> <b>Obat:</b> ' + obatText + '</span>';
+            html += '</div>';
+            html += '</div>';
+          }
+
+          for (var i = 0; i < res.data.length; i++) {
+            var visit = res.data[i];
+            var isCurrent = visit.is_current;
+            var borderColor = isCurrent ? '#3c8dbc' : '#ddd';
+            var bgColor = isCurrent ? '#f0f7fd' : '#fff';
+            var labelCurrent = isCurrent ? ' <span class="label label-primary" style="font-size:13px;padding:4px 8px;">Kunjungan Saat Ini</span>' : '';
+            var statusLabel = '';
+            switch(visit.stts) {
+              case 'Sudah': statusLabel = '<span class="label label-success" style="font-size:13px;padding:4px 8px;">' + visit.stts + '</span>'; break;
+              case 'Belum': statusLabel = '<span class="label label-warning" style="font-size:13px;padding:4px 8px;">' + visit.stts + '</span>'; break;
+              case 'Batal': statusLabel = '<span class="label label-danger" style="font-size:13px;padding:4px 8px;">' + visit.stts + '</span>'; break;
+              default: statusLabel = '<span class="label label-default" style="font-size:13px;padding:4px 8px;">' + visit.stts + '</span>';
+            }
+
+            html += '<div style="border-left:4px solid ' + borderColor + ';background:' + bgColor + ';margin:0;padding:20px 24px;border-bottom:1px solid #eee;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px;">';
+            html += '<div>';
+            html += '<strong style="font-size:16px;color:#333;"><i class="fa fa-calendar-o" style="color:#3c8dbc;"></i> ' + visit.tgl_registrasi + '</strong> ';
+            html += statusLabel + labelCurrent;
+            html += '</div>';
+            html += '<div style="color:#555;font-size:14px;">';
+            html += '<i class="fa fa-hospital-o"></i> ' + visit.nm_poli + ' &nbsp;|&nbsp; ';
+            html += '<i class="fa fa-user-md"></i> ' + visit.nm_dokter + ' &nbsp;|&nbsp; ';
+            html += '<i class="fa fa-shield"></i> ' + visit.png_jawab;
+            html += '</div>';
+            html += '</div>';
+
+            // Diagnosa & Prosedur compact
+            if (visit.diagnosa.length > 0 || visit.prosedur.length > 0) {
+              html += '<div style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;">';
+              for (var d = 0; d < visit.diagnosa.length; d++) {
+                html += '<span class="label" style="background:#5cb85c;font-weight:normal;font-size:13px;padding:5px 10px;"><i class="fa fa-stethoscope"></i> ' + visit.diagnosa[d].kd_penyakit + ' - ' + visit.diagnosa[d].nm_penyakit + '</span>';
+              }
+              for (var pr = 0; pr < visit.prosedur.length; pr++) {
+                html += '<span class="label" style="background:#5bc0de;font-weight:normal;font-size:13px;padding:5px 10px;"><i class="fa fa-medkit"></i> ' + visit.prosedur[pr].kode + ' - ' + visit.prosedur[pr].deskripsi_panjang + '</span>';
+              }
+              html += '</div>';
+            }
+
+            // Pemeriksaan / SOAP entries
+            if (visit.pemeriksaan.length > 0) {
+              totalSoap += visit.pemeriksaan.length;
+              for (var j = 0; j < visit.pemeriksaan.length; j++) {
+                var p = visit.pemeriksaan[j];
+                html += '<div style="background:#fff;border:1px solid #e8e8e8;border-radius:4px;padding:16px;margin-bottom:12px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+                html += '<span style="color:#555;font-size:14px;"><i class="fa fa-clock-o"></i> ' + p.tgl_perawatan + ' ' + p.jam_rawat + ' &mdash; ' + (p.nama_petugas || '-') + '</span>';
+
+                // Copy button
+                html += '<button type="button" class="btn btn-xs btn-primary copy_riwayat_soap" ';
+                html += 'data-keluhan="' + (p.keluhan || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-pemeriksaan="' + (p.pemeriksaan || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-penilaian="' + (p.penilaian || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-rtl="' + (p.rtl || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-instruksi="' + (p.instruksi || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-evaluasi="' + (p.evaluasi || '').replace(/"/g, '&quot;') + '" ';
+                html += 'data-suhu_tubuh="' + (p.suhu_tubuh || '') + '" ';
+                html += 'data-tensi="' + (p.tensi || '') + '" ';
+                html += 'data-nadi="' + (p.nadi || '') + '" ';
+                html += 'data-respirasi="' + (p.respirasi || '') + '" ';
+                html += 'data-tinggi="' + (p.tinggi || '') + '" ';
+                html += 'data-berat="' + (p.berat || '') + '" ';
+                html += 'data-spo2="' + (p.spo2 || '') + '" ';
+                html += 'data-gcs="' + (p.gcs || '') + '" ';
+                html += 'data-kesadaran="' + (p.kesadaran || '') + '" ';
+                html += 'data-alergi="' + (p.alergi || '') + '" ';
+                html += 'data-lingkar_perut="' + (p.lingkar_perut || '') + '" ';
+                html += '><i class="fa fa-copy"></i> Salin ke Form</button>';
+                html += '</div>';
+
+                // TTV Row
+                var ttvItems = [];
+                if (p.tensi && p.tensi !== '-' && p.tensi !== '') ttvItems.push('<span><i class="fa fa-heartbeat" style="color:#e74c3c;"></i> TD: <b>' + p.tensi + '</b> mmHg</span>');
+                if (p.suhu_tubuh && p.suhu_tubuh !== '-' && p.suhu_tubuh !== '' && p.suhu_tubuh !== '0') ttvItems.push('<span><i class="fa fa-thermometer-half" style="color:#f39c12;"></i> Suhu: <b>' + p.suhu_tubuh + '</b> &deg;C</span>');
+                if (p.nadi && p.nadi !== '-' && p.nadi !== '' && p.nadi !== '0') ttvItems.push('<span><i class="fa fa-heart" style="color:#e74c3c;"></i> Nadi: <b>' + p.nadi + '</b> /mnt</span>');
+                if (p.respirasi && p.respirasi !== '-' && p.respirasi !== '' && p.respirasi !== '0') ttvItems.push('<span><i class="fa fa-lungs" style="color:#3c8dbc;"></i> RR: <b>' + p.respirasi + '</b> /mnt</span>');
+                if (p.tinggi && p.tinggi !== '-' && p.tinggi !== '' && p.tinggi !== '0') ttvItems.push('<span><i class="fa fa-arrows-v" style="color:#00a65a;"></i> TB: <b>' + p.tinggi + '</b> cm</span>');
+                if (p.berat && p.berat !== '-' && p.berat !== '' && p.berat !== '0') ttvItems.push('<span><i class="fa fa-balance-scale" style="color:#00a65a;"></i> BB: <b>' + p.berat + '</b> kg</span>');
+                if (p.spo2 && p.spo2 !== '-' && p.spo2 !== '' && p.spo2 !== '0') ttvItems.push('<span><i class="fa fa-tint" style="color:#3c8dbc;"></i> SpO2: <b>' + p.spo2 + '</b> %</span>');
+                if (p.gcs && p.gcs !== '-' && p.gcs !== '' && p.gcs !== '0') ttvItems.push('<span><i class="fa fa-brain" style="color:#605ca8;"></i> GCS: <b>' + p.gcs + '</b></span>');
+                if (p.kesadaran && p.kesadaran !== '-' && p.kesadaran !== '') ttvItems.push('<span><i class="fa fa-eye" style="color:#605ca8;"></i> Kesadaran: <b>' + p.kesadaran + '</b></span>');
+                if (p.alergi && p.alergi !== '-' && p.alergi !== '') ttvItems.push('<span><i class="fa fa-exclamation-triangle" style="color:#dd4b39;"></i> Alergi: <b>' + p.alergi + '</b></span>');
+                if (p.lingkar_perut && p.lingkar_perut !== '-' && p.lingkar_perut !== '' && p.lingkar_perut !== '0') ttvItems.push('<span><i class="fa fa-circle-o" style="color:#f39c12;"></i> LP: <b>' + p.lingkar_perut + '</b> cm</span>');
+
+                if (ttvItems.length > 0) {
+                  html += '<div style="background:#f0f7fd;border:1px solid #d4e6f1;border-radius:4px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#444;display:flex;flex-wrap:wrap;gap:12px 20px;">';
+                  html += '<span style="font-weight:600;color:#3c8dbc;"><i class="fa fa-stethoscope"></i> TTV:</span> ';
+                  html += ttvItems.join(' ');
+                  html += '</div>';
+                }
+
+                // SOAP Grid
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;">';
+                html += '<div><span style="font-weight:600;color:#3c8dbc;font-size:14px;">S:</span> <span style="font-size:14px;color:#333;">' + (p.keluhan || '-') + '</span></div>';
+                html += '<div><span style="font-weight:600;color:#3c8dbc;font-size:14px;">O:</span> <span style="font-size:14px;color:#333;">' + (p.pemeriksaan || '-') + '</span></div>';
+                html += '<div><span style="font-weight:600;color:#3c8dbc;font-size:14px;">A:</span> <span style="font-size:14px;color:#333;">' + (p.penilaian || '-') + '</span></div>';
+                html += '<div><span style="font-weight:600;color:#3c8dbc;font-size:14px;">P:</span> <span style="font-size:14px;color:#333;">' + (p.rtl || '-') + '</span></div>';
+                html += '</div>';
+                html += '</div>';
+              }
+            } else {
+              html += '<div style="color:#999;font-size:14px;font-style:italic;padding:6px 0;">Tidak ada data SOAP</div>';
+            }
+
+            // Obat
+            if (visit.obat && visit.obat.length > 0) {
+              html += '<div style="margin-top:10px;"><span style="font-weight:600;color:#e67e22;font-size:14px;"><i class="fa fa-pills"></i> Obat:</span> ';
+              var obatList = [];
+              for (var o = 0; o < visit.obat.length; o++) {
+                obatList.push(visit.obat[o].nama_brng + ' (' + visit.obat[o].jml + ') ' + (visit.obat[o].aturan_pakai || ''));
+              }
+              html += '<span style="font-size:14px;color:#555;">' + obatList.join(', ') + '</span></div>';
+            }
+
+            html += '</div>';
+          }
+          $('#riwayat_data').html(html);
+          $('#riwayat_count').text(totalSoap);
+        } else {
+          $('#riwayat_empty').show();
+          $('#riwayat_count').text('0');
+        }
+      } catch(e) {
+        console.log('Riwayat parse error:', e);
+        $('#riwayat_empty').show();
+      }
+      },
+      error: function(xhr, status, error) {
+        $('#riwayat_loading').hide();
+        var msg = 'Gagal memuat riwayat pemeriksaan.';
+        if (status === 'timeout') msg = 'Request timeout. Silakan coba lagi dengan klik panel Riwayat.';
+        $('#riwayat_empty').html('<div style="text-align:center;padding:30px;"><i class="fa fa-exclamation-circle fa-2x" style="color:#e74c3c;"></i><p style="margin-top:10px;color:#e74c3c;">' + msg + '</p><button type="button" class="btn btn-sm btn-default" onclick="riwayatLoaded=false;loadRiwayatSoap();"><i class="fa fa-refresh"></i> Coba Lagi</button></div>').show();
+      },
+      complete: function() {
+        $('#riwayat_loading').hide();
+      }
+    });
+  }
+
+  // Copy dari riwayat ke form SOAP
+  $(document).on('click', '.copy_riwayat_soap', function(e) {
+    e.preventDefault();
+    var btn = $(this);
+
+    // Hanya isi field yang masih kosong atau hanya berisi "-"
+    function fillIfEmpty(selector, value) {
+      var $el = $(selector);
+      var cur = $el.val().trim();
+      if (cur === '' || cur === '-') $el.val(value);
+    }
+
+    fillIfEmpty('textarea[name=keluhan]', btn.data('keluhan'));
+    fillIfEmpty('textarea[name=pemeriksaan]', btn.data('pemeriksaan'));
+    fillIfEmpty('textarea[name=penilaian]', btn.data('penilaian'));
+    fillIfEmpty('textarea[name=rtl]', btn.data('rtl'));
+    fillIfEmpty('textarea[name=instruksi]', btn.data('instruksi'));
+    fillIfEmpty('textarea[name=evaluasi]', btn.data('evaluasi'));
+    fillIfEmpty('input[name=suhu_tubuh]', btn.data('suhu_tubuh'));
+    fillIfEmpty('input[name=tensi]', btn.data('tensi'));
+    fillIfEmpty('input[name=nadi]', btn.data('nadi'));
+    fillIfEmpty('input[name=respirasi]', btn.data('respirasi'));
+    fillIfEmpty('input[name=tinggi]', btn.data('tinggi'));
+    fillIfEmpty('input[name=berat]', btn.data('berat'));
+    fillIfEmpty('input[name=spo2]', btn.data('spo2'));
+    fillIfEmpty('input[name=gcs]', btn.data('gcs'));
+    fillIfEmpty('input[name=kesadaran]', btn.data('kesadaran'));
+    fillIfEmpty('input[name=lingkar_perut]', btn.data('lingkar_perut'));
+
+    // Alergi selalu dari PCare — fallback baca dropdown langsung jika window._pcareAlergiText belum tersedia
+    var _pcareText = window._pcareAlergiText;
+    if (!_pcareText && typeof buildAlergiTextFromPcare === 'function') {
+      _pcareText = buildAlergiTextFromPcare(
+        $('#alergi_makanan').val() || '00',
+        $('#alergi_makanan_lainnya').val() || '',
+        $('#alergi_udara').val() || '00',
+        $('#alergi_udara_lainnya').val() || '',
+        $('#alergi_obat').val() || '00',
+        $('#alergi_obat_lainnya').val() || ''
+      );
+      window._pcareAlergiText = _pcareText;
+    }
+    $('input[name=alergi]').val(_pcareText || '');
+
+    // Scroll ke form SOAP
+    $('html, body').animate({ scrollTop: $('#form_soap').offset().top - 10 }, 400);
+
+    $('#notif').html('<div class="alert alert-info alert-dismissible fade in" role="alert" style="border-radius:0px;margin-top:-15px;">' +
+      'Data SOAP dari riwayat berhasil disalin ke form!' +
+      '<button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>' +
+    '</div>').show();
+    $(".alert-dismissible").fadeTo(3000, 500).slideUp(500);
+  });
+
+  // Auto-load riwayat di background (panel tetap tertutup, data sudah siap)
+  var _riwayatRetry = 0;
+  var _riwayatMaxRetry = 10;
+  function _tryLoadRiwayat() {
+    var no_rkm = $('input:text[name=no_rkm_medis]').val();
+    var no_rawat = $('input:text[name=no_rawat]').val();
+    if (no_rkm && no_rawat) {
+      loadRiwayatSoap();
+    } else if (_riwayatRetry < _riwayatMaxRetry) {
+      _riwayatRetry++;
+      setTimeout(_tryLoadRiwayat, 500);
+    }
+  }
+  setTimeout(_tryLoadRiwayat, 300);
+
 </script>
 <script type="text/javascript">
   // tombol buka form diklik

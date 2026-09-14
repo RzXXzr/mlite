@@ -1,0 +1,181 @@
+{{define "content"}}
+<div class="row">
+    <form id="formSettings" method="POST" action="/api/settings">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Pengaturan Satu Sehat Kemenkes</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Organization ID</label>
+                            <input type="text" name="organizationid" class="form-control" value="{{.Settings.OrganizationID}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Client ID</label>
+                            <input type="text" name="clientid" class="form-control" value="{{.Settings.ClientID}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Secret Key</label>
+                            <input type="text" name="secretkey" class="form-control" value="{{.Settings.SecretKey}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Auth URL</label>
+                            <input type="text" name="authurl" class="form-control" value="{{.Settings.AuthURL}}">
+                        </div>
+                        <div class="form-group">
+                            <label>FHIR URL</label>
+                            <input type="text" name="fhirurl" class="form-control" value="{{.Settings.FhirURL}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitude</label>
+                            <span class="pull-right"><a href="#koordinat-modal" data-toggle="modal" class="small">[Generate Koordinat Latitude & Longitude]</a></span>
+                            <input type="text" name="latitude" id="latitude" class="form-control" value="{{.Settings.Latitude}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude</label>
+                            <input type="text" name="longitude" id="longitude" class="form-control" value="{{.Settings.Longitude}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Mapping Instalasi Praktisi Apoteker</label>
+                            <select name="praktisiapotek" class="form-control">
+                                {{range .Bidang}}
+                                <option value="{{.Nama}}" {{if eq .Nama $.Settings.PraktisiApotek}}selected{{end}}>{{.Nama}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mapping Instalasi Praktisi Laboratorium</label>
+                            <select name="praktisilab" class="form-control">
+                                {{range .Bidang}}
+                                <option value="{{.Nama}}" {{if eq .Nama $.Settings.PraktisiLab}}selected{{end}}>{{.Nama}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mapping Instalasi Praktisi Radiologi</label>
+                            <select name="praktisirad" class="form-control">
+                                {{range .Bidang}}
+                                <option value="{{.Nama}}" {{if eq .Nama $.Settings.PraktisiRad}}selected{{end}}>{{.Nama}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Kode Kelurahan</label>
+                            <input type="text" name="kelurahan" class="form-control" value="{{.Settings.Kelurahan}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Kode Kecamatan</label>
+                            <input type="text" name="kecamatan" class="form-control" value="{{.Settings.Kecamatan}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Kode Kabupaten</label>
+                            <input type="text" name="kabupaten" class="form-control" value="{{.Settings.Kabupaten}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Kode Propinsi</label>
+                            <input type="text" name="propinsi" class="form-control" value="{{.Settings.Propinsi}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Kodepos</label>
+                            <input type="text" name="kodepos" class="form-control" value="{{.Settings.KodePos}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Zona Waktu</label>
+                            <select name="zonawaktu" class="form-control">
+                                <option value="WIB" {{if eq .Settings.ZonaWaktu "WIB"}}selected{{end}}>WIB</option>
+                                <option value="WITA" {{if eq .Settings.ZonaWaktu "WITA"}}selected{{end}}>WITA</option>
+                                <option value="WIT" {{if eq .Settings.ZonaWaktu "WIT"}}selected{{end}}>WIT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Departemen Farmasi</label>
+                            <select name="farmasi" class="form-control">
+                                {{range .MappingLokasi}}
+                                <option value="{{.Kode}}" {{if eq .Kode $.Settings.Farmasi}}selected{{end}}>{{.Lokasi}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Departemen Laboratorium</label>
+                            <select name="laboratorium" class="form-control">
+                                {{range .MappingLokasi}}
+                                <option value="{{.Kode}}" {{if eq .Kode $.Settings.Laboratorium}}selected{{end}}>{{.Lokasi}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Departemen Radiologi</label>
+                            <select name="radiologi" class="form-control">
+                                {{range .MappingLokasi}}
+                                <option value="{{.Kode}}" {{if eq .Kode $.Settings.Radiologi}}selected{{end}}>{{.Lokasi}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key Open AI</label>
+                            <input type="text" name="api_openai" class="form-control" value="{{.Settings.APIOpenAI}}">
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<!-- Modal Koordinat -->
+<div class="modal fade" id="koordinat-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Generate Koordinat Latitude dan Longitude</h4>
+            </div>
+            <div class="modal-body">
+                Cara mendapatkan koordinat suatu tempat
+                <ol>
+                    <li>Di komputer Anda, <a href="https://www.google.com/maps" target="_blank">buka Google Maps</a>.</li>
+                    <li>Klik kanan tempat atau area pada peta. Ini akan membuka jendela pop-up.</li>
+                    <li>Untuk menyalin koordinat secara otomatis, klik kiri pada peta atau tanda lokasi anda.</li>
+                    <li>Tempelkan (ctrl+v) koordinat yang sudah disalin ke kolom Latitude.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#latitude').keyup(function(){
+    var coordinate = $(this).val();
+    if (coordinate.indexOf(',') > -1) {
+        var latitude = coordinate.substring(0, coordinate.indexOf(","));
+        var longitude = coordinate.split(',')[1].trim();
+        $('#latitude').val(latitude);
+        $('#longitude').val(longitude);
+    }
+});
+
+$('#formSettings').on('submit', function(e){
+    e.preventDefault();
+    var formData = $(this).serialize();
+    $.ajax({
+        url: '/api/settings',
+        method: 'POST',
+        data: formData,
+        success: function(resp){
+            alert('Pengaturan berhasil disimpan!');
+        },
+        error: function(xhr){
+            alert('Gagal menyimpan: ' + (xhr.responseJSON ? xhr.responseJSON.error : xhr.statusText));
+        }
+    });
+});
+</script>
+{{end}}

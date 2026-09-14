@@ -1,0 +1,412 @@
+Get Rujukan
+{Base URL}/{Service Name}/kunjungan/rujukan/{Parameter 1}
+Fungsi : Get Data Rujukan
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kunjungan
+
+                                    
+{
+  "response": {
+    "noRujukan": "0114U1630316Y000003",
+    "ppk": {
+      "kdPPK": "0114U163",
+      "nmPPK": "Klinik Cempaka Putih (JST)",
+      "alamat": null,
+      "kc": {
+        "kdKC": "0901",
+        "nmKC": "JAKARTA PUSAT",
+        "alamat": null,
+        "telp": null,
+        "fax": null,
+        "dati": {
+          "kdProp": null,
+          "kdDati": "0114",
+          "nmDati": "KOTA JAKARTA PUSAT"
+        },
+        "kdKR": {
+          "kdKR": "04",
+          "nmKR": "REGIONAL   IV - JAKARTA",
+          "alamat": null,
+          "telp": null,
+          "fax": null
+        }
+      }
+    },
+    "tglKunjungan": "31-07-2016",
+    "poli": {
+      "kdPoli": "UGD",
+      "nmPoli": "Unit Gawat Darurat"
+    },
+    "nokaPst": "0001149957551",
+    "nmPst": "HANY TJOA",
+    "tglLahir": "16-06-1970",
+    "pisa": "1",
+    "ketPisa": "Peserta",
+    "sex": "L",
+    "diag1": {
+      "kdDiag": "A01.1",
+      "nmDiag": "Paratyphoid fever A"
+    },
+    "diag2": null,
+    "diag3": null,
+    "catatan": "",
+    "dokter": {
+      "kdDokter": "019",
+      "nmDokter": "dr henny"
+    },
+    "tacc": {
+      "nmTacc": null,
+      "alasanTacc": null
+    },
+    "infoDenda": "Anda memasuki masa denda 45 hari jika melakukan rawat inap di FKRTL mulai tanggal : 01-08-2016 sampai tanggal : 15-09-2016"
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Riwayat Kunjungan
+{Base URL}/{Service Name}/kunjungan/peserta/{Parameter 1}
+Fungsi : Get Data Riwayat Kunjungan
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor kartu peserta
+
+                                    
+{
+  "response": {
+    "count": 1,
+    "list": [
+      {
+        "noKunjungan": "0114A0260815Y000003",
+        "tglKunjungan": "25-08-2015",
+        "providerPelayanan": {
+          "kdProvider": "0114A026",
+          "nmProvider": "IF RS THAMRIN"
+        },
+        "peserta": {
+          "noKartu": "0000029247423",
+          "nama": null,
+          "hubunganKeluarga": "Peserta",
+          "sex": null,
+          "tglLahir": null,
+          "tglMulaiAktif": null,
+          "tglAkhirBerlaku": null,
+          "kdPpkPst": null,
+          "kdPpkGigi": null,
+          "jnsKelas": null,
+          "jnsPeserta": null,
+          "golDarah": null,
+          "noHP": null,
+          "noKTP": null,
+          "asuransi": null
+        },
+        "poli": {
+          "kdPoli": "002",
+          "nmPoli": "Gigi",
+          "poliSakit": true
+        },
+        "progProlanis": {
+          "kdProgram": "",
+          "nmProgram": ""
+        },
+        "keluhan": "keluhan",
+        "diagnosa1": {
+          "kdDiag": "K296",
+          "nmDiag": "Other gastritis",
+          "nonSpesialis": false
+        },
+        "diagnosa2": {
+          "kdDiag": null,
+          "nmDiag": null,
+          "nonSpesialis": false
+        },
+        "diagnosa3": {
+          "kdDiag": null,
+          "nmDiag": null,
+          "nonSpesialis": false
+        },
+        "kesadaran": {
+          "kdSadar": "01",
+          "nmSadar": "Compos mentis"
+        },
+        "sistole": 0,
+        "diastole": 0,
+        "beratBadan": 0,
+        "tinggiBadan": 0,
+        "respRate": 0,
+        "heartRate": 0,
+        "catatan": "catatan",
+        "rujukBalik": 0,
+        "providerAsalRujuk": {
+          "kdProvider": "",
+          "nmProvider": null
+        },
+        "providerRujukLanjut": {
+          "kdProvider": "00010003",
+          "nmProvider": "POLIKLINIK POLRES LANGSA"
+        },
+        "pemFisikLain": "",
+        "dokter": {
+          "kdDokter": "002",
+          "nmDokter": "Asmaul Husna"
+        },
+        "statusPulang": {
+          "kdStatusPulang": "4",
+          "nmStatusPulang": "Rujuk Lanjut"
+        },
+        "tkp": {
+          "kdTkp": "10",
+          "nmTkp": "RJTP"
+        },
+        "poliRujukInternal": {
+          "kdPoli": null,
+          "nmPoli": null,
+          "poliSakit": true
+        },
+        "poliRujukLanjut": {
+          "kdPoli": "TAK",
+          "nmPoli": "TAK",
+          "poliSakit": true
+        },
+        "tglPulang": "25-08-2015"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+{Base URL}/{Service Name}/kunjungan
+Fungsi : Add Data Kunjungan
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+                                                
+Contoh Parameter Rujukan HEMODIALISA
+{
+  "noKunjungan": null,
+  "noKartu": "0000043678034",
+  "tglDaftar": "13-08-2018",
+  "kdPoli": null,
+  "keluhan": "keluhan",
+  "kdSadar": "01",
+  "sistole": 0,
+  "diastole": 0,
+  "beratBadan": 0,
+  "tinggiBadan": 0,
+  "respRate": 0,
+  "heartRate": 0,
+  "lingkarPerut": 36,
+  "kdStatusPulang": "4",
+  "tglPulang": "19-05-2016",
+  "kdDokter": "73229",
+  "kdDiag1": "A01.0",
+  "kdDiag2": null,
+  "kdDiag3": null,
+  "kdPoliRujukInternal": null,
+  "rujukLanjut": {	
+  	"tglEstRujuk":"02-10-2018",
+    "kdppk": "0116R028",
+    "subSpesialis": null,
+    "khusus": {
+      "kdKhusus": "HDL",
+      "kdSubSpesialis": null,
+      "catatan": "peserta sudah biasa hemodialisa"
+    }
+  },
+  "kdTacc": 0,
+  "alasanTacc": null,
+  "anamnesa": "test anamnesa",
+  "alergiMakan": "00",
+  "alergiUdara": "00",
+  "alergiObat": "00",
+  "kdPrognosa": "01",
+  "terapiObat": "test terapi obat",
+  "terapiNonObat": "test terapi nonobat",
+  "bmhp": "bmhp",
+  "suhu": "36,4"
+}
+
+Contoh Parameter Rujukan Spesialis
+{
+    "noKunjungan": null,
+    "noKartu": "0000000114759",
+    "tglDaftar": "26-03-2022",
+    "kdPoli": "002",
+    "keluhan": "keluhan",
+    "kdSadar": "04",
+    "sistole": 80,
+    "diastole": 80,
+    "beratBadan": 50,
+    "tinggiBadan": 170,
+    "respRate": 80,
+    "heartRate": 80,
+    "lingkarPerut": 36,
+    "kdStatusPulang": "4",
+    "tglPulang": "27-03-2022",
+    "kdDokter": "179007",
+    "kdDiag1": "O82",
+    "kdDiag2": null,
+    "kdDiag3": null,
+    "kdPoliRujukInternal": null,
+    "rujukLanjut": {
+        "kdppk": "0112R016",
+        "tglEstRujuk": "27-03-2022",
+        "subSpesialis": {
+            "kdSubSpesialis1": "16",
+            "kdSarana": null
+        },
+        "khusus": null
+    },
+    "kdTacc": -1,
+    "alasanTacc": null,
+    "anamnesa": "test anamnesa",
+    "alergiMakan": "00",
+    "alergiUdara": "00",
+    "alergiObat": "00",
+    "kdPrognosa": "01",
+    "terapiObat": "test terapi obat",
+    "terapiNonObat": "test terapi nonobat",
+    "bmhp": "bmhp",
+    "suhu": "36,4"
+}
+
+Ref_TACC : [
+  { "kdTacc": "-1", "nmTacc": "Tanpa TACC", alasanTacc:[] },
+  { "kdTacc": "1", "nmTacc": "Time", alasanTacc:["< 3 Hari", ">= 3 - 7 Hari", ">= 7 Hari"] },
+  { "kdTacc": "2", "nmTacc": "Age", alasanTacc:["< 1 Bulan", ">= 1 Bulan s/d < 12 Bulan", ">= 1 Tahun s/d < 5 Tahun",">= 5 Tahun s/d < 12 Tahun", ">= 12 Tahun s/d < 55 Tahun", ">= 55 Tahun"]   },
+  { "kdTacc": "3", "nmTacc": "Complication", alasanTacc:(format : kdDiagnosa + " - " + NamaDiagnosa, contoh : "A09 - Diarrhoea and gastroenteritis of presumed infectious origin")  },
+  { "kdTacc": "4", "nmTacc": "Comorbidity", alasanTacc:["< 3 Hari", ">= 3 - 7 Hari", ">= 7 Hari"]  }
+]
+
+Response
+                                            
+{
+  	"response": {
+	    "field": "noKunjungan",
+	    "message": "0114U1630316Y000001"
+  	},
+  	"metaData": {
+	    "message": "CREATED",
+	    "code": 201
+  	}
+}
+
+
+{Base URL}/{Service Name}/kunjungan
+Fungsi : Edit Data Kunjungan
+
+Method : PUT
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+                                                
+{
+    "noKunjungan": "011200210322Y000012",
+    "noKartu": "0000000114759",
+    "keluhan": "keluhan",
+    "kdSadar": "03",
+    "sistole": 90,
+    "diastole": 90,
+    "beratBadan": 50,
+    "tinggiBadan": 170,
+    "respRate": 90,
+    "heartRate": 90,
+    "lingkarPerut": 36,
+    
+    "kdStatusPulang": "4",
+    "tglPulang": "27-03-2022",
+    "kdDokter": "179007",
+    "kdDiag1": "B54",
+    "kdDiag2": null,
+    "kdDiag3": null,
+    "kdPoliRujukInternal": null,
+    "rujukLanjut": {
+        "tglEstRujuk": "27-03-2022",
+        "kdppk": "0112R016",
+        "subSpesialis": null,
+        "khusus": {
+            "kdKhusus": "HDL",
+            "kdSubSpesialis": null,
+            "catatan": "peserta sudah biasa hemodialisa"
+        }
+    },
+    "kdTacc": 1,
+    "alasanTacc": "< 3 Hari",
+    "anamnesa": "test anamnesa",
+    "alergiMakan": "00",
+    "alergiUdara": "00",
+    "alergiObat": "00",
+    "kdPrognosa": "01",
+    "terapiObat": "test terapi obat",
+    "terapiNonObat": "test terapi nonobat",
+    "bmhp": "bmhp",
+    "suhu": "36,4"
+}
+
+Ref_TACC : [
+  { "kdTacc": "-1", "nmTacc": "Tanpa TACC", alasanTacc:[] },
+  { "kdTacc": "1", "nmTacc": "Time", alasanTacc:["< 3 Hari", ">= 3 - 7 Hari", ">= 7 Hari"] },
+  { "kdTacc": "2", "nmTacc": "Age", alasanTacc:["< 1 Bulan", ">= 1 Bulan s/d < 12 Bulan", ">= 1 Tahun s/d < 5 Tahun",">= 5 Tahun s/d < 12 Tahun", ">= 12 Tahun s/d < 55 Tahun", ">= 55 Tahun"]   },
+  { "kdTacc": "3", "nmTacc": "Complication", alasanTacc:(format : kdDiagnosa + " - " + NamaDiagnosa, contoh : "A09 - Diarrhoea and gastroenteritis of presumed infectious origin")  },
+  { "kdTacc": "4", "nmTacc": "Comorbidity", alasanTacc:["< 3 Hari", ">= 3 - 7 Hari", ">= 7 Hari"]  }
+]
+
+Response
+                                            
+{
+	"response": null,
+	"metaData": {
+	  "message": "OK",
+	  "code": 200
+	}
+}
+
+
+Delete Kunjungan
+{Base URL}/{Service Name}/kunjungan/{Parameter 1}
+Fungsi : Delete Data Kunjungan
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kunjungan
+
+                                    
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+

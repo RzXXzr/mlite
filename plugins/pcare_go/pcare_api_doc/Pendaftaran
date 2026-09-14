@@ -1,0 +1,227 @@
+Get Pendaftaran by Nomor Urut
+{Base URL}/{Service Name}/pendaftaran/noUrut/{Parameter 1}/tglDaftar/{Parameter 2}
+Fungsi : Get Data Pendaftaran by Nomor Urut
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Urut Pendaftaran
+
+Parameter 2 : Tanggal Pendaftaran
+
+                                    
+{
+  "response": {
+    "noUrut": "A1",
+    "tgldaftar": "13-08-2015",
+    "providerPelayanan": {
+      "kdProvider": "1301U007",
+      "nmProvider": "MAULIDA JUNIAR, dr"
+    },
+    "peserta": {
+      "noKartu": "0000029247423",
+      "nama": "ANDIKA TRI UTARI",
+      "hubunganKeluarga": "Peserta",
+      "sex": "P",
+      "tglLahir": "01-11-1992",
+      "tglMulaiAktif": "12-09-2002",
+      "tglAkhirBerlaku": "31-12-2050",
+      "kdProviderPst": {
+        "kdProvider": "0611U006",
+        "nmProvider": "dr. HESTI WIDYANINGSIH"
+      },
+      "kdProviderGigi": {
+        "kdProvider": "0091G002",
+        "nmProvider": "drg. SRIWIDIASTUTI"
+      },
+      "jnsKelas": {
+        "kode": "2",
+        "nama": "KELAS II"
+      },
+      "jnsPeserta": {
+        "kode": "13",
+        "nama": "PEGAWAI SWASTA"
+      },
+      "golDarah": "4",
+      "noHP": "",
+      "noKTP": "1674010000",
+      "aktif": true,
+      "ketAktif": "AKTIF",
+      "asuransi": {
+        "kdAsuransi": "05",
+        "nmAsuransi": "PT ASURANSI SINAR MAS",
+        "noAsuransi": "056M000045274004792a"
+      }
+    },
+    "poli": {
+      "kdPoli": "001",
+      "nmPoli": "Umum"
+    },
+    "keluhan": "",
+    "status": "Sudah dilayani",
+    "sistole": 0,
+    "diastole": 0,
+    "beratBadan": 0,
+    "tinggiBadan": 0,
+    "respRate": 0,
+    "heartRate": 0,
+    "tkp": {
+      "kdTkp": "10",
+      "nmTkp": "RJTP"
+    }
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get Pendaftaran Provider
+{Base URL}/{Service Name}/pendaftaran/tglDaftar/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Get Data Pendaftaran Provider
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Tanggal Pendaftaran
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                    
+{
+  "response": {
+    "count": 1,
+    "list": [
+      	{
+               "noUrut": "A1",
+               "tgldaftar": "15-05-2018",
+               "providerPelayanan": null,
+               "peserta": {
+                   "noKartu": "0000043678034",
+                   "nama": "FERRY APRIADI",
+                   "hubunganKeluarga": null,
+                   "sex": "L",
+                   "tglLahir": "05-04-1965",
+                   "tglMulaiAktif": null,
+                   "tglAkhirBerlaku": null,
+                   "kdProviderPst": null,
+                   "kdProviderGigi": null,
+                   "jnsKelas": null,
+                   "jnsPeserta": null,
+                   "golDarah": null,
+                   "noHP": null,
+                   "noKTP": null,
+                   "aktif": false,
+                   "ketAktif": null,
+                   "asuransi": null
+               },
+               "poli": {
+                   "kdPoli": "001",
+                   "nmPoli": "Umum",
+                   "poliSakit": true
+               },
+               "keluhan": "",
+               "kunjSakit": true,
+               "status": "Baru",
+               "sistole": 0,
+               "diastole": 0,
+               "beratBadan": 0,
+               "tinggiBadan": 0,
+               "respRate": 0,
+               "heartRate": 0,
+               "tkp": {
+                   "kdTkp": "10",
+                   "nmTkp": "RJTP"
+               }
+           }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+{Base URL}/{Service Name}/pendaftaran
+Fungsi : Add Data Pendaftaran
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                                
+{
+  "kdProviderPeserta": "0114A026",
+  "tglDaftar": "12-08-2015",
+  "noKartu": "0001113569638",
+  "kdPoli": "001",
+  "keluhan": null,
+  "kunjSakit": true,
+  "sistole": 0,
+  "diastole": 0,
+  "beratBadan": 0,
+  "tinggiBadan": 0,
+  "respRate": 0,
+  "lingkarPerut": 0,
+  "heartRate": 0,
+  "rujukBalik": 0,
+  "kdTkp": "10"
+}
+
+ref tkp:
+"tkp": [{ "kdTkp": "10", "nmTkp": "RJTP" }, { "kdTkp": "20", "nmTkp": "RITP" }, { "kdTkp": "50", "nmTkp": "Promotif" }]
+
+
+Response
+                                            
+"response": {
+      "field": "noUrut",
+      "message": "A1"
+  },
+  "metaData": {
+      "message": "CREATED",
+      "code": 201
+  }
+
+Delete Pendaftaran
+{Base URL}/{Service Name}/pendaftaran/peserta/{Parameter 1}/tglDaftar/{Parameter 2}/noUrut/{Parameter 3}/kdPoli/{Parameter 4}
+Fungsi : Delete Data Obat
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kartu Peserta
+
+Parameter 2 : Tanggal Pendaftaran
+
+Parameter 3 : Nomor Urut Pendaftaran
+
+Parameter 4 : Kode Poli
+
+                                    
+{
+    "response": "",
+    "metaData": {
+      "message": "OK",
+   	  "code": 200
+    }
+}
+

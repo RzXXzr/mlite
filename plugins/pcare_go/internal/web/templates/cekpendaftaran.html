@@ -1,0 +1,58 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <div class="row">
+            <div class="col-md-4"><h3 class="panel-title" style="line-height:30px"><i class="fa fa-search"></i> Cek Pendaftaran Provider</h3></div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="tglFilter" placeholder="Tanggal (dd-mm-yyyy)">
+                    <span class="input-group-btn"><button class="btn btn-primary" id="btnFilter"><i class="fa fa-search"></i></button></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <p class="text-muted">Mengecek daftar pendaftaran yang terdaftar di PCare untuk tanggal tertentu melalui API provider.</p>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover" id="tblData" style="width:100%">
+                <thead><tr><th>No</th><th>No Kartu</th><th>Nama</th><th>No Urut</th><th>Poli</th><th>Tgl Daftar</th></tr></thead>
+                <tbody id="tblBody"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+var dt,allData=[];
+$(function(){
+    $('#tglFilter').datetimepicker({format:'DD-MM-YYYY',defaultDate:moment()});
+    $('#btnFilter').click(function(){allData=[];loadPage(0);});
+});
+function loadPage(offset){
+    var tgl=$('#tglFilter').val();if(!tgl)return;
+    apiCall('GET','/pendaftaran/provider/'+tgl+'/'+offset+'/10').done(function(r){
+        var list=pcare.list(r);
+        if(Array.isArray(list)&&list.length>0){
+            allData=allData.concat(list);
+            if(list.length>=10){loadPage(offset+list.length);return;}
+        }
+        renderTable();
+    }).fail(function(){if(allData.length>0){renderTable();}else{showAlert('danger','Gagal mengambil data dari PCare');}});
+}
+function renderTable(){
+    if(dt)dt.destroy();
+    var body='';
+    $.each(allData,function(i,p){
+        var noKartu=p.peserta?p.peserta.noKartu:(p.noKartu||'-');
+        var nama=p.peserta?p.peserta.nama:(p.nama||'-');
+        var poli=p.poli?(p.poli.nmPoli||p.poli.kdPoli):(p.kdPoli||'-');
+        var tgl=p.tglDaftar||p.tglKunjungan||'-';
+        body+='<tr><td>'+(i+1)+'</td><td>'+noKartu+'</td><td>'+nama+'</td><td>'+(p.noUrut||'-')+'</td><td>'+poli+'</td><td>'+tgl+'</td></tr>';
+    });
+    $('#tblBody').html(body||'<tr><td colspan="6" class="text-center">Tidak ada data pendaftaran</td></tr>');
+    if(allData.length>0) dt=$('#tblData').DataTable({pageLength:25,destroy:true});
+}
+</script>
+{{end}}

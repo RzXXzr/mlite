@@ -1,0 +1,150 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} - PCare Go</title>
+    <link rel="dns-prefetch" href="//maxcdn.bootstrapcdn.com">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//cdn.datatables.net">
+    <link rel="dns-prefetch" href="//code.jquery.com">
+    <link rel="preconnect" href="https://maxcdn.bootstrapcdn.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://code.jquery.com" crossorigin>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css">
+    <style>
+        body { background-color: #ecf0f5; padding-top: 0; font-family: 'Source Sans Pro','Helvetica Neue',Helvetica,Arial,sans-serif; }
+        .wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: #222d32; color: #b8c7ce; min-height: 100vh; position: fixed; z-index: 100; overflow-y: auto; }
+        .sidebar .brand { display: block; padding: 15px 20px; font-size: 20px; color: #fff; background: #1a2226; text-decoration: none; font-weight: bold; }
+        .sidebar .brand i { margin-right: 8px; color: #3c8dbc; }
+        .sidebar .nav-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar .nav-menu li a, .sidebar .nav-menu li a:visited { display: block; padding: 10px 20px; color: #b8c7ce; text-decoration: none !important; border-left: 3px solid transparent; transition: all 0.2s; font-size: 13px; }
+        .sidebar .nav-menu li a:hover, .sidebar .nav-menu li a:focus, .sidebar .nav-menu li a.active { background: #1e282c; color: #fff; border-left-color: #3c8dbc; }
+        .sidebar .nav-menu li a i { width: 20px; margin-right: 8px; text-align: center; }
+        .sidebar .nav-menu .section-title { padding: 12px 20px 4px; text-transform: uppercase; font-size: 11px; color: #4b646f; letter-spacing: 1px; }
+        .content-wrapper { flex: 1; margin-left: 250px; padding: 15px; }
+        .breadcrumb-bar { background: #fff; padding: 8px 15px; border-radius: 3px; margin-bottom: 15px; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
+        .breadcrumb-bar a { color: #3c8dbc; text-decoration: none; }
+        .modules { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
+        .modules .module { width: 180px; }
+        .modules .module .panel { margin-bottom: 0; transition: box-shadow 0.2s; }
+        .modules .module .panel:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .modules .module .panel-body { text-decoration: none !important; color: #333; display: block; }
+        .modules .module .panel-thumb { font-size: 40px; color: #3c8dbc; margin-bottom: 8px; }
+        .modules .module h4 { font-size: 13px; margin: 5px 0 0; }
+        .info-box { display: flex; background: #fff; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.1); margin-bottom: 15px; min-height: 80px; }
+        .info-box .info-box-icon { width: 70px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff; border-radius: 4px 0 0 4px; }
+        .info-box .info-box-content { padding: 10px 15px; flex: 1; }
+        .info-box .info-box-text { font-size: 13px; color: #888; margin: 0; }
+        .info-box .info-box-number { font-size: 22px; font-weight: bold; margin: 0; }
+        .bg-aqua { background-color: #00c0ef !important; }
+        .bg-green { background-color: #00a65a !important; }
+        .bg-yellow { background-color: #f39c12 !important; }
+        .bg-red { background-color: #dd4b39 !important; }
+        .bg-blue { background-color: #3c8dbc !important; }
+        .bg-purple { background-color: #605ca8 !important; }
+        .badge-success { background-color: #00a65a; }
+        .badge-warning { background-color: #f39c12; }
+        .badge-danger { background-color: #dd4b39; }
+        .badge-info { background-color: #00c0ef; }
+        .dataTables_wrapper .dataTables_filter input { border-radius: 3px; border: 1px solid #d2d6de; padding: 4px 8px; }
+        @media (max-width: 767px) {
+            .sidebar { width: 0; overflow: hidden; transition: width 0.3s; }
+            .sidebar.open { width: 250px; }
+            .content-wrapper { margin-left: 0; }
+            .mobile-toggle { display: block !important; }
+        }
+        .mobile-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 200; background: #3c8dbc; color: #fff; border: none; padding: 8px 12px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')"><i class="fa fa-bars"></i></button>
+    <div class="wrapper">
+        <div class="sidebar">
+            <a href="/web" class="brand"><i class="fa fa-medkit"></i> PCare Go</a>
+            <ul class="nav-menu">
+                <li class="section-title">Menu Utama</li>
+                <li><a href="/web" class="{{if eq .Page "manage"}}active{{end}}"><i class="fa fa-th-large"></i> Dashboard</a></li>
+                <li><a href="/web/settings" class="{{if eq .Page "settings"}}active{{end}}"><i class="fa fa-cog"></i> Pengaturan</a></li>
+                <li class="section-title">Data & Monitor</li>
+                <li><a href="/web/dashboard" class="{{if eq .Page "dashboard"}}active{{end}}"><i class="fa fa-dashboard"></i> Dashboard PCare</a></li>
+                <li><a href="/web/monitorpcare" class="{{if eq .Page "monitorpcare"}}active{{end}}"><i class="fa fa-desktop"></i> Monitor PCare</a></li>
+                <li><a href="/web/bridging" class="{{if eq .Page "bridging"}}active{{end}}"><i class="fa fa-exchange"></i> Data Bridging</a></li>
+                <li><a href="/web/datakunjunganbpjs" class="{{if eq .Page "datakunjunganbpjs"}}active{{end}}"><i class="fa fa-calendar-check-o"></i> Kunjungan BPJS</a></li>
+                <li class="section-title">Peserta & Pendaftaran</li>
+                <li><a href="/web/peserta" class="{{if eq .Page "peserta"}}active{{end}}"><i class="fa fa-user"></i> Peserta</a></li>
+                <li><a href="/web/pendaftaran" class="{{if eq .Page "pendaftaran"}}active{{end}}"><i class="fa fa-pencil-square-o"></i> Pendaftaran</a></li>
+                <li><a href="/web/kunjungan" class="{{if eq .Page "kunjungan"}}active{{end}}"><i class="fa fa-stethoscope"></i> Kunjungan</a></li>
+                <li class="section-title">Obat & Tindakan</li>
+                <li><a href="/web/obat" class="{{if eq .Page "obat"}}active{{end}}"><i class="fa fa-pills"></i> Obat DPHO</a></li>
+                <li><a href="/web/tindakan" class="{{if eq .Page "tindakan"}}active{{end}}"><i class="fa fa-hand-paper-o"></i> Tindakan</a></li>
+                <li><a href="/web/mcu" class="{{if eq .Page "mcu"}}active{{end}}"><i class="fa fa-heartbeat"></i> MCU</a></li>
+                <li class="section-title">Referensi</li>
+                <li><a href="/web/diagnosa" class="{{if eq .Page "diagnosa"}}active{{end}}"><i class="fa fa-book"></i> Diagnosa</a></li>
+                <li><a href="/web/dokter" class="{{if eq .Page "dokter"}}active{{end}}"><i class="fa fa-user-md"></i> Dokter</a></li>
+                <li><a href="/web/poli" class="{{if eq .Page "poli"}}active{{end}}"><i class="fa fa-hospital-o"></i> Poliklinik</a></li>
+                <li><a href="/web/alergi" class="{{if eq .Page "alergi"}}active{{end}}"><i class="fa fa-warning"></i> Alergi</a></li>
+                <li><a href="/web/kesadaran" class="{{if eq .Page "kesadaran"}}active{{end}}"><i class="fa fa-eye"></i> Kesadaran</a></li>
+                <li><a href="/web/prognosa" class="{{if eq .Page "prognosa"}}active{{end}}"><i class="fa fa-line-chart"></i> Prognosa</a></li>
+                <li><a href="/web/provider" class="{{if eq .Page "provider"}}active{{end}}"><i class="fa fa-building"></i> Provider</a></li>
+                <li><a href="/web/spesialis" class="{{if eq .Page "spesialis"}}active{{end}}"><i class="fa fa-graduation-cap"></i> Spesialis</a></li>
+                <li><a href="/web/statuspulang" class="{{if eq .Page "statuspulang"}}active{{end}}"><i class="fa fa-sign-out"></i> Status Pulang</a></li>
+                <li class="section-title">Kelompok & Skrining</li>
+                <li><a href="/web/kelompok" class="{{if eq .Page "kelompok"}}active{{end}}"><i class="fa fa-users"></i> Kelompok / Club</a></li>
+                <li><a href="/web/skrining" class="{{if eq .Page "skrining"}}active{{end}}"><i class="fa fa-check-square-o"></i> Skrining</a></li>
+                <li class="section-title">Utilitas</li>
+                <li><a href="/web/ceksinkronisasi" class="{{if eq .Page "ceksinkronisasi"}}active{{end}}"><i class="fa fa-refresh"></i> Cek Sinkronisasi</a></li>
+                <li><a href="/web/cekpendaftaran" class="{{if eq .Page "cekpendaftaran"}}active{{end}}"><i class="fa fa-search"></i> Cek Pendaftaran</a></li>
+            </ul>
+        </div>
+        <div class="content-wrapper">
+            <div class="breadcrumb-bar">
+                <a href="/web"><i class="fa fa-home"></i> Home</a>
+                {{if ne .Page "manage"}} &raquo; <span>{{.Title}}</span>{{end}}
+            </div>
+            <div id="main-content">
+                {{template "content" .}}
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/id.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap.min.js"></script>
+    <script>
+        var pcare = { apiBase: '/api', webBase: '/web' };
+        pcare.list = function(r) {
+            var resp = r.response || r || {};
+            if (Array.isArray(resp)) return resp;
+            if (resp.list && Array.isArray(resp.list)) return resp.list;
+            return [];
+        };
+        pcare.esc = function(s) {
+            var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML;
+        };
+        pcare.formatRp = function(n) {
+            return 'Rp ' + Number(n||0).toLocaleString('id-ID');
+        };
+        function showAlert(type, msg) {
+            var a = $('<div class="alert alert-'+type+' alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert">&times;</button>'+msg+'</div>');
+            $('#main-content').prepend(a);
+            setTimeout(function(){ a.fadeOut(); }, 5000);
+        }
+        function apiCall(method, url, data) {
+            return $.ajax({ method: method, url: pcare.apiBase + url, contentType: 'application/json', data: data ? JSON.stringify(data) : undefined });
+        }
+    </script>
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}
+
+{{define "scripts"}}{{end}}

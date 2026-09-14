@@ -1,0 +1,43 @@
+{if: !empty($tindakan_list)}
+<div class="table-responsive" style="margin-top:5px;">
+  <table class="table table-condensed table-bordered table-striped" style="margin-bottom:0;">
+    <thead>
+      <tr>
+        <th style="white-space:nowrap;">Tanggal/Jam</th>
+        <th>Nama Tindakan</th>
+        <th class="text-right" style="white-space:nowrap;">Biaya</th>
+        <th style="width:60px;">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {loop: $tindakan_list}
+      <tr>
+        <td style="white-space:nowrap;">{$value.tgl_perawatan} {$value.jam_rawat}</td>
+        <td>{$value.nm_perawatan}</td>
+        <td class="text-right">Rp. {?=number_format($value.biaya_rawat,0,',','.')?}</td>
+        <td>
+          <button type="button" class="btn btn-danger btn-xs hapus_tindakan_soap"
+            data-no_rawat="{$value.no_rawat}"
+            data-kd_jenis_prw="{$value.kd_jenis_prw}"
+            data-tgl_perawatan="{$value.tgl_perawatan}"
+            data-jam_rawat="{$value.jam_rawat}"
+            data-provider="rawat_jl_dr"
+            title="Hapus tindakan ini">
+            <i class="fa fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+      {/loop}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="2" class="text-right">Total Tindakan</th>
+        <th class="text-right"><strong>Rp. {?=number_format($total,0,',','.')?}</strong></th>
+        <th></th>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{else}
+<p class="text-muted text-center" style="padding:8px 0;margin:0;"><i class="fa fa-info-circle"></i> Belum ada tindakan yang ditambahkan.</p>
+{/if}

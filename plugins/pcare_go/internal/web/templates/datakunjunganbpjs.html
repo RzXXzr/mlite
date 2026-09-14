@@ -1,0 +1,46 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <div class="row">
+            <div class="col-md-4"><h3 class="panel-title" style="line-height:30px"><i class="fa fa-calendar-check-o"></i> Data Kunjungan BPJS</h3></div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="tglFilter" placeholder="Tanggal">
+                    <span class="input-group-btn"><button class="btn btn-primary" id="btnFilter"><i class="fa fa-search"></i></button></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <p class="text-muted">Data kunjungan pasien BPJS yang sudah memiliki nomor kunjungan.</p>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover" id="tblData" style="width:100%">
+                <thead><tr><th>No</th><th>No. Rawat</th><th>No. RM</th><th>Nama</th><th>Poli</th><th>Dokter</th><th>No Urut</th><th>No Kunjungan</th></tr></thead>
+                <tbody id="tblBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+var dt;
+$(function(){
+    $('#tglFilter').datetimepicker({format:'DD-MM-YYYY',defaultDate:moment()});
+    loadData();
+    $('#btnFilter').click(loadData);
+});
+function loadData(){
+    var tgl=$('#tglFilter').val()||moment().format('DD-MM-YYYY');
+    apiCall('GET','/datakunjunganbpjs?date='+tgl).done(function(res){
+        if(dt)dt.destroy();
+        var rows=res.rows||[];var body='';
+        $.each(rows,function(i,r){
+            body+='<tr><td>'+(i+1)+'</td><td>'+r.no_rawat+'</td><td>'+r.no_rkm_medis+'</td><td>'+r.nm_pasien+'</td><td>'+r.nm_poli+'</td><td>'+r.nm_dokter+'</td><td>'+(r.nomor_urut||'-')+'</td><td>'+(r.nomor_kunjungan||'-')+'</td></tr>';
+        });
+        $('#tblBody').html(body||'<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>');
+        if(rows.length>0) dt=$('#tblData').DataTable({pageLength:25,destroy:true});
+    });
+}
+</script>
+{{end}}

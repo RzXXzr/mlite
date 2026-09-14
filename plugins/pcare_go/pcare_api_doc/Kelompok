@@ -1,0 +1,370 @@
+Get Club Prolanis
+{Base URL}/{Service Name}/kelompok/club/{Parameter 1}
+Fungsi : Get Data Club Prolanis
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode Jenis Kelompok => 01 : Diabetes Melitus, 02 : Hipertensi
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "clubId": 33,
+        "jnsKelompok": {
+          "kdProgram": "01",
+          "nmProgram": "Diabetes Melitus"
+        },
+        "tglMulai": "23-08-2015",
+        "tglAkhir": null,
+        "alamat": "alamat club 1",
+        "nama": "Club DM satu",
+        "ketua_noHP": "085720127801",
+        "ketua_nama": "Bambang"
+      },
+      {
+        "clubId": 34,
+        "jnsKelompok": {
+          "kdProgram": "01",
+          "nmProgram": "Diabetes Melitus"
+        },
+        "tglMulai": "23-08-2015",
+        "tglAkhir": null,
+        "alamat": "alamat club dm 2",
+        "nama": "club DM dua",
+        "ketua_noHP": "085720293132",
+        "ketua_nama": "Susi"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+
+Get Kegiatan Kelompok
+{Base URL}/{Service Name}/kelompok/kegiatan/{Parameter 1}
+Fungsi : Get Data Kegiatan Kelompok
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Bulan, format => dd-mm-yyyy
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "eduId": "16010000003",
+        "clubProl": {
+          "clubId": 36,
+          "jnsKelompok": {
+            "kdProgram": "03",
+            "nmProgram": "Asthma"
+          },
+          "tglMulai": "30-01-2016",
+          "tglAkhir": null,
+          "alamat": "Alamat asma satu",
+          "nama": "Asthma satu",
+          "ketua_noHP": "083",
+          "ketua_nama": "ketua"
+        },
+        "tglPelayanan": "30-01-2016",
+        "kegiatan": {
+          "nama": "Senam",
+          "kode": "01"
+        },
+        "kelompok": {
+          "nama": "Asthma",
+          "kode": "03"
+        },
+        "materi": "senam asthma satu",
+        "pembicara": "pembicara asthma satu",
+        "lokasi": "lokasi",
+        "keterangan": "ket asma",
+        "biaya": 30000
+      },
+      {
+        "eduId": "16010000001",
+        "clubProl": {
+          "clubId": 34,
+          "jnsKelompok": {
+            "kdProgram": "01",
+            "nmProgram": "Diabetes Melitus"
+          },
+          "tglMulai": "23-08-2015",
+          "tglAkhir": null,
+          "alamat": "alamat club dm 2",
+          "nama": "club DM dua",
+          "ketua_noHP": "085720293132",
+          "ketua_nama": "erna"
+        },
+        "tglPelayanan": "29-01-2016",
+        "kegiatan": {
+          "nama": "Penyuluhan",
+          "kode": "10"
+        },
+        "kelompok": {
+          "nama": "Diabetes Melitus",
+          "kode": "01"
+        },
+        "materi": "d",
+        "pembicara": "d",
+        "lokasi": "d",
+        "keterangan": "",
+        "biaya": 0
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+
+Get Peserta Kegiatan Kelompok
+{Base URL}/{Service Name}/kelompok/peserta/{Parameter 1}
+Fungsi : Get Data Peserta Kegiatan Kelompok
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : eduId
+
+                                    
+{
+  "response": {
+    "count": 2,
+    "list": [
+      {
+        "eduId": "16020000001",
+        "peserta": {
+          "noKartu": "0001101521158",
+          "nama": "MULIANA",
+          "hubunganKeluarga": "Peserta",
+          "sex": "L",
+          "tglLahir": "10-05-1975",
+          "tglMulaiAktif": "27-01-1995",
+          "tglAkhirBerlaku": "10-05-2075",
+          "kdProviderPst": {
+            "kdProvider": "0114U163",
+            "nmProvider": "cemput jst"
+          },
+          "kdProviderGigi": {
+            "kdProvider": null,
+            "nmProvider": null
+          },
+          "jnsKelas": {
+            "nama": "KELAS II",
+            "kode": "2"
+          },
+          "jnsPeserta": {
+            "nama": "TNI ANGKATAN DARAT",
+            "kode": "5"
+          },
+          "golDarah": "0",
+          "noHP": null,
+          "noKTP": " ",
+          "pstProl": "",
+          "pstPrb": "",
+          "aktif": true,
+          "ketAktif": "AKTIF",
+          "asuransi": {
+            "kdAsuransi": null,
+            "nmAsuransi": null,
+            "noAsuransi": null,
+            "cob": false
+          },
+          "tunggakan": 0
+        }
+      },
+      {
+        "eduId": "16020000001",
+        "peserta": {
+          "noKartu": "0001101615759",
+          "nama": "TOGU ELIOT FERNANDO",
+          "hubunganKeluarga": "Peserta",
+          "sex": "L",
+          "tglLahir": "11-11-1983",
+          "tglMulaiAktif": "08-11-2003",
+          "tglAkhirBerlaku": "11-11-2083",
+          "kdProviderPst": {
+            "kdProvider": "0114U163",
+            "nmProvider": "cemput jst"
+          },
+          "kdProviderGigi": {
+            "kdProvider": null,
+            "nmProvider": null
+          },
+          "jnsKelas": {
+            "nama": "KELAS II",
+            "kode": "2"
+          },
+          "jnsPeserta": {
+            "nama": "TNI ANGKATAN DARAT",
+            "kode": "5"
+          },
+          "golDarah": "0",
+          "noHP": null,
+          "noKTP": " ",
+          "pstProl": "",
+          "pstPrb": "",
+          "aktif": true,
+          "ketAktif": "AKTIF",
+          "asuransi": {
+            "kdAsuransi": null,
+            "nmAsuransi": null,
+            "noAsuransi": null,
+            "cob": false
+          },
+          "tunggakan": 0
+        }
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Add Kegiatan Kelompok
+{Base URL}/{Service Name}/kelompok/kegiatan
+Fungsi : Add Data Kegiatan Kelompok
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+                                                
+{
+  "eduId": null,
+  "clubId": 36,
+  "tglPelayanan": "27-03-2016",
+  "kdKegiatan": "01",
+  "kdKelompok": "03",
+  "materi": "materi",
+  "pembicara": "pembicara",
+  "lokasi": "lokasi",
+  "keterangan": "keterangan",
+  "biaya": 20000
+}
+                                     
+                                     
+                                                
+KET : "kdKelompok":[{"kdProgram":"01", "nmProgram":"Diabetes Melitus"}, {"kdProgram":"02", "nmProgram":"Hipertensi"}]
+	  "kdKegiatan":[{"kdProgram":"01", "nmProgram":"Senam"}, {"kdProgram":"10", "nmProgram":"Penyuluhan"}, {"kdProgram":"11", "nmProgram":"Penyuluhan dan Senam"}]
+                                                                 
+Response
+                                            
+{
+  "response": {
+    "field": "eduId",
+    "message": "16030000009"
+  },
+  "metaData": {
+    "message": "CREATED",
+    "code": 201
+  }
+}
+
+
+Add Peserta Kegiatan Kelompok
+{Base URL}/{Service Name}/kelompok/peserta
+Fungsi : Add Data Peserta Kegiatan Kelompok
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+                                                
+{
+  "eduId": "16030000009",
+  "noKartu": "0001101615759"
+}
+                                     
+                                     
+                                                
+KET : "kdKelompok":[{"kdProgram":"01", "nmProgram":"Diabetes Melitus"}, {"kdProgram":"02", "nmProgram":"Hipertensi"}]
+	  "kdKegiatan":[{"kdProgram":"01", "nmProgram":"Senam"}, {"kdProgram":"10", "nmProgram":"Penyuluhan"}, {"kdProgram":"11", "nmProgram":"Penyuluhan dan Senam"}]
+
+Response
+                                            
+{
+  "response": null,
+  "metaData": {
+    "message": "CREATED",
+    "code": 201
+  }
+}
+
+
+{Base URL}/{Service Name}/kelompok/kegiatan/{Parameter 1}
+Fungsi : Delete Data Kegiatan Kelompok
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : eduId
+
+                                    
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Delete Peserta Kegiatan Kelompok
+{Base URL}/{Service Name}/kelompok/peserta/{Parameter 1}/{Parameter 2}
+Fungsi : Delete Data Peserta Kegiatan Kelompok
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : eduId
+
+Parameter 2 : Nomor Kartu Peserta
+
+                                    
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}

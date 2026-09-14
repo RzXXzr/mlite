@@ -1,0 +1,139 @@
+{if: $error}
+<div class="alert alert-danger">
+  <i class="fa fa-exclamation-circle"></i> <strong>Error ({$code}):</strong> {$message}
+</div>
+{else}
+<div class="row">
+  <div class="col-sm-3">
+    <div class="panel panel-info">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700">{$count}</h2>
+        <small><i class="fa fa-users"></i> Jumlah Pendaftaran</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="panel panel-primary">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700">{$date_display}</h2>
+        <small><i class="fa fa-calendar"></i> Tanggal Pendaftaran</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="panel panel-success">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700">{$offset}</h2>
+        <small><i class="fa fa-arrow-right"></i> Offset</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-3">
+    <div class="panel panel-warning">
+      <div class="panel-body text-center">
+        <h2 style="margin:0;font-weight:700">{$limit}</h2>
+        <small><i class="fa fa-list-ol"></i> Limit</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter pencarian -->
+<div class="form-group" style="margin-bottom:10px;">
+  <input type="text" class="form-control" id="filter_pendaftaran" placeholder="Cari berdasarkan nama, no kartu, poli..." style="max-width:400px;">
+</div>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-striped table-hover table-condensed" id="tbl_pendaftaran_provider">
+    <thead>
+      <tr style="background:#337ab7;color:#fff;">
+        <th style="width:40px;text-align:center;">No</th>
+        <th>No. Urut</th>
+        <th>Tgl Daftar</th>
+        <th>No. Kartu</th>
+        <th>Nama Peserta</th>
+        <th>Jns Kelamin</th>
+        <th>Tgl Lahir</th>
+        <th>Poli</th>
+        <th>Keluhan</th>
+        <th>Kunj. Sakit</th>
+        <th>Status</th>
+        <th>Sistole</th>
+        <th>Diastole</th>
+        <th>BB</th>
+        <th>TB</th>
+        <th>Resp Rate</th>
+        <th>Heart Rate</th>
+        <th>TKP</th>
+        <th>Provider Pelayanan</th>
+      </tr>
+    </thead>
+    <tbody>
+      {if: $count > 0}
+      {loop: $list}
+      <tr>
+        <td style="text-align:center;">{$value.no}</td>
+        <td>{$value.noUrut}</td>
+        <td>{$value.tglDaftar}</td>
+        <td>{$value.peserta.noKartu}</td>
+        <td><strong>{$value.peserta.nama}</strong></td>
+        <td style="text-align:center;">
+          {if: $value.peserta.sex == 'L'}
+            <span class="label label-info">L</span>
+          {else}
+            <span class="label label-danger">P</span>
+          {/if}
+        </td>
+        <td>{$value.peserta.tglLahir}</td>
+        <td><span class="label label-primary">{$value.poli.nmPoli}</span></td>
+        <td>{$value.keluhan}</td>
+        <td style="text-align:center;">
+          {if: $value.kunjSakit}
+            <span class="label label-warning">Ya</span>
+          {else}
+            <span class="label label-default">Tidak</span>
+          {/if}
+        </td>
+        <td style="text-align:center;">
+          {if: $value.status == 'Baru'}
+            <span class="label label-success">{$value.status}</span>
+          {else}
+            <span class="label label-info">{$value.status}</span>
+          {/if}
+        </td>
+        <td style="text-align:center;">{$value.sistole}</td>
+        <td style="text-align:center;">{$value.diastole}</td>
+        <td style="text-align:center;">{$value.beratBadan}</td>
+        <td style="text-align:center;">{$value.tinggiBadan}</td>
+        <td style="text-align:center;">{$value.respRate}</td>
+        <td style="text-align:center;">{$value.heartRate}</td>
+        <td>{$value.tkp.nmTkp}</td>
+        <td>{$value.providerPelayanan}</td>
+      </tr>
+      {/loop}
+      {else}
+      <tr>
+        <td colspan="19" class="text-center text-muted">
+          <i class="fa fa-info-circle"></i> Tidak ada data pendaftaran pada tanggal ini.
+        </td>
+      </tr>
+      {/if}
+    </tbody>
+  </table>
+</div>
+
+{if: $count > 0}
+<div class="text-muted text-right" style="margin-top:5px;">
+  <small>Menampilkan {$count} data pendaftaran dari PCare. Offset: {$offset}, Limit: {$limit}</small>
+</div>
+{/if}
+
+<script>
+$('#filter_pendaftaran').on('keyup', function(){
+  var val = $(this).val().toLowerCase();
+  $('#tbl_pendaftaran_provider tbody tr').filter(function(){
+    $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1);
+  });
+});
+</script>
+{/if}

@@ -134,66 +134,64 @@ class Admin extends AdminModule
 
     public function getGeneratePdf($ref_type, $ref_id)
     {
+        $logFile = WEBAPPS_PATH . '/../tmp/esign_error.log';
+        try {
         $signatures = $this->db('esignatures')
             ->where('ref_type', $ref_type)
             ->where('ref_id', $ref_id)
             ->toArray();
-            
-        // Use mPDF (Standard in mLITE)
+
         $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8', 
-            'format' => 'A4', 
-            'margin_top' => 25,
+            'mode'          => 'utf-8',
+            'format'        => 'A4',
+            'margin_top'    => 25,
             'margin_bottom' => 25,
-            'margin_left' => 30,
-            'margin_right' => 20
+            'margin_left'   => 30,
+            'margin_right'  => 20,
         ]);
 
-        // Watermark
         $mpdf->SetWatermarkText('SIGNED ELECTRONICALLY');
-        $mpdf->showWatermarkText = true;
-        $mpdf->watermark_font = 'DejaVuSansCondensed';
+        $mpdf->showWatermarkText  = true;
+        $mpdf->watermark_font     = 'DejaVuSansCondensed';
         $mpdf->watermarkTextAlpha = 0.05;
 
         $html = '
         <style>
             body { font-family: sans-serif; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
             .content { margin-bottom: 30px; }
-            .signature-box { border: 1px solid #ccc; padding: 10px; display: inline-block; width: 50%; margin: 5px; vertical-align: top; }
-            .footer { border-top: 1px solid #ccc; margin-top: 10px; padding-top: 10px; font-size: 0.8em; color: #666; }
-            
-            /* CSS from riwayat.perawatan.html */
+            .signature-box { border: 1px solid #ccc; padding: 10px; display: inline-block; width: 48%; margin: 5px; vertical-align: top; }
             table td, table th { padding: 5px; }
             .tbl_form { border-collapse: collapse; }
             .tbl_form td { border: 1px solid #000; }
         </style>
-        
         <div class="content">';
-        
-        // Load external content
-        $contentFile = WEBAPPS_PATH . '/../admin/tmp/'.$ref_type.'.html';
+
+        $contentFile = WEBAPPS_PATH . '/../admin/tmp/' . $ref_type . '.html';
         if (file_exists($contentFile)) {
             $rawContent = file_get_contents($contentFile);
-            
-            // Clean up: Remove <del> tags and modal elements that shouldn't be in PDF
-            $rawContent = preg_replace('/<del>.*?<\/del>/s', '', $rawContent);
-            $rawContent = preg_replace('/<div class="modal-header">.*?<\/div>/s', '', $rawContent);
-            $rawContent = preg_replace('/<div class="modal-footer">.*?<\/div>/s', '', $rawContent);
-            $rawContent = preg_replace('/<a.*?class="btn.*?>.*?<\/a>/s', '', $rawContent); // Remove buttons
-            
+
+            // Strip tag yang tidak bisa dirender mPDF
+            $rawContent = preg_replace('/<script\b[^>]*>.*?<\/script>/si', '', $rawContent);
+            $rawContent = preg_replace('/<link\b[^>]*>/si', '', $rawContent);
+            $rawContent = preg_replace('/<style\b[^>]*>.*?<\/style>/si', '', $rawContent);
+            $rawContent = preg_replace('/<input\b[^>]*>/si', '', $rawContent);
+            $rawContent = preg_replace('/<button\b[^>]*>.*?<\/button>/si', '', $rawContent);
+            $rawContent = preg_replace('/<del\b[^>]*>.*?<\/del>/si', '', $rawContent);
+            $rawContent = preg_replace('/<a\b[^>]*class="btn[^"]*"[^>]*>.*?<\/a>/si', '', $rawContent);
+
+            // Ganti URL gambar https:// ke path file lokal agar mPDF bisa membaca
+            $baseUrl = url();
+            $rawContent = str_replace('src="' . $baseUrl . '/', 'src="' . BASE_DIR . '/', $rawContent);
+
             $html .= $rawContent;
         } else {
-            $html .= '<p>Konten riwayat perawatan tidak ditemukan.</p>';
+            $html .= '<p>Konten dokumen tidak ditemukan.</p>';
         }
 
-        $html .= '</div>
-        <div class="signer">
-        <h3>Tanda Tangan Elektronik:</h3>
-        <div style="width: 100%;">';
+        $html .= '</div><div><h3>Tanda Tangan Elektronik:</h3><div style="width:100%;">';
 
         foreach ($signatures as $sig) {
-            $path = WEBAPPS_PATH . '/berkas/esignature/' . $sig['signature_path'];
+            $path      = WEBAPPS_PATH . '/berkas/esignature/' . $sig['signature_path'];
             $verifyUrl = url(['esignature', 'verify', $sig['signature_hash']]);
 
             if (file_exists($path)) {
@@ -202,75 +200,82 @@ class Admin extends AdminModule
                     <table width="100%">
                         <tr>
                             <td width="60%" align="center">
-                                <img src="'.$path.'" height="80" /><br>
-                                <strong>'.$sig['signer_name'].'</strong><br>
-                                <small>'.$sig['signer_role'].'</small><br>
-                                <small>'.date('d-m-Y H:i', strtotime($sig['signed_at'])).'</small>
+                                <img src="' . $path . '" height="80" /><br>
+                                <strong>' . htmlspecialchars($sig['signer_name']) . '</strong><br>
+                                <small>' . htmlspecialchars($sig['signer_role']) . '</small><br>
+                                <small>' . date('d-m-Y H:i', strtotime($sig['signed_at'])) . '</small>
                             </td>
                             <td width="40%" align="center">
-                                <barcode code="'.$verifyUrl.'" type="QR" class="barcode" size="0.8" error="M" disableborder="1" />
-                                <br>
-                                <br>
-                                <small>Scan to Verify</small>
+                                <barcode code="' . $verifyUrl . '" type="QR" class="barcode" size="0.8" error="M" disableborder="1" />
+                                <br><small>Scan to Verify</small>
                             </td>
                         </tr>
                         <tr>
-                            <td style="font-size: 8px; color: #888; word-break: break-all;text-align: center;">
-                                Hash: '.substr($sig['signature_hash'], 0, 20).'...
-                            </td>
-                            <td>
+                            <td colspan="2" style="font-size:8px;color:#888;word-break:break-all;text-align:center;">
+                                Hash: ' . substr($sig['signature_hash'], 0, 20) . '...
                             </td>
                         </tr>
                     </table>
                 </div>';
             }
         }
-        
-        $html .= '</div>';
+
+        $html .= '</div></div>';
 
         $mpdf->shrink_tables_to_fit = 1;
-        $mpdf->use_kwt = true;
+        $mpdf->use_kwt              = true;
+
+        $namaInstansi = $this->settings('settings.nama_instansi') ?: '';
+        $legalBasis   = !empty($signatures) ? ($signatures[0]['legal_basis'] ?? '') : '';
+
+        // SetHTMLFooter harus dipanggil sebelum WriteHTML
+        $mpdf->SetHTMLFooter('
+        <p style="font-size:9px;color:#888;word-break:break-all;">
+            Dokumen ini resmi dan telah ditandatangani secara elektronik sesuai dengan Peraturan Direktur
+            ' . htmlspecialchars($namaInstansi) . ' dan ' . htmlspecialchars($legalBasis) . '
+        </p>
+        <table width="100%"><tr>
+            <td width="50%">Dicetak pada: ' . date('d-m-Y H:i') . '</td>
+            <td width="50%" align="right">Halaman {PAGENO} dari {nbpg}</td>
+        </tr></table>');
 
         $mpdf->WriteHTML($html);
 
-        // Footer with global QR if needed or page numbers
-        $mpdf->SetHTMLFooter('
-        <p style="font-size: 9px; color: #888; word-break: break-all;">
-            Dokumen ini resmi dan telah ditandatangani secara elektronik sesuai dengan Peraturan Direktur '.$this->settings('settings.nama_instansi').' dan '.$sig['legal_basis'].'
-        </p>
-        <div class="footer">
-            <table width="100%">
-                <tr>
-                    <td width="50%">Dicetak pada: '.date('d-m-Y H:i').'</td>
-                    <td width="50%" align="right">Halaman {PAGENO} dari {nbpg}</td>
-                </tr>
-            </table>
-        </div>');
-
-        // Check if uploads/berkasrawat/pages/upload exists, if not create it
         $uploadDir = WEBAPPS_PATH . '/berkasrawat/pages/upload/';
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
 
         $timestamp = date('YmdHis');
-        $fileName = 'doc_'.$ref_id.'_'.$timestamp.'.pdf';
-        $filePath = $uploadDir . $fileName;
+        $fileName  = 'doc_' . $ref_id . '_' . $timestamp . '.pdf';
+        $filePath  = $uploadDir . $fileName;
 
-        // Save to file
         $mpdf->Output($filePath, 'F');
 
-        // Insert to berkas_digital_perawatan
-        if (file_exists($filePath)) {
-            $this->db('berkas_digital_perawatan')->save([
-                'no_rawat' => revertNorawat($ref_id), // Assuming ref_id is no_rawat
-                'kode' => $this->settings('esignature.kode_berkasdigital'), // Example code for E-Signed Doc, adjust as needed
-                'lokasi_file' => 'pages/upload/' . $fileName
-            ]);
+        // Simpan ke berkas digital hanya jika kode sudah dikonfigurasi dan no_rawat valid di reg_periksa
+        $kodeBerkas = $this->settings('esignature.kode_berkasdigital');
+        if (!empty($kodeBerkas) && file_exists($filePath)) {
+            $noRawat = revertNorawat($ref_id);
+            $regExists = $this->db('reg_periksa')->where('no_rawat', $noRawat)->count();
+            $kodeExists = $this->db('master_berkas_digital')->where('kode', $kodeBerkas)->count();
+            if ($regExists && $kodeExists) {
+                try {
+                    $this->db('berkas_digital_perawatan')->save([
+                        'no_rawat'    => $noRawat,
+                        'kode'        => $kodeBerkas,
+                        'lokasi_file' => 'pages/upload/' . $fileName,
+                    ]);
+                } catch (\Exception $e) {
+                    // Simpan gagal (misal: duplikat) — tidak membatalkan output PDF
+                }
+            }
         }
 
-        // Also output to browser
         $mpdf->Output($fileName, 'I');
         exit;
+        } catch (\Throwable $e) {
+            file_put_contents($logFile, date('Y-m-d H:i:s') . ' [' . $ref_type . '/' . $ref_id . '] ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString() . "\n\n", FILE_APPEND);
+            throw $e;
+        }
     }
 }

@@ -106,13 +106,32 @@
     $select.trigger('change');
   }
 
+  // Konversi nilai dropdown alergi PCare ke teks ringkas untuk field SOAP
+  function buildAlergiTextFromPcare(makanan, makananLain, udara, udaraLain, obat, obatLain) {
+    var mapMakanan = {'00':'', '01':'Seafood', '02':'Gandum', '03':'Susu Sapi', '04':'Kacang-Kacangan', '05':''};
+    var mapUdara   = {'00':'', '01':'Udara Panas', '02':'Udara Dingin', '03':'Udara Kotor'};
+    var mapObat    = {'00':'', '01':'Antibiotik', '02':'Antiinflamasi', '03':'Non Steroid', '04':'Aspirin', '05':'Kortikosteroid', '06':'Insulin', '07':''};
+
+    var parts = [];
+    var txtMakanan = (makanan == '05') ? (makananLain || 'Makanan Lain') : (mapMakanan[makanan] || '');
+    var txtUdara   = mapUdara[udara] || '';
+    var txtObat    = (obat == '07') ? (obatLain || 'Obat-Obatan Lain') : (mapObat[obat] || '');
+
+    if(txtMakanan) parts.push(txtMakanan);
+    if(txtUdara)   parts.push(txtUdara);
+    if(txtObat)    parts.push(txtObat);
+
+    return parts.length > 0 ? parts.join(', ') : 'Tidak Ada';
+  }
+
   // Fungsi load data alergi pasien
   function loadAlergiPasien(no_rkm_medis) {
     var baseURL = mlite.url + '/' + mlite.admin;
     var url = baseURL + '/pemeriksaan_ralan/getalergi?t=' + mlite.token;
     var $container = $('#form_alergi_container');
 
-    // Reset form
+    // Reset global alergi & form
+    window._pcareAlergiText = null;
     setSelectValue($container.find('#alergi_makanan'), '00');
     setSelectValue($container.find('#alergi_udara'), '00');
     setSelectValue($container.find('#alergi_obat'), '00');
@@ -150,6 +169,19 @@
             if(obat == '07' && d.alergi_obat_lainnya) {
               $container.find('#alergi_obat_lainnya').val(d.alergi_obat_lainnya).show();
             }
+
+            // Simpan teks alergi PCare ke variable global agar bisa dipakai handler copy_soap
+            var makananLain = (makanan == '05') ? ($container.find('#alergi_makanan_lainnya').val() || d.alergi_makanan_lainnya || '') : '';
+            var udaraLain   = $container.find('#alergi_udara_lainnya').val() || d.alergi_udara_lainnya || '';
+            var obatLain    = (obat == '07') ? ($container.find('#alergi_obat_lainnya').val() || d.alergi_obat_lainnya || '') : '';
+            window._pcareAlergiText = buildAlergiTextFromPcare(makanan, makananLain, udara, udaraLain, obat, obatLain);
+
+            // Auto-fill field Alergi di form SOAP jika belum diisi
+            var $soapAlergi = $('input:text[name=alergi]');
+            var currentVal = $soapAlergi.val().trim();
+            if(currentVal === '' || currentVal === '-') {
+              $soapAlergi.val(window._pcareAlergiText);
+            }
           }, 100);
 
           // Tampilkan badge status
@@ -160,10 +192,12 @@
             $container.find('#alergi_status_badge').html('<span class="label label-success"><i class="fa fa-check"></i> Tidak Ada Alergi</span>');
           }
         } else {
+          window._pcareAlergiText = null;
           $container.find('#alergi_status_badge').html('<span class="label label-info"><i class="fa fa-info-circle"></i> Belum Ada Data</span>');
         }
       },
       error: function() {
+        window._pcareAlergiText = null;
         $('#form_alergi_container #alergi_status_badge').html('<span class="label label-default">Gagal memuat data alergi</span>');
       }
     });
@@ -208,6 +242,12 @@
           } else {
             $container.find('#alergi_status_badge').html('<span class="label label-success"><i class="fa fa-check"></i> Tidak Ada Alergi</span>');
           }
+          // Selalu update field Alergi di form SOAP sesuai data yang baru disimpan
+          var makananLain = (makanan == '05') ? ($container.find('#alergi_makanan_lainnya').val() || '') : '';
+          var udaraLain   = $container.find('#alergi_udara_lainnya').val() || '';
+          var obatLain    = (obat == '07') ? ($container.find('#alergi_obat_lainnya').val() || '') : '';
+          window._pcareAlergiText = buildAlergiTextFromPcare(makanan, makananLain, udara, udaraLain, obat, obatLain);
+          $('input:text[name=alergi]').val(window._pcareAlergiText);
           setTimeout(function() { $container.find('#alergi_save_status').html(''); }, 3000);
         } else {
           $container.find('#alergi_save_status').html('<span class="text-danger"><i class="fa fa-times"></i> ' + response.message + '</span>');

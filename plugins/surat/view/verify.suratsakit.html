@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Surat Keterangan Sakit</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 16px; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.10); max-width: 480px; margin: 20px auto; }
+    .header { font-size: 13px; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 16px; }
+    .badge-ok  { background: #d1e7dd; color: #0f5132; border-left: 4px solid #198754; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+    .badge-err { background: #f8d7da; color: #842029; border-left: 4px solid #dc3545; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    td { padding: 7px 4px; vertical-align: top; border-bottom: 1px solid #f5f5f5; }
+    td:first-child { color: #666; width: 160px; white-space: nowrap; }
+    td:last-child { font-weight: 500; }
+    .footer { text-align: center; font-size: 11px; color: #aaa; margin-top: 18px; padding-top: 12px; border-top: 1px solid #eee; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header"><strong>{$instansi}</strong></div>
+
+  {if: $valid}
+    <div class="badge-ok">
+      &#10003;&nbsp; <strong>Dokumen Valid &amp; Terverifikasi</strong><br>
+      <small>Surat ini terdaftar dan sah dalam sistem klinik.</small>
+    </div>
+    <table>
+      <tr><td>Nomor Surat</td><td>{$surat.nomor_surat}</td></tr>
+      <tr><td>Nama Pasien</td><td>{$surat.nm_pasien}</td></tr>
+      <tr><td>Tanggal Pelayanan</td><td>{$tgl_pelayanan} {$jam_pelayanan}</td></tr>
+      <tr><td>Poli / Unit</td><td>{$nm_poli}</td></tr>
+      <tr><td>Dokter Pemeriksa</td><td>{$nm_dokter}</td></tr>
+      <tr><td>Nomor SIP Dokter</td><td>{$sip_dokter}</td></tr>
+      <tr><td>Izin Istirahat s.d.</td><td>{$tanggal_selesai_formatted}</td></tr>
+    </table>
+    <div class="footer">
+      Halaman ini hanya menampilkan ringkasan layanan.<br>
+      Diagnosa dan data klinis tidak ditampilkan demi privasi pasien.
+    </div>
+  {/if}
+
+  {if: !$valid}
+    <div class="badge-err">
+      &#10007;&nbsp; <strong>Dokumen Tidak Valid</strong><br>
+      <small>QR Code tidak ditemukan atau sudah tidak berlaku.</small>
+    </div>
+    <p style="color:#555;font-size:14px;">Kemungkinan penyebab:<br>
+    &bull; Surat belum disimpan secara resmi<br>
+    &bull; QR Code rusak atau dipalsukan<br>
+    &bull; Surat telah dihapus dari sistem</p>
+    <div class="footer">Hubungi klinik jika Anda merasa ini adalah kesalahan.</div>
+  {/if}
+</div>
+</body>
+</html>

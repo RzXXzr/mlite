@@ -1,0 +1,38 @@
+Status Pulang
+Get Status Pulang
+{Base URL}/{Service Name}/statuspulang/rawatInap/{Parameter 1}
+Fungsi : Get Status Pulang
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Jika rawat inap maka diisi true, sebaliknya diisi false
+
+                                    
+{
+  "response": {
+    "count": 3,
+    "list": [
+      {
+        "kdStatusPulang": "3",
+        "nmStatusPulang": "Berobat Jalan"
+      },
+      {
+        "kdStatusPulang": "4",
+        "nmStatusPulang": "Rujuk Lanjut"
+      },
+      {
+        "kdStatusPulang": "5",
+        "nmStatusPulang": "Rujuk Internal"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

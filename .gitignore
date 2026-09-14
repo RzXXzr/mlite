@@ -74,3 +74,6 @@ admin/pla.php
 assets/easyui/
 jasperphp/
 systems/lib/jasperphp/
+
+# --- Backup archives ---
+*.zip

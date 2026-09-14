@@ -1,0 +1,213 @@
+Get DPHO
+{Base URL}/{Service Name}/obat/dpho/{Parameter 1}/{Parameter 2}/{Parameter 3}
+Fungsi : Get Data DPHO
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode atau nama DPHO
+
+Parameter 2 : Row data awal yang akan ditampilkan
+
+Parameter 3 : Limit jumlah data yang akan ditampilkan
+
+                                
+{
+  "response": {
+    "count": 100,
+    "list": [
+      {
+        "kdObat": "130199999",
+        "nmObat": "Kapsul Kosong Kapsul Apt kaps",
+        "sedia": 1
+      },
+      {
+        "kdObat": "130103595",
+        "nmObat": "Canderin 16 mg Dexa tab",
+        "sedia": 16
+      },
+      {
+        "kdObat": "130103594",
+        "nmObat": "Quinin 25 %, 2 ml Kifa amp",
+        "sedia": 1
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Get DPHO by KDPPK New
+{Base URL}/{Service Name}/dpho/kdppk/{parameter1}/{parameter2}/{parameter3}/{parameter4}
+Fungsi : Untuk melihat stock obat berdasarkan apotek tujuan yang dipilih
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Kode PPK Apotek Tujuan
+
+Parameter 2 : Nama Obat
+
+Parameter 3 : Row data awal yang akan ditampilkan
+
+Parameter 4 : Limit jumlah data yang akan ditampilkan
+
+                                
+{
+    "response": {
+        "count": 4,
+        "list": [
+            {
+                "kdObat": "12250804924",
+                "nmObat": "Akarbose",
+                "sediaan": "tab 100 mg",
+                "stok": 10
+            },
+            {
+                "kdObat": "12250804925",
+                "nmObat": "Akarbose",
+                "sediaan": "tab 50 mg",
+                "stok": 0
+            },
+            {
+                "kdObat": "12250805037",
+                "nmObat": "Indakaterol",
+                "sediaan": "serb ih 150 mcg",
+                "stok": 0
+            },
+            {
+                "kdObat": "12250805038",
+                "nmObat": "Indakaterol",
+                "sediaan": "serb ih 300 mcg",
+                "stok": 0
+            }
+        ]
+    },
+    "metaData": {
+        "message": "OK",
+        "code": 200
+    }
+}
+
+Get Obat by Kunjungan
+{Base URL}/{Service Name}/obat/kunjungan/{Parameter 1}
+Fungsi : Get Data Obat by Kunjungan
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : Nomor Kunjungan
+
+                                
+{
+  "response": {
+    "count": 1,
+    "list": [
+      {
+        "kdObatSK": 38,
+        "kdRacikan": "R.01",
+        "obat": {
+          "kdObat": "130199999",
+          "nmObat": "Kapsul Kosong Apt Kapsul",
+          "sedia": 0
+        },
+        "signa1": 3,
+        "signa2": 1,
+        "jmlObat": 10,
+        "jmlHari": 3,
+        "kekuatan": 2,
+        "jmlPermintaan": 0,
+        "jmlObatRacikan": 20
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+
+
+Add Obat
+{Base URL}/{Service Name}/obat/kunjungan
+Fungsi : Add Data Obat
+
+Method : POST
+
+Format : Json
+
+Content-Type: text/plain
+
+Request
+Response
+Request
+                                            
+{
+  "kdObatSK": 0,
+  "noKunjungan": "1301U0070815Y000004",
+  "racikan": true,
+  "kdRacikan": null,
+  "obatDPHO": true,
+  "kdObat": "130199999",
+  "signa1": 3,
+  "signa2": 1,
+  "jmlObat": 10,
+  "jmlPermintaan": 2,
+  "nmObatNonDPHO": "racikan 1 obat 1"
+}
+
+Response
+                                    
+{
+  "response": [
+    {
+      "field": "kdObatSK",
+      "message": "37"
+    },
+    {
+      "field": "kdRacikan",
+      "message": "R.12"
+    }
+  ],
+  "metaData": {
+    "message": "CREATED",
+    "code": 201
+  }
+}
+
+
+Delete Obat
+{Base URL}/{Service Name}/obat/{Parameter 1}/kunjungan/{Parameter 2}
+Fungsi : Delete Data Obat
+
+Method : DELETE
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+Parameter 1 : kodeObatSK
+
+Parameter 2 : Nomor Kunjungan
+
+                                
+{
+  "response": null,
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}
+

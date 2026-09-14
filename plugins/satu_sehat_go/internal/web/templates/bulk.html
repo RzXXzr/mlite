@@ -1,0 +1,189 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <div class="btn-group pull-right" style="margin-top:-8px;">
+            <span class="btn btn-sm dropdown-toggle" data-toggle="dropdown">
+                <i class="fa fa-calendar"></i><span class="hidden-xs"> Periode</span>
+            </span>
+            <ul class="dropdown-menu dropdown-menu-right" style="padding:10px;min-width:220px;">
+                <li style="padding:0 5px;">
+                    <label style="font-size:12px;">Tanggal Awal</label>
+                    <input type="text" id="periode_awal" class="form-control periode" required>
+                </li>
+                <li style="padding:0 5px;margin-top:5px;">
+                    <label style="font-size:12px;">Tanggal Akhir</label>
+                    <input type="text" id="periode_akhir" class="form-control periode" required>
+                </li>
+                <li style="padding:0 5px;margin-top:5px;">
+                    <button class="btn btn-primary btn-block" id="btnFilterBulk">Cari</button>
+                </li>
+            </ul>
+        </div>
+        <h3 class="panel-title">Kirim Data Massal Satu Sehat</h3>
+    </div>
+    <div class="panel-body">
+        <div style="margin-bottom:10px;">
+            <button onclick="clickLinksBundle()" class="btn btn-info btn-sm"><i class="fa fa-paper-plane"></i> Kirim Bundle Berurutan</button>
+            <button onclick="clickLinksManual()" class="btn btn-warning btn-sm"><i class="fa fa-paper-plane"></i> Kirim Manual Berurutan</button>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table display table-bordered table-striped" width="100%" id="bulkTable">
+                    <thead>
+                        <tr>
+                            <th>Tgl. Rawat</th>
+                            <th>No. Rawat</th>
+                            <th>No. RM</th>
+                            <th>Nama Pasien</th>
+                            <th>No. KTP Pasien</th>
+                            <th>Kd. Dokter</th>
+                            <th>Nama Dokter</th>
+                            <th>No. KTP Dokter</th>
+                            <th>Kd. Poli/Unit</th>
+                            <th>Poli/Unit</th>
+                            <th>Status Rawat</th>
+                            <th>Status Lanjut</th>
+                            <th>Status Bayar</th>
+                            <th>Tgl. Pulang</th>
+                            <th>ID Departemen</th>
+                            <th>ID Lokasi</th>
+                            <th>ID Encounter</th>
+                            <th>ID Condition</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="bulkModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" id="bulkModalContent">
+            <div class="modal-body text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Loading...</div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$(document).ready(function(){
+    var tanggalAwal = '', tanggalAkhir = '';
+
+    function loadBulkTable() {
+        if($.fn.DataTable.isDataTable('#bulkTable')) { $('#bulkTable').DataTable().destroy(); }
+        var url = '/api/response?tanggal_awal=' + encodeURIComponent(tanggalAwal) + '&tanggal_akhir=' + encodeURIComponent(tanggalAkhir);
+        window.bulkTable = $('#bulkTable').DataTable({
+            processing: true,
+            serverSide: true,
+            scrollX: true,
+            fixedColumns: { left: 4 },
+            ajax: {
+                url: url,
+                type: 'GET',
+                dataSrc: function(json){ return json.data || []; }
+            },
+            language: { search: "", searchPlaceholder: "Search..." },
+            columns: [
+                { data: 'tgl_registrasi' },
+                { data: 'no_rawat' },
+                { data: 'no_rkm_medis', render: function(d,t,row) {
+                    var nr = (row.no_rawat||'').replace(/\//g, '--');
+                    return d + ' <a href="#" class="btn btn-xs btn-info btn-bundle" data-id="'+nr+'"><i class="fa fa-plus"></i></a>';
+                }},
+                { data: 'nm_pasien' },
+                { data: 'no_ktp_pasien' },
+                { data: 'kd_dokter' },
+                { data: 'nm_dokter' },
+                { data: 'no_ktp_dokter' },
+                { data: 'kd_poli' },
+                { data: 'nm_poli' },
+                { data: 'stts' },
+                { data: 'status_lanjut' },
+                { data: 'status_bayar' },
+                { data: 'tgl_pulang' },
+                { data: 'id_organisasi' },
+                { data: 'id_lokasi' },
+                { data: 'id_encounter', render: function(d,t,row) {
+                    if(!d && row.tgl_pulang) {
+                        var nr = (row.no_rawat||'').replace(/\//g, '--');
+                        return '<a href="#" class="btn btn-xs btn-info btn-enc" data-id="'+nr+'"><i class="fa fa-check"></i></a>';
+                    }
+                    return d || '<span class="badge badge-error">Belum Closing</span>';
+                }},
+                { data: 'id_condition', render: function(d,t,row) {
+                    if(!d && row.diagnosa_pasien) {
+                        var nr = (row.no_rawat||'').replace(/\//g, '--');
+                        return '<a href="#" class="btn btn-xs btn-info btn-cond" data-id="'+nr+'"><i class="fa fa-check"></i></a>';
+                    }
+                    return d || '<span class="badge badge-error">Kosong</span>';
+                }}
+            ],
+            lengthChange: true,
+            lengthMenu: [[10,25,50,100,-1],[10,25,50,100,"Semua"]],
+            dom: "<<'data-table-title'><'datatable-search'f>><'row'<'col-sm-12'tr>><<'pmd-datatable-pagination' l i p>>"
+        });
+    }
+
+    loadBulkTable();
+
+    $('#btnFilterBulk').on('click', function(e){
+        e.preventDefault();
+        tanggalAwal = $('#periode_awal').val();
+        tanggalAkhir = $('#periode_akhir').val();
+        loadBulkTable();
+    });
+
+    // Actions
+    $(document).on('click', '.btn-bundle', function(e){
+        e.preventDefault();
+        var id = $(this).data('id');
+        showModal('/api/encounter/' + id + '?bundle=1');
+    });
+    $(document).on('click', '.btn-enc', function(e){
+        e.preventDefault();
+        showModal('/api/encounter/' + $(this).data('id'));
+    });
+    $(document).on('click', '.btn-cond', function(e){
+        e.preventDefault();
+        showModal('/api/condition/' + $(this).data('id'));
+    });
+
+    function showModal(url) {
+        $('#bulkModalContent').html('<div class="modal-body text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Mengirim...</div>');
+        $('#bulkModal').modal('show');
+        $.get(url, function(resp){
+            var pretty = typeof resp === 'string' ? resp : JSON.stringify(resp, null, 2);
+            $('#bulkModalContent').html(
+                '<div class="modal-header"><button type="button" class="close" data-dismiss="modal">&times;</button><h4>Response</h4></div>' +
+                '<div class="modal-body"><pre style="max-height:400px;overflow:auto;">'+$('<div>').text(pretty).html()+'</pre></div>' +
+                '<div class="modal-footer"><button type="button" class="btn btn-primary" data-dismiss="modal">Tutup</button></div>'
+            );
+        }).fail(function(xhr){
+            $('#bulkModalContent').html('<div class="modal-body"><pre>'+xhr.responseText+'</pre></div>');
+        });
+    }
+
+    $('#bulkModal').on('hidden.bs.modal', function(){
+        if(window.bulkTable) window.bulkTable.ajax.reload(null, false);
+    });
+
+    $('.periode').datetimepicker({ format: 'YYYY-MM-DD', locale: 'id' });
+});
+
+function clickLinksBundle() {
+    var links = document.querySelectorAll('.btn-bundle');
+    var i = 0;
+    function next() { if(i < links.length) { links[i++].click(); setTimeout(next, 2000); } }
+    next();
+}
+
+function clickLinksManual() {
+    var links = document.querySelectorAll('.btn-enc, .btn-cond');
+    var i = 0;
+    function next() { if(i < links.length) { links[i++].click(); setTimeout(next, 1500); } }
+    next();
+}
+</script>
+{{end}}

@@ -1,0 +1,79 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-user"></i> Cari Peserta BPJS</h3></div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="noKartu" placeholder="No. Kartu BPJS (13 digit) / NIK (16 digit)">
+                    <span class="input-group-btn"><button class="btn btn-primary" id="btnCari"><i class="fa fa-search"></i> Cari</button></span>
+                </div>
+                <small id="searchInfo" class="text-muted" style="display:none;margin-top:5px"></small>
+            </div>
+        </div>
+        <hr>
+        <div id="result" style="display:none">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-bordered">
+                        <tr><th width="40%">No. Kartu</th><td id="r_noKartu"></td></tr>
+                        <tr><th>Nama</th><td id="r_nama"></td></tr>
+                        <tr><th>NIK</th><td id="r_nik"></td></tr>
+                        <tr><th>Tgl Lahir</th><td id="r_tglLahir"></td></tr>
+                        <tr><th>Jns Kelamin</th><td id="r_sex"></td></tr>
+                        <tr><th>Jns Peserta</th><td id="r_jnsPeserta"></td></tr>
+                        <tr><th>Jns Kelas</th><td id="r_jnsKelas"></td></tr>
+                        <tr><th>Gol Darah</th><td id="r_golDarah"></td></tr>
+                        <tr><th>No HP</th><td id="r_noHP"></td></tr>
+                        <tr><th>Aktif</th><td id="r_aktif"></td></tr>
+                        <tr><th>Status</th><td id="r_kdStatusPeserta"></td></tr>
+                        <tr><th>Provider</th><td id="r_kdProviderPst"></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+$('#btnCari').click(function(){
+    var no=$('#noKartu').val().trim();
+    if(!no){showAlert('warning','Masukkan nomor kartu / NIK');return;}
+    var url;
+    if(no.length==16){
+        url='/peserta/jenis/nik/'+encodeURIComponent(no);
+    } else {
+        url='/peserta/'+encodeURIComponent(no);
+    }
+    $('#searchInfo').text(no.length==16?'Pencarian berdasarkan NIK':'Pencarian berdasarkan No. Kartu').show();
+    apiCall('GET',url).done(function(res){
+        var d=res.response||res;
+        if(d.noKartu||d.nama){
+            $('#r_noKartu').text(d.noKartu||'-');
+            $('#r_nama').text(d.nama||'-');
+            $('#r_nik').text(d.noKTP||d.nik||'-');
+            $('#r_tglLahir').text(d.tglLahir||'-');
+            $('#r_sex').text(d.sex||'-');
+            $('#r_jnsPeserta').text(d.jnsPeserta?d.jnsPeserta.nama:'-');
+            $('#r_jnsKelas').text(d.jnsKelas?d.jnsKelas.nama:'-');
+            $('#r_golDarah').text(d.golDarah||'-');
+            $('#r_noHP').text(d.noHP||'-');
+            $('#r_aktif').text(d.aktif=='true'?'Aktif':'Tidak Aktif');
+            $('#r_kdStatusPeserta').text(d.kdStatusPeserta||'-');
+            $('#r_kdProviderPst').text((d.kdProviderPst?d.kdProviderPst.nmProvider:'-'));
+            $('#result').show();
+        } else {
+            $('#result').hide();
+        }
+
+    }).fail(function(xhr){
+        showAlert('danger','Gagal: '+(xhr.responseJSON?xhr.responseJSON.error:xhr.statusText));
+        $('#result').hide();
+    });
+});
+$('#noKartu').on('keypress',function(e){if(e.which==13)$('#btnCari').click();});
+</script>
+{{end}}

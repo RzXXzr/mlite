@@ -1,0 +1,39 @@
+Kesadaran
+Get Kesadaran
+{Base URL}/{Service Name}/kesadaran
+Fungsi : Get Data Kesadaran
+
+Method : GET
+
+Format : Json
+
+Content-Type: application/json; charset=utf-8
+
+                                    
+{
+  "response": {
+    "count": 4,
+    "list": [
+      {
+        "kdSadar": "01",
+        "nmSadar": "Compos mentis"
+      },
+      {
+        "kdSadar": "02",
+        "nmSadar": "Somnolence"
+      },
+      {
+        "kdSadar": "03",
+        "nmSadar": "Sopor"
+      },
+      {
+        "kdSadar": "04",
+        "nmSadar": "Coma"
+      }
+    ]
+  },
+  "metaData": {
+    "message": "OK",
+    "code": 200
+  }
+}

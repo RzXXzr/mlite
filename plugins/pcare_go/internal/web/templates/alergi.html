@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-warning"></i> Referensi Alergi</h3></div>
+    <div class="panel-body">
+        <div class="btn-group">
+            <button class="btn btn-primary btn-alergi" data-jenis="01"><i class="fa fa-cutlery"></i> Makanan</button>
+            <button class="btn btn-info btn-alergi" data-jenis="02"><i class="fa fa-cloud"></i> Udara</button>
+            <button class="btn btn-warning btn-alergi" data-jenis="03"><i class="fa fa-medkit"></i> Obat</button>
+        </div>
+        <div class="table-responsive" style="margin-top:15px">
+            <table class="table table-striped table-bordered" id="tblData"><thead><tr><th>Kode</th><th>Nama</th></tr></thead><tbody id="tblBody"><tr><td colspan="2" class="text-muted">Pilih jenis alergi di atas</td></tr></tbody></table>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+$('.btn-alergi').click(function(){
+    var btn=$(this);
+    $('.btn-alergi').removeClass('active');
+    btn.addClass('active');
+    var jenis=btn.data('jenis');
+    apiCall('GET','/alergi/'+jenis).done(function(r){
+        var list=pcare.list(r);var b='';
+        $.each(list,function(i,a){b+='<tr><td>'+(a.kdAlergi||a.kode||'-')+'</td><td>'+(a.nmAlergi||a.nama||'-')+'</td></tr>';});
+        $('#tblBody').html(b||'<tr><td colspan="2">Tidak ada data</td></tr>');
+    }).fail(function(xhr){
+        showAlert('danger','Gagal: '+(xhr.responseJSON?xhr.responseJSON.error:xhr.statusText));
+    });
+});
+</script>
+{{end}}

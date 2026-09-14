@@ -1,0 +1,79 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <div class="row">
+            <div class="col-md-4"><h3 class="panel-title" style="line-height:30px"><i class="fa fa-desktop"></i> Monitor PCare</h3></div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="tglFilter" placeholder="Pilih tanggal">
+                    <span class="input-group-btn"><button class="btn btn-primary" id="btnFilter"><i class="fa fa-search"></i> Filter</button></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="row" id="summary-cards" style="margin-bottom:15px">
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-aqua"><i class="fa fa-users"></i></div><div class="info-box-content"><span class="info-box-text">Total BPJS</span><span class="info-box-number" id="total">0</span></div></div></div>
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-green"><i class="fa fa-check"></i></div><div class="info-box-content"><span class="info-box-text">Sdh Daftar</span><span class="info-box-number" id="sudah_daftar">0</span></div></div></div>
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-blue"><i class="fa fa-paper-plane"></i></div><div class="info-box-content"><span class="info-box-text">Sdh Kunjungan</span><span class="info-box-number" id="sudah_kunjungan">0</span></div></div></div>
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-yellow"><i class="fa fa-clock-o"></i></div><div class="info-box-content"><span class="info-box-text">Siap Kirim</span><span class="info-box-number" id="siap_kirim">0</span></div></div></div>
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-red"><i class="fa fa-exclamation-triangle"></i></div><div class="info-box-content"><span class="info-box-text">Belum Kirim</span><span class="info-box-number" id="belum_kirim">0</span></div></div></div>
+            <div class="col-md-2"><div class="info-box"><div class="info-box-icon bg-purple"><i class="fa fa-database"></i></div><div class="info-box-content"><span class="info-box-text">Total mLITE</span><span class="info-box-number" id="total_mlite">0</span></div></div></div>
+        </div>
+        <h4>Data Bridging PCare</h4>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover" id="tblMonitor" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>No. Rawat</th>
+                        <th>No. RM</th>
+                        <th>Nama</th>
+                        <th>Poli</th>
+                        <th>Dokter</th>
+                        <th>Status</th>
+                        <th>No Urut</th>
+                        <th>No Kunjungan</th>
+                        <th>Status Kirim</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+var dt;
+$(function(){
+    $('#tglFilter').datetimepicker({ format: 'DD-MM-YYYY', defaultDate: moment() });
+    loadData();
+    $('#btnFilter').click(loadData);
+});
+function loadData() {
+    var tgl = $('#tglFilter').val() || moment().format('DD-MM-YYYY');
+    apiCall('GET', '/monitor?date=' + tgl).done(function(res) {
+        $('#total').text(res.total || 0);
+        $('#sudah_daftar').text(res.sudah_daftar || 0);
+        $('#sudah_kunjungan').text(res.sudah_kunjungan || 0);
+        $('#siap_kirim').text(res.siap_kirim || 0);
+        $('#belum_kirim').text(res.belum_kirim || 0);
+        $('#total_mlite').text(res.total_mlite || 0);
+        renderTable(res.rows || []);
+    }).fail(function(){ showAlert('danger', 'Gagal memuat data'); });
+}
+function renderTable(rows) {
+    if (dt) dt.destroy();
+    var body = '';
+    $.each(rows, function(i, r) {
+        var sttsLabel = r.stts === 'Sudah' ? '<span class="label label-success">Sudah</span>' : r.stts === 'Batal' ? '<span class="label label-danger">Batal</span>' : '<span class="label label-warning">' + r.stts + '</span>';
+        var statusKirim = r.nomor_kunjungan ? '<span class="label label-success">Terkirim</span>' : '<span class="label label-default">Belum</span>';
+        body += '<tr><td>'+(i+1)+'</td><td>'+r.no_rawat+'</td><td>'+r.no_rkm_medis+'</td><td>'+r.nm_pasien+'</td><td>'+r.nm_poli+'</td><td>'+r.nm_dokter+'</td><td>'+sttsLabel+'</td><td>'+(r.nomor_urut||'-')+'</td><td>'+(r.nomor_kunjungan||'-')+'</td><td>'+statusKirim+'</td></tr>';
+    });
+    $('#tblBody').html(body);
+    dt = $('#tblMonitor').DataTable({ pageLength: 25, destroy: true });
+}
+</script>
+{{end}}

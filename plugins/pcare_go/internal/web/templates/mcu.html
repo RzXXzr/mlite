@@ -1,0 +1,51 @@
+{{define "content"}}
+<div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-heartbeat"></i> MCU (Medical Check Up)</h3></div>
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#tabCari" data-toggle="tab">Cari MCU</a></li>
+            <li><a href="#tabAdd" data-toggle="tab">Tambah MCU</a></li>
+        </ul>
+        <div class="tab-content" style="padding-top:15px">
+            <div class="tab-pane active" id="tabCari">
+                <div class="row"><div class="col-md-6"><div class="input-group"><input type="text" class="form-control" id="noKunjungan" placeholder="No. Kunjungan"><span class="input-group-btn"><button class="btn btn-primary" id="btnCari"><i class="fa fa-search"></i></button></span></div></div></div>
+                <div style="margin-top:15px"><pre id="resCari"></pre></div>
+            </div>
+            <div class="tab-pane" id="tabAdd">
+                <form id="formMCU">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>No. Kunjungan</label><input type="text" class="form-control" name="noKunjungan"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Tekanan Darah Sistole</label><input type="text" class="form-control" name="tekananDarahSistole" value="120"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Tekanan Darah Diastole</label><input type="text" class="form-control" name="tekananDarahDiastole" value="80"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Radiologi Foto Toraks</label><input type="text" class="form-control" name="radipilogiFotoToraks" value="Normal"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Lab PDL Darah Rutin</label><input type="text" class="form-control" name="labPDLDarahRutin" value="Normal"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Lab GDP</label><input type="text" class="form-control" name="labGDP" value="100"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Lab GD2PP</label><input type="text" class="form-control" name="labGD2PP" value="120"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Lab Kolesterol Total</label><input type="text" class="form-control" name="labKolesterolTotal" value="180"></div></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan</button>
+                </form>
+                <div id="resAdd" style="display:none;margin-top:15px"><pre id="resAddPre"></pre></div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{define "scripts"}}
+<script>
+$('#btnCari').click(function(){
+    var no=$('#noKunjungan').val();if(!no)return;
+    apiCall('GET','/mcu/'+encodeURIComponent(no)).done(function(r){$('#resCari').text(JSON.stringify(r,null,2));});
+});
+$('#formMCU').on('submit',function(e){
+    e.preventDefault();var d={};$(this).find('input').each(function(){d[$(this).attr('name')]=$(this).val();});
+    apiCall('POST','/mcu',d).done(function(r){$('#resAddPre').text(JSON.stringify(r,null,2));$('#resAdd').show();showAlert('success','MCU berhasil disimpan');}).fail(function(){showAlert('danger','Gagal');});
+});
+</script>
+{{end}}

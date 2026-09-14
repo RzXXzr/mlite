@@ -1,0 +1,130 @@
+<div class="row">
+  <div class="col-sm-12">
+    {include: ../plugins/pcare/view/admin/menu.html}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-list-alt"></i> Cek Pendaftaran Provider PCare</h3>
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i> Fitur ini mengambil data pendaftaran pada <strong>provider</strong> dari server PCare BPJS berdasarkan tanggal pendaftaran.
+          Endpoint API: <code>pendaftaran/tglDaftar/{tanggal}/{offset}/{limit}</code>
+        </div>
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label for="tanggal_pendaftaran">Tanggal Pendaftaran</label>
+              <div class="input-group date tanggal">
+                <input type="text" class="form-control" id="tanggal_pendaftaran" name="tanggal_pendaftaran" value="{?=date('d-m-Y')?}">
+                <span class="input-group-addon" style="cursor:pointer">
+                  <span class="fa fa-calendar"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="offset_pendaftaran">Offset (mulai dari)</label>
+              <input type="number" class="form-control" id="offset_pendaftaran" name="offset_pendaftaran" value="0" min="0">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label for="limit_pendaftaran">Limit</label>
+              <input type="number" class="form-control" id="limit_pendaftaran" name="limit_pendaftaran" value="100" min="1" max="1000">
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-primary btn-block" id="btn-cari-pendaftaran">
+                <i class="fa fa-search"></i> Cari Data
+              </button>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-success btn-block" id="btn-export-excel" style="display:none;">
+                <i class="fa fa-file-excel-o"></i> Export Excel
+              </button>
+            </div>
+          </div>
+        </div>
+        <hr>
+        <div id="display_pendaftaran_provider">
+          <div class="text-center text-muted">
+            <p><i class="fa fa-list-alt fa-2x"></i><br>Pilih tanggal dan klik "Cari Data" untuk mengambil data pendaftaran dari PCare.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(function(){
+  $('.tanggal').datetimepicker({
+    format: 'DD-MM-YYYY',
+    locale: 'id'
+  });
+});
+
+function loadPendaftaranProvider() {
+  var tanggal = $('#tanggal_pendaftaran').val();
+  var offset = $('#offset_pendaftaran').val() || '0';
+  var limit = $('#limit_pendaftaran').val() || '100';
+  if (!tanggal) {
+    tanggal = '{?=date("d-m-Y")?}';
+  }
+  var baseURL = mlite.url + '/' + mlite.admin;
+  $('#display_pendaftaran_provider').html('<div class="text-center"><p><i class="fa fa-spinner fa-spin fa-2x"></i><br>Mengambil data pendaftaran dari server PCare...<br><small class="text-muted">Mohon tunggu, proses ini membutuhkan koneksi ke server BPJS</small></p></div>');
+  $('#btn-export-excel').hide();
+
+  $.ajax({
+    url: baseURL + '/pcare/cekpendaftaranproviderdisplay?date=' + encodeURIComponent(tanggal) + '&offset=' + offset + '&limit=' + limit + '&t=' + mlite.token,
+    type: 'GET',
+    success: function(data){
+      $('#display_pendaftaran_provider').html(data);
+      if ($('#tbl_pendaftaran_provider tbody tr').length > 0 && !$('#tbl_pendaftaran_provider tbody tr td[colspan]').length) {
+        $('#btn-export-excel').show();
+      }
+    },
+    error: function(xhr){
+      $('#display_pendaftaran_provider').html('<div class="alert alert-danger"><i class="fa fa-exclamation-circle"></i> Gagal memuat data: ' + xhr.statusText + '</div>');
+    }
+  });
+}
+
+$('#btn-cari-pendaftaran').on('click', function(){
+  loadPendaftaranProvider();
+});
+
+$('#tanggal_pendaftaran').on('keypress', function(e){
+  if(e.which == 13) loadPendaftaranProvider();
+});
+
+// Export to Excel
+$('#btn-export-excel').on('click', function(){
+  var table = document.getElementById('tbl_pendaftaran_provider');
+  if (!table) return;
+
+  var csv = [];
+  var rows = table.querySelectorAll('tr');
+  for (var i = 0; i < rows.length; i++) {
+    var row = [], cols = rows[i].querySelectorAll('td, th');
+    for (var j = 0; j < cols.length; j++) {
+      var text = cols[j].innerText.replace(/"/g, '""');
+      row.push('"' + text + '"');
+    }
+    csv.push(row.join(','));
+  }
+
+  var csvContent = '\uFEFF' + csv.join('\n');
+  var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'pendaftaran_provider_' + $('#tanggal_pendaftaran').val() + '.csv';
+  link.click();
+});
+</script>

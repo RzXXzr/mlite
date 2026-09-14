@@ -255,7 +255,7 @@ $(document).ready(function(){
                       <div class="col col-md-6">
                         <div class="form-group">
                           <label for="poli">Terapi Obat</label>
-                          <input type="text" name="terapiObat" id="terapiObat" class="form-control" value="tidak ada">
+                          <input type="text" name="terapiObat" id="terapiObat" class="form-control" value="{?=isset_or($terapi_obat_prefill, 'tidak ada')?}">
                         </div>
                       </div>
                       <div class="col col-md-6">

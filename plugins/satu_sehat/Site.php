@@ -32,6 +32,8 @@ class Site extends SiteModule
         $this->route('satu-sehat/batch-tanggal', 'batchByDate');
         $this->route('satu-sehat/batch-plan', 'batchGetPlan');
         $this->route('satu-sehat/batch-process', 'batchProcessOne');
+        $this->route('satu-sehat/cron-monitor', 'cronMonitor');
+        $this->route('satu-sehat/cron-api', 'cronApi');
     }
 
     public function forwardEncounter($no_rawat = null)
@@ -1446,6 +1448,1012 @@ function showSummary(stats, failedList, total) {
 renderCards();
 </script>
 
+</body>
+</html>';
+    }
+
+    // =========================================================================
+    //  Cron Monitor — Standalone page (no login required)
+    // =========================================================================
+
+    private function getCronPaths(): array
+    {
+        return [
+            'progress' => BASE_DIR . '/tmp/cron_satusehat_progress.json',
+            'lock'     => BASE_DIR . '/tmp/cron_satusehat.lock',
+            'log'      => BASE_DIR . '/tmp/cron_satusehat.log',
+            'script'   => BASE_DIR . '/cron_satusehat.php',
+            'settings' => BASE_DIR . '/tmp/cron_satusehat_settings.json',
+        ];
+    }
+
+    private function loadJsonFile(string $path): array
+    {
+        if (!file_exists($path)) return [];
+        $data = json_decode(file_get_contents($path), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function isCronRunning(): bool
+    {
+        $paths = $this->getCronPaths();
+        if (!file_exists($paths['lock'])) return false;
+        $pid = (int)file_get_contents($paths['lock']);
+        return ($pid > 0 && file_exists("/proc/$pid"));
+    }
+
+    private function tailFile(string $filepath, int $lines = 100): array
+    {
+        if (!file_exists($filepath)) return [];
+        $f = @fopen($filepath, 'rb');
+        if (!$f) return [];
+        $buffer = '';
+        $result = [];
+        $chunk = 4096;
+        fseek($f, 0, SEEK_END);
+        $pos = ftell($f);
+        while ($pos > 0 && count($result) < $lines + 1) {
+            $readSize = min($chunk, $pos);
+            $pos -= $readSize;
+            fseek($f, $pos);
+            $buffer = fread($f, $readSize) . $buffer;
+            $result = explode("\n", $buffer);
+        }
+        fclose($f);
+        if (end($result) === '') array_pop($result);
+        return array_slice($result, -$lines);
+    }
+
+    /**
+     * AJAX API for cron actions: get-status, save-settings, start, stop, reset, clearlog, get-log
+     */
+    public function cronApi()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $action = $_GET['action'] ?? $_POST['action'] ?? '';
+        $paths = $this->getCronPaths();
+
+        switch ($action) {
+            case 'get-status':
+                $progress = array_merge([
+                    'last_completed_date' => '-', 'start_date' => '-', 'end_date' => '-',
+                    'last_run' => '-', 'total_processed' => 0, 'total_success' => 0,
+                    'total_failed' => 0, 'sessions' => 0,
+                ], $this->loadJsonFile($paths['progress']));
+
+                $settings = array_merge([
+                    'jam_mulai' => 23, 'jam_berhenti' => 5, 'delay_ms' => 500,
+                    'max_errors' => 20, 'tanggal_dari' => '', 'crontab_schedule' => '0 23 * * *',
+                    'enabled' => true,
+                ], $this->loadJsonFile($paths['settings']));
+
+                // Hutang per bulan
+                $sql = "SELECT DATE_FORMAT(rp.tgl_registrasi, '%Y-%m') as bulan,
+                               COUNT(*) as total,
+                               SUM(CASE WHEN sr.no_rawat IS NULL THEN 1 ELSE 0 END) as belum_kirim
+                        FROM reg_periksa rp
+                        LEFT JOIN mlite_satu_sehat_response sr ON rp.no_rawat = sr.no_rawat
+                        WHERE rp.stts != 'Batal'
+                          AND rp.tgl_registrasi >= '2024-01-01'
+                        GROUP BY DATE_FORMAT(rp.tgl_registrasi, '%Y-%m')
+                        ORDER BY bulan";
+                $rows = $this->db()->pdo()->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
+                $hutang = [];
+                $totalHutang = 0;
+                $totalKunjungan = 0;
+                foreach ($rows as $r) {
+                    $sudah = $r['total'] - $r['belum_kirim'];
+                    $persen = $r['total'] > 0 ? round(($sudah / $r['total']) * 100, 1) : 100;
+                    $hutang[] = [
+                        'bulan' => $r['bulan'], 'total' => (int)$r['total'],
+                        'belum_kirim' => (int)$r['belum_kirim'], 'sudah_kirim' => $sudah, 'persen' => $persen,
+                    ];
+                    $totalHutang += (int)$r['belum_kirim'];
+                    $totalKunjungan += (int)$r['total'];
+                }
+
+                echo json_encode([
+                    'running'       => $this->isCronRunning(),
+                    'progress'      => $progress,
+                    'settings'      => $settings,
+                    'hutang'        => $hutang,
+                    'totalHutang'   => $totalHutang,
+                    'totalKunjungan'=> $totalKunjungan,
+                ], JSON_UNESCAPED_SLASHES);
+                break;
+
+            case 'get-log':
+                $lines = (int)($_GET['lines'] ?? 100);
+                $content = file_exists($paths['log']) ? $this->tailFile($paths['log'], $lines) : [];
+                echo json_encode(['log' => implode("\n", $content)]);
+                break;
+
+            case 'get-visits':
+                // Returns unsent visits for a given month (YYYY-MM) with plan info
+                $bulan = $_GET['bulan'] ?? '';
+                $force = !empty($_GET['force']);
+                if (!preg_match('/^\d{4}-\d{2}$/', $bulan)) {
+                    echo json_encode(['status' => 'error', 'message' => 'Parameter bulan wajib (YYYY-MM)']);
+                    break;
+                }
+                $dari = $bulan . '-01';
+                $sampai = date('Y-m-t', strtotime($dari));
+
+                require_once __DIR__ . '/src/BatchProcessor.php';
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'] ?? '127.0.0.1';
+                $baseUrl = $scheme . '://' . $host;
+                $processor = new \Plugins\Satu_Sehat\Src\BatchProcessor($this->core, $baseUrl);
+
+                $rows = $processor->getNoRawatByDate($dari, $sampai);
+                $visits = [];
+                foreach ($rows as $row) {
+                    $nr = $row['no_rawat'];
+                    $existing = $processor->getExistingResponse($nr);
+                    $dataAvail = $processor->getDataAvailability($nr, $row['status_lanjut']);
+                    $plan = $processor->determineResources($existing, $dataAvail, $force);
+                    $toSend = 0;
+                    $alreadySent = 0;
+                    foreach ($plan as $p) {
+                        if ($p['action'] === 'send') $toSend++;
+                        elseif ($p['action'] === 'skip_exists') $alreadySent++;
+                    }
+                    if ($toSend === 0 && !$force) continue; // skip fully sent
+                    $visits[] = [
+                        'no_rawat'      => $nr,
+                        'status_lanjut' => $row['status_lanjut'],
+                        'tgl_registrasi'=> $row['tgl_registrasi'] ?? $dari,
+                        'to_send'       => $toSend,
+                        'already_sent'  => $alreadySent,
+                    ];
+                }
+                echo json_encode(['status' => 'ok', 'bulan' => $bulan, 'total' => count($visits), 'visits' => $visits], JSON_UNESCAPED_SLASHES);
+                break;
+
+            case 'save-settings':
+                $input = $_POST;
+                $settings = [
+                    'jam_mulai'        => (int)($input['jam_mulai'] ?? 23),
+                    'jam_berhenti'     => (int)($input['jam_berhenti'] ?? 5),
+                    'delay_ms'         => max(200, (int)($input['delay_ms'] ?? 500)),
+                    'max_errors'       => max(5, (int)($input['max_errors'] ?? 20)),
+                    'tanggal_dari'     => $input['tanggal_dari'] ?? '',
+                    'crontab_schedule' => $input['crontab_schedule'] ?? '0 23 * * *',
+                    'enabled'          => !empty($input['enabled']),
+                ];
+                @mkdir(BASE_DIR . '/tmp', 0755, true);
+                file_put_contents($paths['settings'], json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+
+                // Update crontab
+                $this->updateCrontab($settings);
+
+                echo json_encode(['status' => 'ok', 'message' => 'Pengaturan disimpan & crontab diperbarui']);
+                break;
+
+            case 'start':
+                if ($this->isCronRunning()) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cron sudah berjalan']);
+                    break;
+                }
+                $settings = array_merge([
+                    'delay_ms' => 500, 'max_errors' => 20, 'tanggal_dari' => '',
+                ], $this->loadJsonFile($paths['settings']));
+
+                $cmd = '/usr/bin/php ' . \escapeshellarg($paths['script'])
+                     . ' --no-time-fence'
+                     . ' --delay=' . $settings['delay_ms']
+                     . ' --max-errors=' . $settings['max_errors'];
+                if (!empty($settings['tanggal_dari'])) {
+                    $cmd .= ' --tanggal-dari=' . \escapeshellarg($settings['tanggal_dari']);
+                }
+                $cmd .= ' >> ' . \escapeshellarg($paths['log']) . ' 2>&1 &';
+                $this->shellExec($cmd);
+                \sleep(1);
+                echo json_encode(['status' => 'ok', 'message' => 'Cron manual dimulai']);
+                break;
+
+            case 'stop':
+                if (!$this->isCronRunning()) {
+                    echo json_encode(['status' => 'error', 'message' => 'Cron tidak sedang berjalan']);
+                    break;
+                }
+                $pid = (int)\file_get_contents($paths['lock']);
+                if ($pid > 0) {
+                    \posix_kill($pid, 15); // SIGTERM
+                    \sleep(2);
+                    if (\file_exists("/proc/$pid")) {
+                        \posix_kill($pid, 9); // SIGKILL
+                    }
+                }
+                @unlink($paths['lock']);
+                echo json_encode(['status' => 'ok', 'message' => 'Cron dihentikan']);
+                break;
+
+            case 'reset':
+                $resetData = [
+                    'last_completed_date' => '2024-01-01', 'start_date' => '2024-01-01',
+                    'end_date' => date('Y-m-d', strtotime('-1 day')), 'last_run' => '',
+                    'total_processed' => 0, 'total_success' => 0, 'total_failed' => 0, 'sessions' => 0,
+                ];
+                file_put_contents($paths['progress'], json_encode($resetData, JSON_PRETTY_PRINT) . "\n");
+                echo json_encode(['status' => 'ok', 'message' => 'Progress direset ke 2024-01-01']);
+                break;
+
+            case 'clearlog':
+                if (file_exists($paths['log'])) file_put_contents($paths['log'], '');
+                echo json_encode(['status' => 'ok', 'message' => 'Log dihapus']);
+                break;
+
+            default:
+                echo json_encode(['status' => 'error', 'message' => 'Aksi tidak dikenal: ' . $action]);
+        }
+        exit();
+    }
+
+    private function updateCrontab(array $settings): void
+    {
+        $cronLine = $settings['crontab_schedule'] . ' /usr/bin/php ' . BASE_DIR . '/cron_satusehat.php';
+        $args = [];
+        $args[] = '--jam-mulai=' . $settings['jam_mulai'];
+        $args[] = '--jam-berhenti=' . $settings['jam_berhenti'];
+        $args[] = '--delay=' . $settings['delay_ms'];
+        $args[] = '--max-errors=' . $settings['max_errors'];
+        if (!empty($settings['tanggal_dari'])) {
+            $args[] = '--tanggal-dari=' . $settings['tanggal_dari'];
+        }
+        $cronLine .= ' ' . implode(' ', $args) . ' >> ' . BASE_DIR . '/tmp/cron_satusehat.log 2>&1';
+
+        $existing = $this->shellExec('crontab -l 2>/dev/null') ?: '';
+        $lines = explode("\n", trim($existing));
+        $newLines = [];
+        foreach ($lines as $line) {
+            if (strpos($line, 'cron_satusehat') !== false) continue;
+            if (strpos($line, 'Satu Sehat Batch Cron') !== false) continue;
+            $newLines[] = $line;
+        }
+        if ($settings['enabled']) {
+            $newLines[] = '# Satu Sehat Batch Cron';
+            $newLines[] = $cronLine;
+        }
+        $tmpFile = \tempnam(\sys_get_temp_dir(), 'cron');
+        \file_put_contents($tmpFile, implode("\n", $newLines) . "\n");
+        $this->shellExec('crontab ' . \escapeshellarg($tmpFile) . ' 2>&1');
+        @\unlink($tmpFile);
+    }
+
+    /**
+     * Safe shell_exec replacement using proc_open (shell_exec is disabled in FPM)
+     */
+    private function shellExec(string $cmd): ?string
+    {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $proc = @\proc_open($cmd, $descriptors, $pipes, BASE_DIR, null);
+        if (!\is_resource($proc)) return null;
+        \fclose($pipes[0]);
+        $output = \stream_get_contents($pipes[1]);
+        \fclose($pipes[1]);
+        \fclose($pipes[2]);
+        \proc_close($proc);
+        return $output;
+    }
+
+    /**
+     * Cron Monitor — Standalone HTML page
+     */
+    public function cronMonitor()
+    {
+        echo $this->cronRenderPage();
+        exit();
+    }
+
+    private function cronRenderPage(): string
+    {
+        $apiUrl = '/satu-sehat/cron-api';
+        return '<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor Cron Satu Sehat</title>
+<style>
+:root { --green:#22c55e; --yellow:#eab308; --red:#ef4444; --gray:#9ca3af; --blue:#3b82f6; --dark:#1e293b; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#0f172a; color:#e2e8f0; min-height:100vh; }
+.header { background:linear-gradient(135deg,#1e40af,#7c3aed); padding:20px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 20px rgba(0,0,0,.3); }
+.header h1 { font-size:1.4rem; color:#fff; display:flex; align-items:center; gap:10px; }
+.header .badge { background:rgba(255,255,255,.15); padding:4px 12px; border-radius:20px; font-size:.75rem; }
+.header .badge.running { background:#22c55e; color:#000; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.6} }
+.container { max-width:1400px; margin:0 auto; padding:20px; }
+.grid { display:grid; gap:16px; }
+.grid-4 { grid-template-columns:repeat(4,1fr); }
+.grid-2 { grid-template-columns:1fr 1fr; }
+@media(max-width:900px) { .grid-4,.grid-2 { grid-template-columns:1fr 1fr; } }
+@media(max-width:600px) { .grid-4,.grid-2 { grid-template-columns:1fr; } }
+.card { background:#1e293b; border-radius:12px; padding:20px; border:1px solid #334155; }
+.card h3 { font-size:.85rem; color:#94a3b8; margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; }
+.stat-card { text-align:center; }
+.stat-card .value { font-size:2rem; font-weight:700; margin:8px 0; }
+.stat-card .sub { font-size:.75rem; color:#64748b; margin-top:4px; }
+.text-green { color:#22c55e; } .text-red { color:#ef4444; } .text-yellow { color:#eab308; } .text-blue { color:#3b82f6; } .text-gray { color:#64748b; }
+table { width:100%; border-collapse:collapse; font-size:.85rem; }
+th { text-align:left; padding:8px 12px; border-bottom:2px solid #334155; color:#94a3b8; font-weight:600; }
+td { padding:6px 12px; border-bottom:1px solid #1e293b; }
+tr:hover { background:#334155; }
+.progress-bar { background:#334155; border-radius:8px; height:20px; overflow:hidden; position:relative; }
+.progress-fill { height:100%; border-radius:8px; transition:width .5s; display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700; color:#000; }
+.progress-fill.green { background:linear-gradient(90deg,#22c55e,#16a34a); }
+.progress-fill.yellow { background:linear-gradient(90deg,#eab308,#ca8a04); }
+.progress-fill.red { background:linear-gradient(90deg,#ef4444,#dc2626); }
+.btn { padding:10px 20px; border:none; border-radius:8px; font-size:.85rem; font-weight:600; cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:6px; }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.btn-green { background:#22c55e; color:#000; } .btn-green:hover:not(:disabled) { background:#16a34a; }
+.btn-red { background:#ef4444; color:#fff; } .btn-red:hover:not(:disabled) { background:#dc2626; }
+.btn-blue { background:#3b82f6; color:#fff; } .btn-blue:hover:not(:disabled) { background:#2563eb; }
+.btn-gray { background:#475569; color:#fff; } .btn-gray:hover:not(:disabled) { background:#64748b; }
+.btn-sm { padding:6px 12px; font-size:.75rem; }
+.btn-orange { background:#f97316; color:#fff; } .btn-orange:hover:not(:disabled) { background:#ea580c; }
+input,select { background:#0f172a; border:1px solid #475569; color:#e2e8f0; padding:8px 12px; border-radius:6px; font-size:.85rem; width:100%; }
+input:focus,select:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.3); }
+label { display:block; font-size:.8rem; color:#94a3b8; margin-bottom:4px; font-weight:600; }
+.form-group { margin-bottom:14px; }
+.form-hint { font-size:.7rem; color:#64748b; margin-top:3px; }
+.log-box { background:#000; color:#a3e635; padding:12px; border-radius:8px; font-family:"Fira Code",monospace; font-size:.75rem; max-height:400px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; line-height:1.5; }
+.check-label { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:.85rem; color:#e2e8f0; }
+.check-label input[type=checkbox] { width:auto; }
+.info-table td:first-child { color:#94a3b8; font-weight:600; padding-right:16px; white-space:nowrap; }
+.info-table td:last-child { color:#e2e8f0; }
+.actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.section-title { font-size:1rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.hutang-scroll { max-height:380px; overflow-y:auto; }
+.toast { position:fixed; top:20px; right:20px; background:#22c55e; color:#000; padding:12px 20px; border-radius:8px; font-weight:600; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,.3); }
+.toast.error { background:#ef4444; color:#fff; }
+/* Batch processing panel */
+#batchPanel { display:none; }
+#batchPanel .bp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+#batchPanel .bp-progress { margin:12px 0; }
+#batchPanel .bp-stats { display:flex; gap:16px; font-size:.85rem; margin:8px 0; }
+#batchPanel .bp-stats span { font-weight:700; }
+#batchPanel .bp-log { background:#000; color:#a3e635; padding:10px; border-radius:8px; font-family:"Fira Code",monospace; font-size:.75rem; max-height:350px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; line-height:1.6; }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+.dot-green { background:#22c55e; } .dot-red { background:#ef4444; } .dot-yellow { background:#eab308; } .dot-gray { background:#9ca3af; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header">
+    <h1>⏱ Monitor Cron Satu Sehat</h1>
+    <div>
+        <span class="badge" id="statusBadge">MEMUAT...</span>
+        <button class="btn btn-sm btn-gray" onclick="loadAll()" style="margin-left:8px;">↻ Refresh</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Stat Cards -->
+    <div class="grid grid-4" style="margin-bottom:16px;">
+        <div class="card stat-card">
+            <h3>Status</h3>
+            <div class="value" id="statStatus">-</div>
+            <div class="sub" id="statPid"></div>
+        </div>
+        <div class="card stat-card">
+            <h3>Belum Kirim</h3>
+            <div class="value text-red" id="statHutang">-</div>
+            <div class="sub" id="statTotal"></div>
+        </div>
+        <div class="card stat-card">
+            <h3>Sukses (Cron)</h3>
+            <div class="value text-green" id="statSuccess">-</div>
+            <div class="sub" id="statSessions"></div>
+        </div>
+        <div class="card stat-card">
+            <h3>Terakhir Diproses</h3>
+            <div class="value text-blue" id="statLastDate" style="font-size:1.2rem;">-</div>
+            <div class="sub" id="statLastRun"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:16px;">
+        <!-- Hutang Per Bulan -->
+        <div class="card">
+            <div class="section-title">📊 Hutang Data Per Bulan</div>
+            <div class="hutang-scroll">
+                <table id="tblHutang">
+                    <thead><tr><th>Bulan</th><th>Total</th><th>Belum</th><th>Sudah</th><th style="min-width:120px;">Progress</th><th>Aksi</th></tr></thead>
+                    <tbody id="hutangBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card">
+            <div class="section-title">⚙️ Pengaturan Cron</div>
+            <form id="frmSettings" onsubmit="saveSettings(event)">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>Jam Mulai (WIB)</label>
+                        <select id="setJamMulai" name="jam_mulai"></select>
+                        <div class="form-hint">Cron mulai kirim</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Jam Berhenti (WIB)</label>
+                        <select id="setJamBerhenti" name="jam_berhenti"></select>
+                        <div class="form-hint">Cron auto stop</div>
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>Delay Antar Kunjungan (ms)</label>
+                        <input type="number" id="setDelay" name="delay_ms" min="200" max="5000" step="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Error Berturut</label>
+                        <input type="number" id="setMaxErr" name="max_errors" min="5" max="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tanggal Mulai Override</label>
+                    <input type="date" id="setTglDari" name="tanggal_dari">
+                    <div class="form-hint">Kosongkan untuk resume otomatis</div>
+                </div>
+                <div class="form-group">
+                    <label>Crontab Schedule</label>
+                    <input type="text" id="setCrontab" name="crontab_schedule" placeholder="0 23 * * *">
+                    <div class="form-hint">Format: menit jam hari bulan hari-minggu</div>
+                </div>
+                <div class="form-group">
+                    <label class="check-label"><input type="checkbox" id="setEnabled" name="enabled" value="1"> Aktifkan Cron Otomatis</label>
+                </div>
+                <button type="submit" class="btn btn-blue" style="width:100%;">💾 Simpan Pengaturan</button>
+            </form>
+
+            <div class="actions">
+                <button class="btn btn-green" id="btnStart" onclick="startBatchAll()">▶ Jalankan Manual</button>
+                <button class="btn btn-red" id="btnStop" onclick="stopBatch()" style="display:none;">⏹ Stop</button>
+                <button class="btn btn-gray btn-sm" onclick="cronAction(\'reset\')">↻ Reset Progress</button>
+            </div>
+
+            <!-- Progress Info -->
+            <div style="margin-top:16px;">
+                <div class="section-title">📋 Progress Tracking</div>
+                <table class="info-table">
+                    <tr><td>Start Date</td><td id="infoStart">-</td></tr>
+                    <tr><td>Last Completed</td><td id="infoLast">-</td></tr>
+                    <tr><td>Last Run</td><td id="infoLastRun">-</td></tr>
+                    <tr><td>Total Processed</td><td id="infoProcessed">-</td></tr>
+                    <tr><td>Total Success</td><td id="infoSuccess">-</td></tr>
+                    <tr><td>Total Failed</td><td id="infoFailed">-</td></tr>
+                    <tr><td>Sessions</td><td id="infoSessions">-</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Processing Panel -->
+    <div class="card" id="batchPanel" style="margin-bottom:16px;">
+        <div class="bp-header">
+            <div class="section-title" style="margin:0;">🚀 Proses Pengiriman</div>
+            <button class="btn btn-sm btn-red" onclick="stopBatch()">⏹ Stop</button>
+        </div>
+        <div class="bp-progress">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.85rem;">
+                <span id="bpText">Mempersiapkan...</span>
+                <span id="bpPct">0%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill green" id="bpBar" style="width:0%"></div></div>
+        </div>
+        <div class="bp-stats">
+            <span>Bulan: <span id="bpMonth" class="text-blue">-</span></span>
+            <span><span class="dot dot-green"></span>Sukses: <span id="bpOk">0</span></span>
+            <span><span class="dot dot-yellow"></span>Partial: <span id="bpPartial">0</span></span>
+            <span><span class="dot dot-red"></span>Gagal: <span id="bpFail">0</span></span>
+            <span><span class="dot dot-gray"></span>Skip: <span id="bpSkip">0</span></span>
+            <span>Speed: <span id="bpSpeed" class="text-green">-</span></span>
+        </div>
+        <div class="bp-log" id="bpLog"></div>
+    </div>
+
+    <!-- Log Viewer (for crontab log) -->
+    <div class="card" style="margin-bottom:20px;">
+        <div class="section-title" style="justify-content:space-between;">
+            <span>📜 Log Cron (CLI)</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select id="logLines" onchange="loadLog()" style="width:auto;">
+                    <option value="50">50 baris</option>
+                    <option value="100" selected>100 baris</option>
+                    <option value="200">200 baris</option>
+                    <option value="500">500 baris</option>
+                </select>
+                <button class="btn btn-sm btn-gray" onclick="loadLog()">↻</button>
+                <button class="btn btn-sm btn-red" onclick="cronAction(\'clearlog\')">🗑 Hapus</button>
+            </div>
+        </div>
+        <div class="log-box" id="logBox">(memuat log...)</div>
+    </div>
+</div>
+
+<script>
+var API = "' . $apiUrl . '";
+var _running = false;
+var _autoRefresh = null;
+var _batchRunning = false;
+var _batchStopped = false;
+var _hutangData = [];
+
+// ====== Rate limiter (same as batch-tanggal) ======
+var RATE_MIN_INTERVAL = 310;
+var _lastReqTime = 0;
+function rateLimitWait() {
+    return new Promise(function(resolve) {
+        var now = Date.now();
+        var elapsed = now - _lastReqTime;
+        if (elapsed < RATE_MIN_INTERVAL) {
+            setTimeout(function() { _lastReqTime = Date.now(); resolve(); }, RATE_MIN_INTERVAL - elapsed);
+        } else {
+            _lastReqTime = Date.now();
+            resolve();
+        }
+    });
+}
+
+// ====== FHIR resource URL builder ======
+function buildResourceUrl(key, nr) {
+    var m = {
+        encounter: "/satu-sehat/encounter/" + nr,
+        condition: "/satu-sehat/condition/" + nr,
+        obs_tensi: "/satu-sehat/observation/" + nr + "/tensi",
+        obs_nadi: "/satu-sehat/observation/" + nr + "/nadi",
+        obs_respirasi: "/satu-sehat/observation/" + nr + "/respirasi",
+        obs_suhu: "/satu-sehat/observation/" + nr + "/suhu",
+        obs_spo2: "/satu-sehat/observation/" + nr + "/spo2",
+        obs_gcs: "/satu-sehat/observation/" + nr + "/gcs",
+        obs_kesadaran: "/satu-sehat/observation/" + nr + "/kesadaran",
+        obs_berat: "/satu-sehat/observation/" + nr + "/berat",
+        obs_tinggi: "/satu-sehat/observation/" + nr + "/tinggi",
+        obs_perut: "/satu-sehat/observation/" + nr + "/perut",
+        procedure: "/satu-sehat/procedure/" + nr,
+        clinical_impression: "/satu-sehat/clinical-impression/" + nr,
+        vaksin: "/satu-sehat/vaksin/" + nr,
+        diet_gizi: "/satu-sehat/diet-gizi/" + nr,
+        care_plan: "/satu-sehat/care-plan/" + nr,
+        allergy: "/satu-sehat/allergy/" + nr,
+        questionnaire: "/satu-sehat/questionnaire/" + nr,
+        med_request: "/satu-sehat/medication/" + nr + "/request",
+        med_dispense: "/satu-sehat/medication/" + nr + "/dispense",
+        med_statement: "/satu-sehat/medication/" + nr + "/statement",
+        lab_request: "/satu-sehat/laboratory/" + nr + "/request",
+        lab_specimen: "/satu-sehat/laboratory/" + nr + "/specimen",
+        lab_observation: "/satu-sehat/laboratory/" + nr + "/observation",
+        lab_diagnostic: "/satu-sehat/laboratory/" + nr + "/diagnostic",
+        rad_request: "/satu-sehat/radiology/" + nr + "/request",
+        rad_specimen: "/satu-sehat/radiology/" + nr + "/specimen",
+        rad_observation: "/satu-sehat/radiology/" + nr + "/observation",
+        rad_diagnostic: "/satu-sehat/radiology/" + nr + "/diagnostic"
+    };
+    return m[key] || null;
+}
+
+function parseFhirResponse(data) {
+    if (!data || typeof data !== "object") return { success: false, id: null, error: "Invalid response" };
+    if (data.id) return { success: true, id: data.id };
+    if (data.resourceID) return { success: true, id: data.resourceID };
+    if (data.entry && Array.isArray(data.entry)) {
+        for (var i = 0; i < data.entry.length; i++) {
+            var e = data.entry[i];
+            if (e.response && e.response.resourceID) return { success: true, id: e.response.resourceID };
+        }
+    }
+    if (data.issue) return { success: false, id: null, error: (data.issue[0] && data.issue[0].diagnostics) || JSON.stringify(data.issue[0]) };
+    if (data.error) return { success: false, id: null, error: data.error };
+    if (data.pesan) {
+        if (data.pesan.toLowerCase().indexOf("gagal") >= 0) return { success: false, id: null, error: data.pesan };
+        return { success: true, id: null };
+    }
+    return { success: false, id: null, error: "No resource ID" };
+}
+
+// ====== Toast ======
+function toast(msg, isError) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "toast" + (isError ? " error" : "");
+    el.style.display = "block";
+    setTimeout(function(){ el.style.display = "none"; }, 3000);
+}
+
+// ====== API helper ======
+function api(action, params, cb) {
+    var method = "GET";
+    var url = API + "?action=" + action;
+    var body = null;
+    if (params && typeof params === "object") {
+        method = "POST";
+        body = new URLSearchParams(params);
+        body.append("action", action);
+        url = API;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    if (method === "POST") xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onload = function() {
+        try { var data = JSON.parse(xhr.responseText); cb(data); }
+        catch(e) { console.error(e); cb({status:"error",message:"Parse error"}); }
+    };
+    xhr.onerror = function() { cb({status:"error",message:"Network error"}); };
+    xhr.send(body);
+}
+
+// ====== Batch process log ======
+function bpLog(msg) {
+    var box = document.getElementById("bpLog");
+    var ts = new Date().toLocaleTimeString("id-ID");
+    box.textContent += "[" + ts + "] " + msg + "\\n";
+    box.scrollTop = box.scrollHeight;
+}
+
+// ====== Process a single visit (browser-direct, like batch-tanggal) ======
+async function processOneVisit(visit) {
+    var nr = visit.no_rawat;
+    var nrUrl = nr.replace(/\\//g, "");
+
+    // Step 1: Get plan
+    await rateLimitWait();
+    var planUrl = "/satu-sehat/batch-plan?no_rawat=" + encodeURIComponent(nr)
+        + "&status_lanjut=" + encodeURIComponent(visit.status_lanjut);
+    var planResp, plan;
+    try {
+        planResp = await fetch(planUrl);
+        plan = await planResp.json();
+    } catch(e) {
+        return { status: "failed", error: "Plan fetch error: " + e };
+    }
+
+    // Step 2: Send each resource directly
+    var sent = 0, ok = 0, fail = 0, skip = 0;
+    var encounterFailed = false;
+
+    for (var key in plan) {
+        if (_batchStopped) break;
+        var p = plan[key];
+        if (p.action !== "send") { skip++; continue; }
+        if (encounterFailed && key !== "encounter") { skip++; continue; }
+
+        var url = buildResourceUrl(key, nrUrl);
+        if (!url) { fail++; sent++; continue; }
+
+        await rateLimitWait();
+        try {
+            var resp = await fetch(url);
+            var text = await resp.text();
+            var data = null;
+            try { data = JSON.parse(text); } catch(_) {}
+            var parsed = parseFhirResponse(data);
+            sent++;
+            if (parsed.success) { ok++; }
+            else {
+                fail++;
+                if (key === "encounter") encounterFailed = true;
+            }
+        } catch(e) {
+            sent++; fail++;
+            if (key === "encounter") encounterFailed = true;
+        }
+    }
+
+    var st = "skipped";
+    if (sent > 0) {
+        if (fail === 0) st = "success";
+        else if (ok > 0) st = "partial";
+        else st = "failed";
+    }
+    return { status: st, sent: sent, ok: ok, fail: fail, skip: skip };
+}
+
+// ====== Start batch processing for a single month ======
+async function startBatchMonth(bulan) {
+    if (_batchRunning) { toast("Sudah ada proses berjalan", true); return; }
+    _batchRunning = true;
+    _batchStopped = false;
+    document.getElementById("batchPanel").style.display = "";
+    document.getElementById("btnStart").disabled = true;
+    document.getElementById("btnStop").style.display = "";
+    document.getElementById("bpLog").textContent = "";
+    document.getElementById("bpMonth").textContent = bulan;
+
+    bpLog("Memuat data kunjungan bulan " + bulan + "...");
+    document.getElementById("bpText").textContent = "Memuat data...";
+
+    // Fetch visits
+    var visitsData;
+    try {
+        var r = await fetch(API + "?action=get-visits&bulan=" + bulan);
+        visitsData = await r.json();
+    } catch(e) {
+        bpLog("ERROR: Gagal memuat data — " + e);
+        _batchRunning = false;
+        document.getElementById("btnStart").disabled = false;
+        document.getElementById("btnStop").style.display = "none";
+        return;
+    }
+
+    if (visitsData.status !== "ok" || !visitsData.visits || visitsData.visits.length === 0) {
+        bpLog("Tidak ada kunjungan yang perlu dikirim untuk bulan " + bulan);
+        _batchRunning = false;
+        document.getElementById("btnStart").disabled = false;
+        document.getElementById("btnStop").style.display = "none";
+        return;
+    }
+
+    var visits = visitsData.visits;
+    var total = visits.length;
+    bpLog("Ditemukan " + total + " kunjungan yang perlu dikirim");
+
+    var stats = { success: 0, partial: 0, failed: 0, skipped: 0 };
+    var startTime = Date.now();
+
+    for (var i = 0; i < total; i++) {
+        if (_batchStopped) { bpLog("DIHENTIKAN oleh user"); break; }
+
+        var visit = visits[i];
+        var idx = i + 1;
+        var pct = Math.round((idx / total) * 100);
+
+        document.getElementById("bpText").textContent = bulan + " — " + idx + " / " + total + " (" + visit.no_rawat + ")";
+        document.getElementById("bpPct").textContent = pct + "%";
+        document.getElementById("bpBar").style.width = pct + "%";
+
+        var result = await processOneVisit(visit);
+
+        var icon = result.status === "success" ? "✅" : (result.status === "partial" ? "⚠️" : (result.status === "failed" ? "❌" : "⏭️"));
+        bpLog(icon + " " + visit.no_rawat + " [" + result.status + "]" + (result.sent ? " sent=" + result.sent + " ok=" + result.ok + " fail=" + result.fail : "") + (result.error ? " — " + result.error : ""));
+
+        if (result.status === "success") stats.success++;
+        else if (result.status === "partial") stats.partial++;
+        else if (result.status === "failed") stats.failed++;
+        else stats.skipped++;
+
+        document.getElementById("bpOk").textContent = stats.success;
+        document.getElementById("bpPartial").textContent = stats.partial;
+        document.getElementById("bpFail").textContent = stats.failed;
+        document.getElementById("bpSkip").textContent = stats.skipped;
+
+        // Speed calc
+        var elapsed = (Date.now() - startTime) / 1000;
+        var speed = elapsed > 0 ? (idx / elapsed).toFixed(1) : "-";
+        document.getElementById("bpSpeed").textContent = speed + " visit/s";
+    }
+
+    bpLog("═══ SELESAI bulan " + bulan + " ═══");
+    bpLog("Sukses: " + stats.success + ", Partial: " + stats.partial + ", Gagal: " + stats.failed + ", Skip: " + stats.skipped);
+    var totalElap = ((Date.now() - startTime) / 1000).toFixed(0);
+    bpLog("Durasi: " + totalElap + " detik");
+
+    _batchRunning = false;
+    document.getElementById("btnStart").disabled = false;
+    document.getElementById("btnStop").style.display = "none";
+    document.getElementById("bpText").textContent = "Selesai — " + bulan;
+
+    // Refresh status
+    setTimeout(loadAll, 1000);
+}
+
+// ====== Start batch for ALL months with hutang ======
+async function startBatchAll() {
+    if (_batchRunning) { toast("Sudah ada proses berjalan", true); return; }
+    if (!_hutangData || _hutangData.length === 0) { toast("Tidak ada data hutang", true); return; }
+
+    var months = _hutangData.filter(function(h) { return h.belum_kirim > 0; }).map(function(h) { return h.bulan; });
+    if (months.length === 0) { toast("Semua data sudah terkirim!", false); return; }
+
+    if (!confirm("Kirim data hutang untuk " + months.length + " bulan?\\n" + months.join(", ") + "\\n\\nProses ini akan berjalan di browser. Jangan tutup halaman ini.")) return;
+
+    _batchRunning = true;
+    _batchStopped = false;
+    document.getElementById("batchPanel").style.display = "";
+    document.getElementById("btnStart").disabled = true;
+    document.getElementById("btnStop").style.display = "";
+    document.getElementById("bpLog").textContent = "";
+
+    var grandStats = { success: 0, partial: 0, failed: 0, skipped: 0 };
+    var grandStart = Date.now();
+
+    for (var mi = 0; mi < months.length; mi++) {
+        if (_batchStopped) break;
+        var bulan = months[mi];
+
+        bpLog("\\n══════ BULAN " + bulan + " (" + (mi+1) + "/" + months.length + ") ══════");
+        document.getElementById("bpMonth").textContent = bulan + " (" + (mi+1) + "/" + months.length + ")";
+        document.getElementById("bpText").textContent = "Memuat data " + bulan + "...";
+
+        // Fetch visits
+        var visitsData;
+        try {
+            var r = await fetch(API + "?action=get-visits&bulan=" + bulan);
+            visitsData = await r.json();
+        } catch(e) {
+            bpLog("ERROR: Gagal memuat " + bulan + " — " + e);
+            continue;
+        }
+
+        if (!visitsData.visits || visitsData.visits.length === 0) {
+            bpLog("Tidak ada kunjungan hutang bulan " + bulan);
+            continue;
+        }
+
+        var visits = visitsData.visits;
+        var total = visits.length;
+        bpLog("Ditemukan " + total + " kunjungan");
+
+        for (var i = 0; i < total; i++) {
+            if (_batchStopped) { bpLog("DIHENTIKAN oleh user"); break; }
+
+            var visit = visits[i];
+            var idx = i + 1;
+            var pct = Math.round((idx / total) * 100);
+
+            document.getElementById("bpText").textContent = bulan + " — " + idx + "/" + total + " (" + visit.no_rawat + ")";
+            document.getElementById("bpPct").textContent = pct + "%";
+            document.getElementById("bpBar").style.width = pct + "%";
+
+            var result = await processOneVisit(visit);
+
+            var icon = result.status === "success" ? "✅" : (result.status === "partial" ? "⚠️" : (result.status === "failed" ? "❌" : "⏭️"));
+            bpLog(icon + " " + visit.no_rawat + " [" + result.status + "]" + (result.sent ? " sent=" + result.sent + " ok=" + result.ok + " fail=" + result.fail : ""));
+
+            if (result.status === "success") grandStats.success++;
+            else if (result.status === "partial") grandStats.partial++;
+            else if (result.status === "failed") grandStats.failed++;
+            else grandStats.skipped++;
+
+            document.getElementById("bpOk").textContent = grandStats.success;
+            document.getElementById("bpPartial").textContent = grandStats.partial;
+            document.getElementById("bpFail").textContent = grandStats.failed;
+            document.getElementById("bpSkip").textContent = grandStats.skipped;
+
+            var elapsed = (Date.now() - grandStart) / 1000;
+            var done = grandStats.success + grandStats.partial + grandStats.failed + grandStats.skipped;
+            var speed = elapsed > 0 ? (done / elapsed).toFixed(1) : "-";
+            document.getElementById("bpSpeed").textContent = speed + " visit/s";
+        }
+
+        bpLog("Selesai bulan " + bulan + ": ok=" + grandStats.success);
+    }
+
+    bpLog("\\n════════ PROSES SELESAI ════════");
+    bpLog("Total Sukses: " + grandStats.success + ", Partial: " + grandStats.partial + ", Gagal: " + grandStats.failed + ", Skip: " + grandStats.skipped);
+    var totalElap = ((Date.now() - grandStart) / 1000 / 60).toFixed(1);
+    bpLog("Total durasi: " + totalElap + " menit");
+
+    _batchRunning = false;
+    document.getElementById("btnStart").disabled = false;
+    document.getElementById("btnStop").style.display = "none";
+    document.getElementById("bpText").textContent = "Selesai semua";
+    setTimeout(loadAll, 1000);
+}
+
+function stopBatch() {
+    _batchStopped = true;
+    bpLog("⏹ Menghentikan proses...");
+}
+
+// ====== Load status ======
+function loadAll() {
+    api("get-status", null, function(d) {
+        _running = d.running;
+        _hutangData = d.hutang || [];
+
+        var badge = document.getElementById("statusBadge");
+        badge.textContent = d.running ? "● RUNNING" : (_batchRunning ? "● BROWSER BATCH" : "○ IDLE");
+        badge.className = "badge" + (d.running || _batchRunning ? " running" : "");
+
+        document.getElementById("statStatus").innerHTML = d.running
+            ? "<span class=\\"text-green\\">RUNNING (CLI)</span>"
+            : (_batchRunning ? "<span class=\\"text-green\\">RUNNING (Browser)</span>" : "<span class=\\"text-gray\\">IDLE</span>");
+        document.getElementById("statHutang").textContent = d.totalHutang.toLocaleString();
+        document.getElementById("statTotal").textContent = "dari " + d.totalKunjungan.toLocaleString() + " total";
+        document.getElementById("statSuccess").textContent = (d.progress.total_success || 0).toLocaleString();
+        document.getElementById("statSessions").textContent = (d.progress.sessions || 0) + " sesi";
+        document.getElementById("statLastDate").textContent = d.progress.last_completed_date || "-";
+        document.getElementById("statLastRun").textContent = d.progress.last_run || "-";
+
+        // Hutang table with per-month batch buttons
+        var html = "";
+        d.hutang.forEach(function(h) {
+            var pClass = h.persen >= 90 ? "green" : (h.persen >= 50 ? "yellow" : "red");
+            var btnHtml = h.belum_kirim > 0
+                ? "<button class=\\"btn btn-sm btn-orange\\" onclick=\\"startBatchMonth(\\x27" + h.bulan + "\\x27)\\">▶ Kirim</button>"
+                : "<span class=\\"text-green\\">✓</span>";
+            html += "<tr><td>" + h.bulan + "</td><td>" + h.total + "</td>"
+                + "<td style=\\"color:" + (h.belum_kirim > 0 ? "#ef4444" : "#22c55e") + ";font-weight:700\\">" + h.belum_kirim + "</td>"
+                + "<td>" + h.sudah_kirim + "</td>"
+                + "<td><div class=\\"progress-bar\\"><div class=\\"progress-fill " + pClass + "\\" style=\\"width:" + h.persen + "%\\">" + h.persen + "%</div></div></td>"
+                + "<td>" + btnHtml + "</td></tr>";
+        });
+        document.getElementById("hutangBody").innerHTML = html;
+
+        // Settings form
+        fillJamOptions("setJamMulai", d.settings.jam_mulai);
+        fillJamOptions("setJamBerhenti", d.settings.jam_berhenti);
+        document.getElementById("setDelay").value = d.settings.delay_ms;
+        document.getElementById("setMaxErr").value = d.settings.max_errors;
+        document.getElementById("setTglDari").value = d.settings.tanggal_dari || "";
+        document.getElementById("setCrontab").value = d.settings.crontab_schedule;
+        document.getElementById("setEnabled").checked = d.settings.enabled;
+
+        if (!_batchRunning) {
+            document.getElementById("btnStart").disabled = d.running;
+        }
+
+        // Progress info
+        document.getElementById("infoStart").textContent = d.progress.start_date || "-";
+        document.getElementById("infoLast").textContent = d.progress.last_completed_date || "-";
+        document.getElementById("infoLastRun").textContent = d.progress.last_run || "-";
+        document.getElementById("infoProcessed").textContent = (d.progress.total_processed || 0).toLocaleString();
+        document.getElementById("infoSuccess").textContent = (d.progress.total_success || 0).toLocaleString();
+        document.getElementById("infoFailed").textContent = (d.progress.total_failed || 0).toLocaleString();
+        document.getElementById("infoSessions").textContent = d.progress.sessions || 0;
+    });
+    loadLog();
+}
+
+function fillJamOptions(id, selected) {
+    var el = document.getElementById(id);
+    if (el.options.length === 0) {
+        for (var h = 0; h < 24; h++) {
+            var o = document.createElement("option");
+            o.value = h;
+            o.textContent = (h < 10 ? "0" : "") + h + ":00";
+            el.appendChild(o);
+        }
+    }
+    el.value = selected;
+}
+
+function loadLog() {
+    var lines = document.getElementById("logLines").value;
+    api("get-log&lines=" + lines, null, function(d) {
+        var box = document.getElementById("logBox");
+        box.textContent = d.log || "(kosong)";
+        box.scrollTop = box.scrollHeight;
+    });
+}
+
+function saveSettings(e) {
+    e.preventDefault();
+    var params = {
+        jam_mulai: document.getElementById("setJamMulai").value,
+        jam_berhenti: document.getElementById("setJamBerhenti").value,
+        delay_ms: document.getElementById("setDelay").value,
+        max_errors: document.getElementById("setMaxErr").value,
+        tanggal_dari: document.getElementById("setTglDari").value,
+        crontab_schedule: document.getElementById("setCrontab").value,
+        enabled: document.getElementById("setEnabled").checked ? "1" : "",
+    };
+    api("save-settings", params, function(d) {
+        toast(d.message || "OK", d.status !== "ok");
+        loadAll();
+    });
+}
+
+function cronAction(action) {
+    var msgs = {reset:"Reset progress ke awal?", clearlog:"Hapus semua log?"};
+    if (!confirm(msgs[action] || "Lanjutkan?")) return;
+    api(action, {}, function(d) {
+        toast(d.message || "OK", d.status !== "ok");
+        setTimeout(loadAll, 500);
+    });
+}
+
+// Init
+loadAll();
+</script>
 </body>
 </html>';
     }
