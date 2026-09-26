@@ -6,7 +6,8 @@
 
 <div class="dev-queue-card">
   <div class="dev-queue-heading">
-    <div><h3>Daftar pasien</h3><p>Diurutkan dari kunjungan terbaru</p></div>
+    <div><h3>Daftar pasien</h3><p>Antrian terkecil &middot; jam kunjungan paling awal</p></div>
+    <button type="button" id="dev-toggle-examined" class="btn dev-toggle-examined-btn"><i class="fa fa-eye"></i><span class="dev-toggle-label"> Tampilkan semua pasien</span></button>
     <small id="dev-last-updated"><i class="fa fa-clock-o"></i> Diperbarui {?=date('H:i')?}</small>
   </div>
   <div class="table-responsive">
@@ -17,19 +18,19 @@
     <tbody>
       {if: $list}
       {loop: $list}
-      <tr class="dev-patient-row" data-search="{$value.no_rkm_medis} {$value.nm_pasien} {$value.no_rawat} {$value.no_reg} {$value.nm_poli} {$value.nm_dokter}">
+      <tr class="dev-patient-row" data-examined="{if: $value.sudah_diperiksa}1{else}{if: $value.is_batal}1{else}0{/if}{/if}" data-search="{$value.no_rkm_medis} {$value.nm_pasien} {$value.no_rawat} {$value.no_reg} {$value.nm_poli} {$value.nm_dokter}">
         <td><span class="dev-queue-number">{$value.no_reg}</span></td>
         <td><strong class="dev-patient-name">{$value.nm_pasien}</strong><small><i class="fa fa-id-card-o"></i> RM {$value.no_rkm_medis}</small></td>
         <td><strong>{$value.tgl_registrasi} <span class="dev-time">{$value.jam_reg}</span></strong><small>{$value.no_rawat}</small></td>
         <td><strong>{$value.nm_poli}</strong><small>{$value.nm_dokter}</small></td>
-        <td>{if: $value.sudah_diperiksa}<span class="dev-status-badge is-done"><i class="fa fa-check"></i> TTV tercatat</span>{else}<span class="dev-status-badge is-waiting"><i class="fa fa-clock-o"></i> Menunggu</span>{/if}<small>Status: {$value.stts}</small></td>
+        <td>{if: $value.sudah_diperiksa}<span class="dev-status-badge is-done"><i class="fa fa-check"></i> TTV tercatat</span>{else}{if: $value.is_batal}<span class="dev-status-badge is-cancelled"><i class="fa fa-times-circle"></i> Batal</span>{else}<span class="dev-status-badge is-waiting"><i class="fa fa-clock-o"></i> Menunggu</span>{/if}{/if}<small>Status: {$value.stts}</small></td>
         <td class="dev-actions text-right">
           <button type="button" class="btn dev-btn-call dev-call-queue" title="Panggil pasien" data-patient="{$value.nm_pasien}" data-poli="{$value.nm_poli}" data-no-reg="{$value.no_reg}"><i class="fa fa-bullhorn"></i><span> Panggil</span></button>
           <button type="button" class="btn btn-primary dev-select-patient" data-no-rawat="{$value.no_rawat}" data-no-rm="{$value.no_rkm_medis}" data-patient="{$value.nm_pasien}" data-poli="{$value.nm_poli}" data-no-reg="{$value.no_reg}"><i class="fa fa-stethoscope"></i> {if: $value.sudah_diperiksa}Lihat / Edit{else}Periksa{/if}</button>
         </td>
       </tr>
       {/loop}
-      <tr id="dev-search-empty" style="display:none;"><td colspan="6" class="dev-empty-state"><i class="fa fa-search"></i><strong>Pasien tidak ditemukan</strong><span>Coba gunakan nama, nomor RM, atau nomor rawat lain.</span></td></tr>
+      <tr id="dev-search-empty" style="display:none;"><td colspan="6" class="dev-empty-state"><i class="fa fa-inbox"></i><strong id="dev-search-empty-title">Tidak ada pasien yang ditampilkan</strong><span id="dev-search-empty-hint">Klik <strong>Tampilkan semua pasien</strong> untuk melihat yang sudah diperiksa, atau ubah filter pencarian.</span></td></tr>
       {else}
       <tr><td colspan="6" class="dev-empty-state"><i class="fa fa-calendar-times-o"></i><strong>Tidak ada kunjungan</strong><span>Ubah rentang tanggal atau status pemeriksaan.</span></td></tr>
       {/if}

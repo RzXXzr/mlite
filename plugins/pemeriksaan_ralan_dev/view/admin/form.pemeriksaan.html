@@ -3,7 +3,6 @@
   <input type="hidden" name="original_tgl_perawatan">
   <input type="hidden" name="original_jam_rawat">
   <input type="hidden" name="alergi">
-  <div class="dev-form-heading"><div><span class="dev-eyebrow">CATATAN PARAMEDIS</span><h3>Pemeriksaan awal</h3></div><span id="dev-form-mode" class="dev-draft-badge">Catatan baru</span></div>
   <div id="dev-copy-origin" class="dev-copy-origin" role="status" style="display:none;"></div>
   <div class="dev-allergy-alert is-loading" id="dev-allergy-banner">
     <span class="dev-allergy-icon"><i class="fa fa-shield"></i></span>
@@ -11,28 +10,26 @@
     <button type="button" class="btn btn-link btn-sm" id="dev-toggle-allergy" aria-controls="dev-allergy-editor" aria-expanded="false">Perbarui <i class="fa fa-angle-down"></i></button>
   </div>
   <section class="dev-form-section">
-    <div class="dev-section-head"><span><i class="fa fa-heartbeat"></i></span><div><h3>Tanda vital &amp; kesadaran</h3><p>Gunakan hasil pengukuran saat ini. Kolom bertanda * wajib diisi.</p></div></div>
+    <div class="dev-section-head"><span><i class="fa fa-heartbeat"></i></span><h3>Tanda vital &amp; kesadaran</h3></div>
     <div class="dev-vital-grid">
       <div class="form-group"><label for="dev-tensi">Tekanan darah <span>*</span></label><div class="dev-input-unit"><input id="dev-tensi" class="form-control" name="tensi" placeholder="120/80" required><span>mmHg</span></div></div>
-      <div class="form-group"><label for="dev-suhu_tubuh">Suhu tubuh <span>*</span></label><div class="dev-input-unit"><input id="dev-suhu_tubuh" class="form-control" name="suhu_tubuh" placeholder="36.5" inputmode="decimal" required><span>°C</span></div></div>
       <div class="form-group"><label for="dev-nadi">Nadi <span>*</span></label><div class="dev-input-unit"><input id="dev-nadi" class="form-control" name="nadi" placeholder="80" inputmode="numeric" required><span>/mnt</span></div></div>
       <div class="form-group"><label for="dev-respirasi">Pernapasan <span>*</span></label><div class="dev-input-unit"><input id="dev-respirasi" class="form-control" name="respirasi" placeholder="20" inputmode="numeric" required><span>/mnt</span></div></div>
-      <div class="form-group"><label for="dev-spo2">Saturasi oksigen <span>*</span></label><div class="dev-input-unit"><input id="dev-spo2" class="form-control" name="spo2" placeholder="98" inputmode="numeric" required><span>%</span></div></div>
-      <div class="form-group"><label for="dev-gcs">GCS <span>*</span></label><div class="dev-input-unit"><input id="dev-gcs" class="form-control" name="gcs" placeholder="15 / E4V5M6" required></div></div>
-      <div class="form-group dev-consciousness"><label for="dev-kesadaran">Kesadaran <span>*</span></label><select id="dev-kesadaran" class="form-control" name="kesadaran" required><option value="">Pilih tingkat kesadaran</option><option value="Compos Mentis">Compos Mentis</option><option value="Somnolence">Somnolence</option><option value="Sopor">Sopor</option><option value="Coma">Coma</option></select></div>
-    </div>
-    <div class="dev-subsection-label">ANTROPOMETRI</div>
-    <div class="dev-vital-grid">
+      <div class="form-group"><label for="dev-suhu_tubuh">Suhu tubuh <span>*</span></label><div class="dev-input-unit"><input id="dev-suhu_tubuh" class="form-control" name="suhu_tubuh" placeholder="36.5" inputmode="decimal" required><span>&deg;C</span></div></div>
+      <div class="form-group"><label for="dev-spo2">SpO<sub>2</sub> <span>*</span></label><div class="dev-input-unit"><input id="dev-spo2" class="form-control" name="spo2" placeholder="98" inputmode="numeric" required><span>%</span></div></div>
+      <div class="form-group"><label for="dev-gcs">GCS <span>*</span> <small class="dev-gcs-hint">3–15 / E4V5M6</small></label><div class="dev-input-unit"><input id="dev-gcs" class="form-control" name="gcs" placeholder="15" required></div></div>
+      <div class="form-group dev-span-2"><label for="dev-kesadaran">Kesadaran <span>*</span></label><select id="dev-kesadaran" class="form-control" name="kesadaran" required><option value="">Pilih tingkat kesadaran</option><option value="Compos Mentis">Compos Mentis</option><option value="Somnolence">Somnolence</option><option value="Sopor">Sopor</option><option value="Coma">Coma</option></select></div>
+      <div class="dev-subsection-label dev-col-full"><i class="fa fa-child"></i> ANTROPOMETRI</div>
       <div class="form-group"><label for="dev-tinggi">Tinggi badan <span>*</span></label><div class="dev-input-unit"><input id="dev-tinggi" class="form-control" name="tinggi" placeholder="165" inputmode="numeric" required><span>cm</span></div></div>
       <div class="form-group"><label for="dev-berat">Berat badan <span>*</span></label><div class="dev-input-unit"><input id="dev-berat" class="form-control" name="berat" placeholder="60" inputmode="decimal" required><span>kg</span></div></div>
       <div class="form-group"><label for="dev-lingkar_perut">Lingkar perut <span>*</span></label><div class="dev-input-unit"><input id="dev-lingkar_perut" class="form-control" name="lingkar_perut" placeholder="80" inputmode="decimal" required><span>cm</span></div></div>
     </div>
   </section>
   <section class="dev-form-section">
-    <div class="dev-section-head"><span><i class="fa fa-comments-o"></i></span><div><h3>Anamnesa &amp; temuan awal</h3><p>Lengkapi isian atau gunakan catatan pada panel riwayat.</p></div></div>
+    <div class="dev-section-head"><span><i class="fa fa-comments-o"></i></span><h3>Anamnesa &amp; temuan awal</h3></div>
     <div class="dev-anamnesis-grid">
-      <div class="form-group"><label for="dev-keluhan">Keluhan / anamnesa <span>*</span></label><textarea id="dev-keluhan" class="form-control" rows="4" name="keluhan" maxlength="2000" placeholder="Keluhan utama, sejak kapan, dan gejala penyerta..." required></textarea><small class="help-block">Maksimal 2.000 karakter.</small></div>
-      <div class="form-group"><label for="dev-pemeriksaan">Temuan obyektif <small>Opsional</small></label><textarea id="dev-pemeriksaan" class="form-control" rows="4" name="pemeriksaan" maxlength="2000" placeholder="Kondisi umum dan hasil observasi awal..."></textarea><small class="help-block">Catat sesuai hasil pengamatan.</small></div>
+      <div class="form-group"><label for="dev-keluhan">Keluhan / anamnesa <span>*</span></label><textarea id="dev-keluhan" class="form-control" rows="3" name="keluhan" maxlength="2000" placeholder="Keluhan utama, sejak kapan, dan gejala penyerta..." required></textarea><small class="help-block">Maksimal 2.000 karakter.</small></div>
+      <div class="form-group"><label for="dev-pemeriksaan">Temuan obyektif <small>Opsional</small></label><textarea id="dev-pemeriksaan" class="form-control" rows="3" name="pemeriksaan" maxlength="2000" placeholder="Kondisi umum dan hasil observasi awal..."></textarea><small class="help-block">Catat sesuai hasil pengamatan.</small></div>
     </div>
   </section>
   <details id="dev-allergy-editor" class="dev-form-section dev-allergy-section">
@@ -46,5 +43,5 @@
       <button type="button" id="dev-save-allergy" class="btn btn-warning"><i class="fa fa-save"></i> Simpan perubahan alergi</button>
     </div>
   </details>
-  <div class="dev-form-actions"><span id="dev-save-state" role="status"><i class="fa fa-pencil-square-o"></i> Draf belum disimpan</span><button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Simpan pemeriksaan</button></div>
+  <div class="dev-form-actions"><span id="dev-form-mode" class="dev-draft-badge">Catatan baru</span><span id="dev-save-state" role="status"><i class="fa fa-pencil-square-o"></i> Draf belum disimpan</span><button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Simpan pemeriksaan</button></div>
 </form>

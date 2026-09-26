@@ -283,6 +283,36 @@ class Admin extends AdminModule
         $this->respond(['status' => 'success', 'message' => 'Data alergi berhasil disimpan.', 'summary' => $this->alergiSummary($data)]);
     }
 
+    public function postKandidatProlanis()
+    {
+        $visit = $this->requireVisitAccess($this->post('no_rawat'));
+        $rm = $visit['no_rkm_medis'];
+        $pdo = $this->db()->pdo();
+        $htQ = $pdo->prepare(
+            "SELECT DISTINCT dp.kd_penyakit FROM diagnosa_pasien dp
+             JOIN reg_periksa r ON r.no_rawat=dp.no_rawat
+             WHERE r.no_rkm_medis=:rm AND (dp.kd_penyakit='I10' OR dp.kd_penyakit LIKE 'I11%')
+             ORDER BY dp.kd_penyakit LIMIT 20"
+        );
+        $htQ->execute([':rm' => $rm]);
+        $htCodes = $htQ->fetchAll(\PDO::FETCH_COLUMN);
+        $dmQ = $pdo->prepare(
+            "SELECT DISTINCT dp.kd_penyakit FROM diagnosa_pasien dp
+             JOIN reg_periksa r ON r.no_rawat=dp.no_rawat
+             WHERE r.no_rkm_medis=:rm
+             AND (dp.kd_penyakit LIKE 'E10%' OR dp.kd_penyakit LIKE 'E11%'
+               OR dp.kd_penyakit LIKE 'E12%' OR dp.kd_penyakit LIKE 'E13%'
+               OR dp.kd_penyakit LIKE 'E14%')
+             ORDER BY dp.kd_penyakit LIMIT 20"
+        );
+        $dmQ->execute([':rm' => $rm]);
+        $dmCodes = $dmQ->fetchAll(\PDO::FETCH_COLUMN);
+        $this->respond(['status' => 'success', 'data' => [
+            'has_ht' => !empty($htCodes), 'ht_codes' => $htCodes,
+            'has_dm' => !empty($dmCodes), 'dm_codes' => $dmCodes
+        ]]);
+    }
+
     public function getSettings()
     {
         return $this->draw('settings.html', ['settings' => ['pemeriksaan_ralan_dev' => $this->settings('pemeriksaan_ralan_dev')]]);
@@ -348,7 +378,8 @@ class Admin extends AdminModule
         $sql = "SELECT r.no_rawat, r.no_reg, r.tgl_registrasi, r.jam_reg, r.stts, r.status_lanjut, r.status_bayar,
                     p.no_rkm_medis, p.nm_pasien, p.no_peserta,
                     poli.kd_poli, poli.nm_poli, d.nm_dokter, pj.png_jawab,
-                    EXISTS(SELECT 1 FROM pemeriksaan_ralan pr WHERE pr.no_rawat=r.no_rawat) AS sudah_diperiksa
+                    EXISTS(SELECT 1 FROM pemeriksaan_ralan pr WHERE pr.no_rawat=r.no_rawat) AS sudah_diperiksa,
+                    (r.stts = 'Batal') AS is_batal
                 FROM reg_periksa r
                 INNER JOIN pasien p ON p.no_rkm_medis=r.no_rkm_medis
                 INNER JOIN poliklinik poli ON poli.kd_poli=r.kd_poli
@@ -378,7 +409,7 @@ class Admin extends AdminModule
             }
             $sql .= ' AND r.kd_poli IN ('.implode(',', $placeholders).')';
         }
-        $sql .= ' ORDER BY r.tgl_registrasi DESC, r.jam_reg DESC';
+        $sql .= ' ORDER BY (r.no_reg + 0) ASC, r.tgl_registrasi ASC, r.jam_reg ASC';
         $statement = $this->db()->pdo()->prepare($sql);
         $statement->execute($params);
         return $statement->fetchAll();

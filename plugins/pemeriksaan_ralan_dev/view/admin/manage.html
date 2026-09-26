@@ -38,27 +38,37 @@
     <div class="dev-patient-context">
       <span class="dev-patient-avatar"><i class="fa fa-user"></i></span>
       <div class="dev-patient-identity"><span>Pasien terpilih</span><strong id="dev-patient-name">-</strong><small id="dev-patient-rm"></small></div>
+      <dl class="dev-patient-facts">
+        <div><dt>Umur</dt><dd id="dev-patient-age">Memuat...</dd></div>
+        <div><dt>Tgl lahir</dt><dd id="dev-patient-birth">Memuat...</dd></div>
+        <div><dt>Darah</dt><dd id="dev-patient-blood">Memuat...</dd></div>
+        <div><dt>Penjamin</dt><dd id="dev-patient-payer">Memuat...</dd></div>
+        <div><dt>No. kartu</dt><dd id="dev-patient-card">Memuat...</dd></div>
+      </dl>
       <div class="dev-patient-destination"><span>Poliklinik</span><strong id="dev-patient-poli">-</strong></div>
     </div>
-    <dl class="dev-patient-facts">
-      <div><dt>Umur saat ini</dt><dd id="dev-patient-age">Memuat...</dd></div>
-      <div><dt>Tanggal lahir</dt><dd id="dev-patient-birth">Memuat...</dd></div>
-      <div><dt>Golongan darah</dt><dd id="dev-patient-blood">Memuat...</dd></div>
-      <div><dt>Penjamin kunjungan</dt><dd id="dev-patient-payer">Memuat...</dd></div>
-      <div><dt>Nomor kartu peserta</dt><dd id="dev-patient-card">Memuat...</dd></div>
-    </dl>
     <div id="dev-patient-info-error" class="dev-info-error" role="status" style="display:none;"><span></span> <button type="button" id="dev-retry-patient-info" class="btn btn-default btn-sm">Muat ulang identitas</button></div>
     <section id="dev-bpjs-panel" class="dev-bpjs-panel" aria-label="Kepesertaan BPJS" style="display:none;">
-      <div class="dev-bpjs-heading"><strong><i class="fa fa-id-card-o"></i> Kepesertaan BPJS</strong><span id="dev-bpjs-state" role="status">Belum diperiksa</span><button type="button" id="dev-refresh-bpjs" class="btn btn-default btn-sm" disabled><i class="fa fa-refresh"></i> Cek ulang</button></div>
-      <dl class="dev-patient-facts dev-bpjs-facts">
-        <div><dt>Provider / FKTP terdaftar</dt><dd id="dev-bpjs-provider">Belum diperiksa</dd><small id="dev-bpjs-provider-code"></small></div>
-        <div><dt>Jenis peserta</dt><dd id="dev-bpjs-type">Belum diperiksa</dd></div>
-        <div><dt>Status kepesertaan</dt><dd id="dev-bpjs-active">Belum diperiksa</dd></div>
-        <div><dt>Peserta PRB</dt><dd id="dev-bpjs-prb">Belum diperiksa</dd></div>
-        <div><dt>Peserta Prolanis</dt><dd id="dev-bpjs-prolanis">Belum diperiksa</dd></div>
-      </dl>
+      <div class="dev-bpjs-strip">
+        <span class="dev-bpjs-strip-label"><i class="fa fa-id-card-o"></i> BPJS</span>
+        <span id="dev-bpjs-state" role="status">Belum diperiksa</span>
+        <dl class="dev-bpjs-inline-facts">
+          <div><dt>FKTP</dt><dd id="dev-bpjs-provider">-</dd><small id="dev-bpjs-provider-code"></small></div>
+          <div><dt>Jenis</dt><dd id="dev-bpjs-type">-</dd></div>
+          <div><dt>Status</dt><dd id="dev-bpjs-active">-</dd></div>
+          <div><dt>PRB</dt><dd id="dev-bpjs-prb">-</dd></div>
+          <div><dt>Prolanis</dt><dd id="dev-bpjs-prolanis">-</dd></div>
+        </dl>
+        <button type="button" id="dev-refresh-bpjs" class="btn btn-default btn-sm" disabled><i class="fa fa-refresh"></i> Cek ulang</button>
+      </div>
       <p id="dev-bpjs-message" class="dev-bpjs-message" aria-live="polite"></p>
     </section>
+    <div id="dev-prolanis-candidate" class="dev-prolanis-candidate" style="display:none;" role="status" aria-live="polite">
+      <i class="fa fa-star dev-prolanis-star"></i>
+      <span class="dev-prolanis-label">Kandidat Program Prolanis:</span>
+      <span id="dev-candidate-ht" class="dev-candidate-chip dev-candidate-ht" style="display:none;"><i class="fa fa-heartbeat"></i> Hipertensi &mdash; <span id="dev-candidate-ht-codes"></span></span>
+      <span id="dev-candidate-dm" class="dev-candidate-chip dev-candidate-dm" style="display:none;"><i class="fa fa-tint"></i> Diabetes &mdash; <span id="dev-candidate-dm-codes"></span></span>
+    </div>
     </section>
     <div class="dev-exam-body">
       {include: ../plugins/pemeriksaan_ralan_dev/view/admin/form.pemeriksaan.html}
