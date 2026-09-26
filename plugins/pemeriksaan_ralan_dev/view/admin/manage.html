@@ -11,14 +11,13 @@
       <div id="dev-ws-status" class="dev-connection is-pending"><span class="dev-connection-dot"></span><span>Menghubungkan anjungan...</span></div>
     </div>
 
-    <div class="dev-filter-card">
-      <div class="dev-filter-title"><div><i class="fa fa-filter"></i><strong> Filter kunjungan</strong></div><button type="button" id="dev-reset-filter" class="btn btn-link btn-sm"><i class="fa fa-undo"></i> Reset</button></div>
+    <div class="dev-filter-card" aria-label="Filter kunjungan">
       <div class="row pemeriksaan-dev-filter">
         <div class="col-sm-2 form-group"><label for="dev-date-start">Tanggal awal</label><input id="dev-date-start" class="form-control" type="date" value="{?=date('Y-m-d')?}"></div>
         <div class="col-sm-2 form-group"><label for="dev-date-end">Tanggal akhir</label><input id="dev-date-end" class="form-control" type="date" value="{?=date('Y-m-d')?}"></div>
-        <div class="col-sm-3 form-group"><label for="dev-status">Status pemeriksaan</label><select id="dev-status" class="form-control"><option value="">Semua status</option><option value="belum">Belum diperiksa</option><option value="selesai">Sudah diperiksa</option></select></div>
+        <div class="col-sm-3 form-group"><label for="dev-status">Status kunjungan</label><select id="dev-status" class="form-control"><option value="">Semua status</option><option value="Belum">Belum Periksa</option><option value="Berkas Dikirim">Berkas Dikirim</option><option value="Berkas Diterima">Berkas Diterima</option><option value="Sudah">Sudah Periksa</option><option value="Batal">Batal Periksa</option><option value="Dirujuk">Pasien Dirujuk</option><option value="Meninggal">Meninggal</option><option value="Dirawat">Dirawat</option><option value="Pulang Paksa">Pulang Paksa</option></select></div>
         <div class="col-sm-3 form-group"><label for="dev-patient-search">Cari pasien</label><div class="input-group"><span class="input-group-addon"><i class="fa fa-search"></i></span><input id="dev-patient-search" class="form-control" type="search" placeholder="Nama, RM, atau no. rawat"></div></div>
-        <div class="col-sm-2 form-group dev-filter-action"><button id="dev-refresh-list" class="btn btn-primary btn-block"><i class="fa fa-refresh"></i> Terapkan</button></div>
+        <div class="col-sm-2 form-group dev-filter-action"><div class="dev-filter-buttons"><button id="dev-refresh-list" class="btn btn-primary"><i class="fa fa-refresh"></i> Terapkan</button><button type="button" id="dev-reset-filter" class="btn btn-default" aria-label="Reset filter" title="Reset filter"><i class="fa fa-undo"></i></button></div></div>
       </div>
     </div>
 
@@ -30,7 +29,7 @@
   <section id="dev-exam-container" class="dev-exam-workspace" style="display:none;">
     <div class="dev-exam-head">
       <button type="button" class="btn btn-default dev-close-exam"><i class="fa fa-arrow-left"></i> Kembali ke antrean</button>
-      <div><span class="dev-eyebrow">FORM PEMERIKSAAN</span><h2>Pemeriksaan awal pasien</h2></div>
+      <div><span class="dev-eyebrow">FORM PEMERIKSAAN</span><h2 id="dev-exam-title" tabindex="-1">Pemeriksaan awal pasien</h2></div>
       <span class="dev-workspace-hint"><i class="fa fa-columns"></i> Isi pemeriksaan sambil melihat riwayat</span>
       <nav class="dev-mobile-jumps" aria-label="Bagian pemeriksaan"><a class="btn btn-default btn-sm" href="#dev-exam-form">Form</a><a class="btn btn-default btn-sm" href="#dev-patient-history">Riwayat pasien</a></nav>
     </div>
@@ -75,4 +74,16 @@
       {include: ../plugins/pemeriksaan_ralan_dev/view/admin/riwayat.pasien.html}
     </div>
   </section>
+
+  <div id="dev-arrival-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="dev-arrival-title">
+    <div class="modal-dialog modal-sm" role="document"><div class="modal-content">
+      <div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button><h3 class="modal-title" id="dev-arrival-title">Konfirmasi kedatangan pasien</h3></div>
+      <div class="modal-body">
+        <p><strong id="dev-arrival-patient">Pasien</strong> masih berstatus <b>Belum Periksa</b>.</p>
+        <p class="text-muted">Lanjutkan ke form jika pasien datang, atau batalkan kunjungan dengan alasan yang jelas.</p>
+        <div id="dev-cancel-reason-wrap" class="form-group" style="display:none;"><label for="dev-cancel-reason">Alasan batal <span aria-hidden="true">*</span></label><textarea id="dev-cancel-reason" class="form-control" rows="3" maxlength="255" placeholder="Contoh: pasien tidak datang setelah dipanggil"></textarea><small class="help-block">Minimal 5 karakter. Status lokal akan diubah menjadi Batal.</small></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Kembali</button><button type="button" id="dev-show-cancel-reason" class="btn btn-danger"><i class="fa fa-times"></i> Batal periksa</button><button type="button" id="dev-confirm-cancel" class="btn btn-danger" style="display:none;"><i class="fa fa-check"></i> Konfirmasi batal</button><button type="button" id="dev-continue-exam" class="btn btn-primary"><i class="fa fa-stethoscope"></i> Lanjut ke SOAP</button></div>
+    </div></div>
+  </div>
 </div>

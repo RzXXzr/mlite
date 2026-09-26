@@ -1,10 +1,55 @@
-<div class="row">
-  {loop: $sub_modules}
-  <div class="col-md-6">
-    <a class="prd-card" href="{$value.url}">
-      <i class="fa fa-{$value.icon}"></i>
-      <span><strong>{$value.name}</strong><small>{$value.desc}</small></span>
-    </a>
+<main class="pemeriksaan-dev dev-home">
+  <section class="dev-home-hero" aria-labelledby="dev-home-title">
+    <div class="dev-home-copy">
+      <span class="dev-eyebrow">PEMERIKSAAN PARAMEDIS <b>DEV</b></span>
+      <h2 id="dev-home-title">Pemeriksaan awal yang ringkas dan terarah</h2>
+      <p>Panggil pasien, catat tanda vital dan anamnesa, lalu teruskan berkas ke antrean poli dalam satu alur.</p>
+      <div class="dev-home-actions">
+        <a class="btn btn-primary" href="{$manage_url|e}"><i class="fa fa-stethoscope"></i> Buka antrean pemeriksaan</a>
+        <span><i class="fa fa-shield"></i> Akses pasien mengikuti cakupan poli pengguna.</span>
+      </div>
+    </div>
+    <div class="dev-home-mark" aria-hidden="true"><i class="fa fa-heartbeat"></i></div>
+  </section>
+
+  <section class="dev-home-status-grid" aria-label="Kesiapan layanan">
+    <article class="dev-home-status-card">
+      <span class="dev-home-status-icon"><i class="fa fa-hospital-o"></i></span>
+      <div><small>Jenis fasilitas</small><strong>FKTP</strong><p>Khusus alur klinik/fasilitas tingkat pertama.</p></div>
+      <span class="dev-home-state is-fixed">Tetap</span>
+    </article>
+    <article class="dev-home-status-card">
+      <span class="dev-home-status-icon"><i class="fa fa-cloud"></i></span>
+      <div><small>Antrean JKN</small><strong>JKN Mobile FKTP</strong><p>{$fktp.note|e}</p></div>
+      <span class="dev-home-state is-{$fktp.class|e}"><i class="fa fa-circle"></i> {$fktp.label|e}</span>
+    </article>
+    <article class="dev-home-status-card">
+      <span class="dev-home-status-icon"><i class="fa fa-volume-up"></i></span>
+      <div><small>Panggilan anjungan</small><strong>Anjungan pemeriksaan</strong><p>{if: $websocket_enabled}ACK anjungan diverifikasi per panggilan.{else}Panggilan memakai TTS perangkat bila tersedia.{/if}</p></div>
+      <span class="dev-home-state {if: $websocket_enabled}is-ready{else}is-inactive{/if}">{if: $websocket_enabled}Aktif{else}Lokal{/if}</span>
+    </article>
+  </section>
+
+  <div class="dev-home-grid">
+    <section class="dev-home-card" aria-labelledby="dev-workflow-title">
+      <header><span class="dev-home-card-icon"><i class="fa fa-random"></i></span><div><small>ALUR KERJA</small><h3 id="dev-workflow-title">Dari antrean menuju poli</h3></div></header>
+      <ol class="dev-workflow-list">
+        <li><span>1</span><div><strong>Panggil dan pilih pasien</strong><p>Status <b>Belum Periksa</b> dapat dilanjutkan ke form atau dibatalkan dengan alasan.</p></div></li>
+        <li><span>2</span><div><strong>Catat pemeriksaan awal</strong><p>Isi TTV, kesadaran, antropometri, alergi, anamnesa, dan temuan obyektif.</p></div></li>
+        <li><span>3</span><div><strong>Simpan dan teruskan berkas</strong><p>Status berubah atomik menjadi <b>Berkas Dikirim</b> agar pasien masuk alur poli.</p></div></li>
+      </ol>
+    </section>
+
+    <aside class="dev-home-card dev-home-policy" aria-labelledby="dev-policy-title">
+      <header><span class="dev-home-card-icon"><i class="fa fa-sliders"></i></span><div><small>ATURAN MODUL</small><h3 id="dev-policy-title">Konfigurasi tetap dan terpusat</h3></div></header>
+      <dl>
+        <div><dt>Jenis layanan</dt><dd>FKTP <span>Tetap</span></dd></div>
+        <div><dt>Setelah simpan</dt><dd>Berkas Dikirim <span>Tetap</span></dd></div>
+        <div><dt>Kepesertaan</dt><dd>{if: $pcare_active}PCare aktif{else}PCare tidak aktif{/if}</dd></div>
+        <div><dt>Konfigurasi JKN</dt><dd>Modul JKN Mobile FKTP</dd></div>
+      </dl>
+      <p class="dev-home-policy-note"><i class="fa fa-info-circle"></i> Modul ini tidak memiliki pengaturan lokal karena pilihan FKTP/FKTL dan status akhir tidak boleh berubah per pengguna.</p>
+      {if: $jkn_settings_url}<a class="btn btn-default btn-sm" href="{$jkn_settings_url|e}"><i class="fa fa-external-link"></i> Pengaturan JKN Mobile FKTP</a>{/if}
+    </aside>
   </div>
-  {/loop}
-</div>
+</main>

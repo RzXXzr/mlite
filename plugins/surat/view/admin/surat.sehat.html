@@ -19,6 +19,7 @@
   var preNomor   = {?=json_encode($pre_nomor_clean)?};
   var initNomor  = savedNomor || preNomor;
   var initToken  = {?=json_encode($pre_token_clean)?};
+  var initStatusKesehatan = {?=json_encode(isset($surat_clean['status_kesehatan']) ? $surat_clean['status_kesehatan'] : 'SEHAT')?};
 
   function updateStatus(state) {
     var map = {
@@ -87,6 +88,7 @@
       pekerjaan: {?=json_encode($pasien_clean['pekerjaan'])?},
       keperluan: keperluan,
       berlaku_sampai: berlaku_sampai,
+      status_kesehatan: $("#status_kesehatan").val(),
       riwayat_penyakit: "-",
       dokter: {?=json_encode($nm_dokter_clean)?},
       petugas: {?=json_encode($this->core->getUserInfo('username', $_SESSION['mlite_user']))?},
@@ -106,12 +108,14 @@
 
   jQuery(document).ready(function() {
     if (initNomor) $("#nomor_surat_display").text(initNomor);
+    $("#status_kesehatan").val(initStatusKesehatan);
     updateStatus(savedNomor ? "saved" : "draft");
     
     if (savedNomor) {
       $("#keperluan, #berlaku_sampai, #tmp_lahir").on("change", function() {
         updateStatus("changed");
       });
+      $("#status_kesehatan").on("input", function() { updateStatus("changed"); });
     }
     
     renderQR(initToken);
@@ -171,7 +175,7 @@
   </tbody></table>
   <br>
   
-  <p style="text-align:justify;">Setelah kami lakuan pemeriksaan fisik terhadap orang tersebut ternyata keadaan kesehatannya saat ini adalah: <strong>SEHAT</strong></p>
+  <p>Setelah kami lakuan pemeriksaan fisik terhadap orang tersebut ternyata keadaan kesehatannya saat ini adalah: <strong><input type="text" id="status_kesehatan" value="SEHAT" style="font-size:16px;font-family:'Times New Roman',Times,serif;font-weight:bold;border:0;border-bottom:1px solid #000;padding:2px;background:transparent;width:300px;"></strong></p>
   
   <p style="text-align:justify;">Surat keterangan ini dipergunakan untuk keperluan: <input type="text" id="keperluan" value="{?=isset_or($surat.keperluan)?}" placeholder="Contoh: PERSYARATAN PENGURUSAN SIP" style="width:450px;border:0;border-bottom:1px solid #000;padding:2px;"></p>
   

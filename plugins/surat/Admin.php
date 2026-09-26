@@ -614,6 +614,8 @@ class Admin extends AdminModule
         $this->tpl->set('soap_clean', $soap_clean);
         
         $surat = $this->db('mlite_surat_sehat')->where('no_rawat', revertNoRawat($no_rawat))->oneArray();
+        // Tambah kolom jika belum ada (one-time migration)
+        try { $this->db()->pdo()->exec("ALTER TABLE mlite_surat_sehat ADD COLUMN status_kesehatan varchar(200) DEFAULT 'SEHAT'"); } catch (\Exception $e) {}
         $pre_token = !empty($surat['verification_token']) ? $surat['verification_token'] : bin2hex(random_bytes(32));
         
         if (empty($surat['nomor_surat'])) {
@@ -697,6 +699,7 @@ class Admin extends AdminModule
           'pekerjaan' => $_POST['pekerjaan'] ?? '',
           'keperluan' => $_POST['keperluan'],
           'berlaku_sampai' => $berlaku_sampai,
+          'status_kesehatan' => $_POST['status_kesehatan'] ?? 'SEHAT',
           'dokter' => $_POST['dokter'],
           'petugas' => $_POST['petugas'],
           'updated_at' => date('Y-m-d H:i:s')
@@ -729,6 +732,7 @@ class Admin extends AdminModule
           'pekerjaan' => $_POST['pekerjaan'] ?? '',
           'keperluan' => $_POST['keperluan'],
           'berlaku_sampai' => $berlaku_sampai,
+          'status_kesehatan' => $_POST['status_kesehatan'] ?? 'SEHAT',
           'dokter' => $_POST['dokter'],
           'petugas' => $_POST['petugas'],
           'tanggal_surat' => $tanggal_surat,

@@ -1,6 +1,0 @@
-<div class="panel panel-default"><div class="panel-heading"><h3 class="panel-title">Pengaturan Pemeriksaan Awal Paramedis (Dev)</h3></div><div class="panel-body">
-  <form action="{?=url(ADMIN.'/pemeriksaan_ralan_dev/saveSettings')?}" method="POST">
-    <div class="form-group"><label>Tandai kunjungan selesai setelah simpan</label><p class="help-block">Jika Ya, menyimpan pemeriksaan awal akan mengubah status kunjungan menjadi <em>Sudah</em>. Modul ini tidak mengatur status Berkas Dikirim.</p><label class="radio-inline"><input type="radio" name="pemeriksaan_ralan_dev[set_sudah]" value="ya" {if: $settings.pemeriksaan_ralan_dev.set_sudah == 'ya'}checked{/if}> Ya</label><label class="radio-inline"><input type="radio" name="pemeriksaan_ralan_dev[set_sudah]" value="tidak" {if: $settings.pemeriksaan_ralan_dev.set_sudah != 'ya'}checked{/if}> Tidak</label></div>
-    <button class="btn btn-primary" type="submit">Simpan pengaturan</button>
-  </form>
-</div></div>

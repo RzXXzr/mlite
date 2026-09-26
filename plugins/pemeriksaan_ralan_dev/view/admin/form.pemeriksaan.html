@@ -3,6 +3,8 @@
   <input type="hidden" name="original_tgl_perawatan">
   <input type="hidden" name="original_jam_rawat">
   <input type="hidden" name="alergi">
+  <div id="dev-form-error" class="alert alert-danger" role="alert" tabindex="-1" style="display:none;"></div>
+  <div id="dev-form-lock" class="dev-form-lock" role="status" style="display:none;"><i class="fa fa-lock"></i> <span></span></div>
   <div id="dev-copy-origin" class="dev-copy-origin" role="status" style="display:none;"></div>
   <div class="dev-allergy-alert is-loading" id="dev-allergy-banner">
     <span class="dev-allergy-icon"><i class="fa fa-shield"></i></span>
@@ -10,7 +12,7 @@
     <button type="button" class="btn btn-link btn-sm" id="dev-toggle-allergy" aria-controls="dev-allergy-editor" aria-expanded="false">Perbarui <i class="fa fa-angle-down"></i></button>
   </div>
   <section class="dev-form-section">
-    <div class="dev-section-head"><span><i class="fa fa-heartbeat"></i></span><h3>Tanda vital &amp; kesadaran</h3></div>
+    <div class="dev-section-head"><span><i class="fa fa-heartbeat"></i></span><h3>Tanda vital &amp; kesadaran</h3><small><b>*</b> wajib</small></div>
     <div class="dev-vital-grid">
       <div class="form-group"><label for="dev-tensi">Tekanan darah <span>*</span></label><div class="dev-input-unit"><input id="dev-tensi" class="form-control" name="tensi" placeholder="120/80" required><span>mmHg</span></div></div>
       <div class="form-group"><label for="dev-nadi">Nadi <span>*</span></label><div class="dev-input-unit"><input id="dev-nadi" class="form-control" name="nadi" placeholder="80" inputmode="numeric" required><span>/mnt</span></div></div>
@@ -18,8 +20,7 @@
       <div class="form-group"><label for="dev-suhu_tubuh">Suhu tubuh <span>*</span></label><div class="dev-input-unit"><input id="dev-suhu_tubuh" class="form-control" name="suhu_tubuh" placeholder="36.5" inputmode="decimal" required><span>&deg;C</span></div></div>
       <div class="form-group"><label for="dev-spo2">SpO<sub>2</sub> <span>*</span></label><div class="dev-input-unit"><input id="dev-spo2" class="form-control" name="spo2" placeholder="98" inputmode="numeric" required><span>%</span></div></div>
       <div class="form-group"><label for="dev-gcs">GCS <span>*</span> <small class="dev-gcs-hint">3–15 / E4V5M6</small></label><div class="dev-input-unit"><input id="dev-gcs" class="form-control" name="gcs" placeholder="15" required></div></div>
-      <div class="form-group dev-span-2"><label for="dev-kesadaran">Kesadaran <span>*</span></label><select id="dev-kesadaran" class="form-control" name="kesadaran" required><option value="">Pilih tingkat kesadaran</option><option value="Compos Mentis">Compos Mentis</option><option value="Somnolence">Somnolence</option><option value="Sopor">Sopor</option><option value="Coma">Coma</option></select></div>
-      <div class="dev-subsection-label dev-col-full"><i class="fa fa-child"></i> ANTROPOMETRI</div>
+      <div class="form-group dev-span-2 dev-consciousness"><label for="dev-kesadaran">Kesadaran <span>*</span></label><select id="dev-kesadaran" class="form-control" name="kesadaran" required><option value="">Pilih tingkat kesadaran</option><option value="Compos Mentis">Compos Mentis</option><option value="Somnolence">Somnolence</option><option value="Sopor">Sopor</option><option value="Coma">Coma</option></select></div>
       <div class="form-group"><label for="dev-tinggi">Tinggi badan <span>*</span></label><div class="dev-input-unit"><input id="dev-tinggi" class="form-control" name="tinggi" placeholder="165" inputmode="numeric" required><span>cm</span></div></div>
       <div class="form-group"><label for="dev-berat">Berat badan <span>*</span></label><div class="dev-input-unit"><input id="dev-berat" class="form-control" name="berat" placeholder="60" inputmode="decimal" required><span>kg</span></div></div>
       <div class="form-group"><label for="dev-lingkar_perut">Lingkar perut <span>*</span></label><div class="dev-input-unit"><input id="dev-lingkar_perut" class="form-control" name="lingkar_perut" placeholder="80" inputmode="decimal" required><span>cm</span></div></div>
@@ -36,12 +37,12 @@
     <summary><i class="fa fa-shield"></i> Profil alergi <span>Makanan, udara, dan obat</span></summary>
     <div class="dev-section-content">
       <div class="row">
-        <div class="col-sm-4 form-group"><label><i class="fa fa-cutlery"></i> Makanan</label><select class="form-control dev-allergy-input" name="alergi_makanan"><option value="00">Tidak ada</option><option value="01">Seafood</option><option value="02">Gandum</option><option value="03">Susu sapi</option><option value="04">Kacang-kacangan</option><option value="05">Makanan lain</option></select><input class="form-control dev-other-food" name="alergi_makanan_lainnya" placeholder="Sebutkan makanan" style="display:none;margin-top:8px;"></div>
-        <div class="col-sm-4 form-group"><label><i class="fa fa-cloud"></i> Udara</label><select class="form-control dev-allergy-input" name="alergi_udara"><option value="00">Tidak ada</option><option value="01">Udara panas</option><option value="02">Udara dingin</option><option value="03">Udara kotor</option></select><input class="form-control" name="alergi_udara_lainnya" placeholder="Keterangan tambahan" style="margin-top:8px;"></div>
-        <div class="col-sm-4 form-group"><label><i class="fa fa-medkit"></i> Obat</label><select class="form-control dev-allergy-input" name="alergi_obat"><option value="00">Tidak ada</option><option value="01">Antibiotik</option><option value="02">Antiinflamasi</option><option value="03">Non Steroid</option><option value="04">Aspirin</option><option value="05">Kortikosteroid</option><option value="06">Insulin</option><option value="07">Obat lain</option></select><input class="form-control dev-other-drug" name="alergi_obat_lainnya" placeholder="Sebutkan obat" style="display:none;margin-top:8px;"></div>
+        <div class="col-sm-4 form-group"><label for="dev-allergy-food"><i class="fa fa-cutlery"></i> Makanan</label><select id="dev-allergy-food" class="form-control dev-allergy-input" name="alergi_makanan"><option value="00">Tidak ada</option><option value="01">Seafood</option><option value="02">Gandum</option><option value="03">Susu sapi</option><option value="04">Kacang-kacangan</option><option value="05">Makanan lain</option></select><label class="sr-only" for="dev-allergy-food-other">Alergi makanan lainnya</label><input id="dev-allergy-food-other" class="form-control dev-other-food" name="alergi_makanan_lainnya" placeholder="Sebutkan makanan" style="display:none;margin-top:8px;"></div>
+        <div class="col-sm-4 form-group"><label for="dev-allergy-air"><i class="fa fa-cloud"></i> Udara</label><select id="dev-allergy-air" class="form-control dev-allergy-input" name="alergi_udara"><option value="00">Tidak ada</option><option value="01">Udara panas</option><option value="02">Udara dingin</option><option value="03">Udara kotor</option></select><label class="sr-only" for="dev-allergy-air-other">Keterangan alergi udara</label><input id="dev-allergy-air-other" class="form-control" name="alergi_udara_lainnya" placeholder="Keterangan tambahan" style="margin-top:8px;"></div>
+        <div class="col-sm-4 form-group"><label for="dev-allergy-drug"><i class="fa fa-medkit"></i> Obat</label><select id="dev-allergy-drug" class="form-control dev-allergy-input" name="alergi_obat"><option value="00">Tidak ada</option><option value="01">Antibiotik</option><option value="02">Antiinflamasi</option><option value="03">Non Steroid</option><option value="04">Aspirin</option><option value="05">Kortikosteroid</option><option value="06">Insulin</option><option value="07">Obat lain</option></select><label class="sr-only" for="dev-allergy-drug-other">Alergi obat lainnya</label><input id="dev-allergy-drug-other" class="form-control dev-other-drug" name="alergi_obat_lainnya" placeholder="Sebutkan obat" style="display:none;margin-top:8px;"></div>
       </div>
       <button type="button" id="dev-save-allergy" class="btn btn-warning"><i class="fa fa-save"></i> Simpan perubahan alergi</button>
     </div>
   </details>
-  <div class="dev-form-actions"><span id="dev-form-mode" class="dev-draft-badge">Catatan baru</span><span id="dev-save-state" role="status"><i class="fa fa-pencil-square-o"></i> Draf belum disimpan</span><button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Simpan pemeriksaan</button></div>
+  <div class="dev-form-actions"><span id="dev-form-mode" class="dev-draft-badge">Catatan baru</span><span id="dev-save-state" role="status"><i class="fa fa-pencil-square-o"></i> Draf belum disimpan</span><button id="dev-save-exam" type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Simpan pemeriksaan</button></div>
 </form>

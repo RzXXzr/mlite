@@ -11,8 +11,8 @@
   var reconnectDelay = 1000;
   var pendingCalls = {};
   var websocketEnabled = {if: $mlite.websocket == 'ya'}true{else}false{/if};
-  var websocketProxy = "{$mlite.websocket_proxy}";
-  var callerName = "{$mlite.fullname}";
+  var websocketProxy = {?=json_encode($mlite.websocket_proxy)?};
+  var callerName = {?=json_encode($mlite.fullname)?};
   var initialDateStart = $('#dev-date-start').val();
   var initialDateEnd = $('#dev-date-end').val();
   var patientSession = 0;
@@ -27,6 +27,10 @@
   var showExamined = false;
   var kandidatData = null;
   var prolanisStatus = null;
+  var pendingArrivalButton = null;
+  var currentVisitStatus = '';
+  var formWritable = false;
+  var lastPatientTrigger = null;
 
   function endpoint(name) {
     return baseUrl + '/' + name + '?t=' + encodeURIComponent(mlite.token);
@@ -46,6 +50,32 @@
   function requestError(xhr, fallback) {
     var response = xhr && xhr.responseJSON;
     return response && response.message ? response.message : fallback;
+  }
+
+  function clearFormErrors() {
+    $('#dev-form-error').hide().empty();
+    $form.find('[aria-invalid="true"]').removeAttr('aria-invalid');
+    $form.find('.dev-field-error').remove();
+  }
+
+  function showFormError(xhr, fallback) {
+    var response = xhr && xhr.responseJSON;
+    var message = requestError(xhr, fallback);
+    var field = response && response.data && response.data.field;
+    $('#dev-form-error').text(message).show().focus();
+    if (!field) { return; }
+    var $field = $form.find('[name="' + field + '"]').first();
+    if (!$field.length) { return; }
+    $field.attr('aria-invalid', 'true');
+    $('<small>', {'class': 'help-block text-danger dev-field-error'}).text(message).appendTo($field.closest('.form-group'));
+    $field.focus();
+  }
+
+  function setFormWritable(writable, message) {
+    formWritable = writable;
+    $form.find('input:not([type=hidden]), textarea, select, button').prop('disabled', !writable);
+    $('#dev-form-lock').toggle(!writable).find('span').text(message || 'Kunjungan ini hanya dapat dilihat.');
+    $('#dev-form-mode').toggleClass('is-readonly', !writable);
   }
 
   function setButtonBusy(button, busy, loadingHtml) {
@@ -75,21 +105,22 @@
     });
     var allExaminedHidden = !showExamined && visible === 0 && $rows.filter('[data-examined="1"]').length > 0;
     if (allExaminedHidden) {
-      $('#dev-search-empty-title').text('Semua pasien sudah diperiksa');
-      $('#dev-search-empty-hint').html('Klik <strong>Tampilkan semua pasien</strong> untuk melihat daftar lengkap.');
+      $('#dev-search-empty-title').text('Tidak ada pasien berstatus Belum');
+      $('#dev-search-empty-hint').html('Klik <strong>Tampilkan semua status</strong> untuk melihat daftar lengkap.');
     } else {
       $('#dev-search-empty-title').text('Pasien tidak ditemukan');
-      $('#dev-search-empty-hint').text('Coba ubah filter pencarian atau klik Tampilkan semua pasien.');
+      $('#dev-search-empty-hint').text('Coba ubah filter pencarian atau klik Tampilkan semua status.');
     }
     $('#dev-search-empty').toggle($rows.length > 0 && visible === 0);
     $('#dev-toggle-examined .fa').removeClass('fa-eye fa-eye-slash').addClass(showExamined ? 'fa-eye-slash' : 'fa-eye');
-    $('#dev-toggle-examined .dev-toggle-label').text(showExamined ? ' Sembunyikan yang sudah' : ' Tampilkan semua pasien');
+    $('#dev-toggle-examined .dev-toggle-label').text(showExamined ? ' Tampilkan hanya Belum' : ' Tampilkan semua status');
     $('#dev-toggle-examined').toggleClass('is-showing-all', showExamined);
   }
 
   function refreshList() {
     var $button = $('#dev-refresh-list');
     setButtonBusy($button, true, '<i class="fa fa-spinner fa-spin"></i> Memuat...');
+    $('#dev-list-container').attr('aria-busy', 'true');
     $.ajax({
       url: endpoint('display'),
       type: 'POST',
@@ -100,11 +131,13 @@
       }
     }).done(function (html) {
       $('#dev-list-container').html(html);
+      if ($('#dev-status').val()) { showExamined = true; }
       applyPatientSearch();
     }).fail(function () {
       notify('danger', 'Daftar pasien tidak dapat dimuat.');
     }).always(function () {
       setButtonBusy($button, false);
+      $('#dev-list-container').removeAttr('aria-busy');
     });
   }
 
@@ -118,6 +151,7 @@
     $('#dev-allergy-editor').prop('open', false);
     $('#dev-form-mode').removeClass('is-edit is-copy is-saved is-error').text('Catatan baru');
     $('#dev-save-state').removeClass('is-saved is-edit is-copy is-error').html('<i class="fa fa-pencil-square-o"></i> Draf belum disimpan');
+    clearFormErrors();
   }
 
   function allergySummary(data) {
@@ -167,6 +201,7 @@
 
   function loadHistory() {
     var session = patientSession;
+    $('#dev-history').attr('aria-busy', 'true');
     $.ajax({
       url: endpoint('riwayatpemeriksaan'),
       type: 'POST',
@@ -174,10 +209,36 @@
     }).done(function (html) {
       if (session !== patientSession) { return; }
       $('#dev-history').html(html);
+      if (currentVisitStatus !== 'Belum') {
+        var $latest = $('#dev-history .dev-history-card').first();
+        if ($latest.length) {
+          populateExamRecord($latest);
+          $('#dev-form-mode').removeClass('is-edit is-copy is-saved is-error').addClass('is-readonly').text('Lihat catatan');
+          $('#dev-save-state').removeClass('is-saved is-edit is-copy is-error').html('<i class="fa fa-eye"></i> Catatan ' + $latest.attr('data-date') + ' ' + $latest.attr('data-time'));
+        }
+      }
     }).fail(function (xhr) {
       if (session !== patientSession) { return; }
       $('#dev-history').text(requestError(xhr, 'Riwayat pemeriksaan tidak dapat dimuat.'));
-    });
+    }).always(function () { if (session === patientSession) { $('#dev-history').removeAttr('aria-busy'); } });
+  }
+
+  function populateExamRecord(source) {
+    $form.find('[name=original_tgl_perawatan]').val(source.attr('data-date'));
+    $form.find('[name=original_jam_rawat]').val(source.attr('data-time'));
+    $form.find('[name=tensi]').val(source.attr('data-tensi'));
+    $form.find('[name=suhu_tubuh]').val(source.attr('data-suhu'));
+    $form.find('[name=nadi]').val(source.attr('data-nadi'));
+    $form.find('[name=respirasi]').val(source.attr('data-respirasi'));
+    $form.find('[name=spo2]').val(source.attr('data-spo2'));
+    $form.find('[name=gcs]').val(source.attr('data-gcs'));
+    $form.find('[name=kesadaran]').val(source.attr('data-kesadaran'));
+    $form.find('[name=tinggi]').val(source.attr('data-tinggi'));
+    $form.find('[name=berat]').val(source.attr('data-berat'));
+    $form.find('[name=lingkar_perut]').val(source.attr('data-lingkar'));
+    $form.find('[name=alergi]').val(source.attr('data-alergi'));
+    $form.find('[name=keluhan]').val(source.attr('data-keluhan'));
+    $form.find('[name=pemeriksaan]').val(source.attr('data-pemeriksaan'));
   }
 
   function displayValue(value) {
@@ -278,7 +339,8 @@
       $('#dev-bpjs-prb').text(participantFlag(member.pstPrb, 'Terdaftar', 'Tidak terdaftar'));
       $('#dev-bpjs-prolanis').text(participantFlag(member.pstProl, 'Terdaftar', 'Tidak terdaftar'));
       var prolResult = participantFlag(member.pstProl, '__Y__', '__N__');
-      prolanisStatus = (prolResult === '__Y__') ? 'terdaftar' : (prolResult === '__N__' ? 'tidak' : null);
+      // Non-boolean codes like "DM,HT" are also positive Prolanis membership.
+      prolanisStatus = (prolResult === '__N__') ? 'tidak' : (prolResult === 'Tidak ada informasi') ? null : 'terdaftar';
       evaluateProlanisCandidate();
       $('#dev-patient-card').text(member.noKartu);
       $('#dev-bpjs-state').addClass('is-success').text('Data diterima');
@@ -314,8 +376,10 @@
     $('#dev-prolanis-candidate').toggle(showHt || showDm);
   }
 
-  function openPatient(button) {
+  function openPatient(button, visitState) {
     patientSession += 1;
+    lastPatientTrigger = button && button.length ? button : lastPatientTrigger;
+    currentVisitStatus = visitState && visitState.visit_status ? visitState.visit_status : button.attr('data-status');
     resetExamForm();
     resetPatientHistory();
     $('#dev-history').html('<div class="dev-history-loading"><i class="fa fa-spinner fa-spin"></i> Memuat riwayat pemeriksaan...</div>');
@@ -325,12 +389,38 @@
     $('#dev-patient-poli').text(button.attr('data-poli'));
     $root.find('.dev-list-workspace').hide();
     $('#dev-exam-container').show();
+    if (currentVisitStatus === 'Belum') {
+      setFormWritable(true);
+    } else {
+      setFormWritable(false, currentVisitStatus === 'Berkas Dikirim'
+        ? 'Berkas telah dikirim ke poli. Pilih Edit pada catatan tersimpan untuk melakukan koreksi.'
+        : 'Status kunjungan ' + currentVisitStatus + '; form ditampilkan hanya untuk referensi.');
+    }
     loadPatientInfo();
     loadAllergy();
     loadHistory();
     loadPatientHistory(1);
     loadKandidatProlanis();
     window.scrollTo(0, $('#dev-exam-container').offset().top - 20);
+    setTimeout(function () { $('#dev-exam-title').focus(); }, 50);
+  }
+
+  function requestOpenPatient(button) {
+    lastPatientTrigger = button;
+    api('statuskunjungan', {no_rawat: button.attr('data-no-rawat')}).done(function (response) {
+      if (response.data.needs_arrival_decision) {
+        pendingArrivalButton = button;
+        $('#dev-arrival-patient').text(button.attr('data-patient'));
+        $('#dev-cancel-reason').val('');
+        $('#dev-cancel-reason-wrap, #dev-confirm-cancel').hide();
+        $('#dev-show-cancel-reason, #dev-continue-exam').show();
+        $('#dev-arrival-modal').modal('show');
+        return;
+      }
+      openPatient(button, response.data);
+    }).fail(function (xhr) {
+      notify('danger', requestError(xhr, 'Status kunjungan tidak dapat diperiksa.'));
+    });
   }
 
   function closeExam() {
@@ -342,6 +432,9 @@
     $('#dev-history').empty();
     resetExamForm();
     window.scrollTo(0, $root.offset().top - 20);
+    if (lastPatientTrigger && lastPatientTrigger.length && $.contains(document, lastPatientTrigger[0])) {
+      lastPatientTrigger.focus();
+    }
   }
 
   function resetPatientHistory() {
@@ -365,6 +458,7 @@
     var $list = $('#dev-all-visits');
     $('#dev-history-prev, #dev-history-next').prop('disabled', true);
     $('#dev-history-page').text('Memuat kunjungan...');
+    $list.attr('aria-busy', 'true');
     $list.html('<div class="dev-history-loading"><i class="fa fa-spinner fa-spin"></i> Memuat semua kunjungan...</div>');
     api('riwayatpasien', {no_rawat: noRawat, page: page}).done(function (response) {
       if (session !== patientSession || request !== historyRequest) { return; }
@@ -408,7 +502,7 @@
       if (session !== patientSession || request !== historyRequest) { return; }
       $('#dev-history-page').text('Riwayat belum dimuat');
       historyError($list, requestError(xhr, 'Riwayat pasien tidak dapat dimuat.'), function () { loadPatientHistory(page); });
-    });
+    }).always(function () { if (session === patientSession && request === historyRequest) { $list.removeAttr('aria-busy'); } });
   }
 
   function loadVisitDetail(visit, container, session, request) {
@@ -461,6 +555,10 @@
   }
 
   function copyHistoryRecord(button) {
+    if (currentVisitStatus !== 'Belum' || !formWritable) {
+      notify('warning', 'Riwayat hanya dapat disalin saat kunjungan masih berstatus Belum.');
+      return;
+    }
     if (button.data('session') !== patientSession) { return; }
     var record = button.data('record');
     var visit = button.data('visit');
@@ -526,7 +624,7 @@
     } catch (ignore) {
       return;
     }
-    if (message.action === 'panggil_ack' && message.msgId && pendingCalls[message.msgId]) {
+    if (message.action === 'panggil_ack' && (!message.modul || message.modul === 'pemeriksaan_awal') && message.msgId && pendingCalls[message.msgId]) {
       var pending = pendingCalls[message.msgId];
       clearTimeout(pending.timer);
       delete pendingCalls[message.msgId];
@@ -574,12 +672,19 @@
   function callQueue(button) {
     var patient = button.attr('data-patient');
     var number = button.attr('data-no-reg');
+    var messageId = 'panggil_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    if (button.attr('data-fktp-registered') === '1') {
+      api('antreanpanggil', {no_rawat: button.attr('data-no-rawat'), message_id: messageId}).done(function () {
+        notify('success', 'Panggilan juga dikirim ke Antrean FKTP.');
+      }).fail(function (xhr) {
+        notify('warning', requestError(xhr, 'Panggilan lokal berjalan, tetapi sinkronisasi FKTP gagal.'));
+      });
+    }
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       button.prop('disabled', true);
       speakLocally(patient, number, button, 'Anjungan tidak terhubung.');
       return;
     }
-    var messageId = 'panggil_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menunggu anjungan...');
     pendingCalls[messageId] = {
       button: button,
@@ -598,6 +703,25 @@
     }));
   }
 
+  function sendStatusUpdate(noRawat, status) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) { return; }
+    socket.send(JSON.stringify({
+      action: 'update_status', modul: 'pemeriksaan_ralan_dev',
+      msgId: 'status_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      data: {no_rawat: noRawat, new_status: status, nm_pemanggil: callerName}
+    }));
+  }
+
+  function runFktpAction(button, endpointName, loadingText) {
+    setButtonBusy(button, true, '<i class="fa fa-spinner fa-spin"></i> ' + loadingText);
+    api(endpointName, {no_rawat: button.attr('data-no-rawat')}).done(function (response) {
+      notify('success', response.message);
+      refreshList();
+    }).fail(function (xhr) {
+      notify('danger', requestError(xhr, 'Sinkronisasi Antrean FKTP gagal.'));
+    }).always(function () { setButtonBusy(button, false); });
+  }
+
   $root.on('click', '#dev-toggle-examined', function () { showExamined = !showExamined; applyFilters(); });
   $root.on('click', '#dev-refresh-list', function () { refreshList(); });
   $root.on('input', '#dev-patient-search', applyPatientSearch);
@@ -606,9 +730,52 @@
     $('#dev-date-end').val(initialDateEnd);
     $('#dev-status').val('');
     $('#dev-patient-search').val('');
+    showExamined = false;
     refreshList();
   });
-  $root.on('click', '.dev-select-patient', function () { openPatient($(this)); });
+  $root.on('click', '.dev-select-patient', function () { requestOpenPatient($(this)); });
+  $root.on('click', '#dev-continue-exam', function () {
+    var button = pendingArrivalButton;
+    if (!button) { return; }
+    $('#dev-arrival-modal').modal('hide');
+    openPatient(button, {visit_status: 'Belum'});
+    pendingArrivalButton = null;
+  });
+  $root.on('click', '#dev-show-cancel-reason', function () {
+    $('#dev-cancel-reason-wrap, #dev-confirm-cancel').show();
+    $('#dev-show-cancel-reason, #dev-continue-exam').hide();
+    $('#dev-cancel-reason').focus();
+  });
+  $root.on('click', '#dev-confirm-cancel', function () {
+    var $button = $(this);
+    var patientButton = pendingArrivalButton;
+    if (!patientButton) { return; }
+    var reason = $.trim($('#dev-cancel-reason').val());
+    if (reason.length < 5) {
+      $('#dev-cancel-reason').attr('aria-invalid', 'true').focus();
+      notify('warning', 'Alasan batal minimal 5 karakter.');
+      return;
+    }
+    setButtonBusy($button, true, '<i class="fa fa-spinner fa-spin"></i> Membatalkan...');
+    api('batalperiksa', {no_rawat: patientButton.attr('data-no-rawat'), alasan: reason}).done(function (response) {
+      var fktp = response.data && response.data.fktp;
+      var needsAttention = fktp && ['failed', 'needs_review'].indexOf(fktp.status) !== -1;
+      sendStatusUpdate(patientButton.attr('data-no-rawat'), 'Batal');
+      $('#dev-arrival-modal').modal('hide');
+      pendingArrivalButton = null;
+      notify(needsAttention ? 'warning' : 'success', response.message + (fktp && fktp.message ? ' ' + fktp.message : ''));
+      refreshList();
+    }).fail(function (xhr) {
+      notify('danger', requestError(xhr, 'Kunjungan gagal dibatalkan.'));
+    }).always(function () { setButtonBusy($button, false); });
+  });
+  $('#dev-arrival-modal').on('hidden.bs.modal', function () {
+    $('#dev-cancel-reason').removeAttr('aria-invalid').val('');
+    pendingArrivalButton = null;
+    if (!$('#dev-exam-container').is(':visible') && lastPatientTrigger && lastPatientTrigger.length) {
+      lastPatientTrigger.focus();
+    }
+  });
   $root.on('click', '#dev-retry-patient-info', loadPatientInfo);
   $root.on('click', '#dev-refresh-bpjs', loadBpjsMembership);
   $root.on('click', '.dev-close-exam', closeExam);
@@ -621,7 +788,9 @@
   $('#dev-allergy-editor').on('toggle', function () {
     $('#dev-toggle-allergy').attr('aria-expanded', String(this.open));
   });
-    $form.on('input change', 'input:not([type=hidden]), textarea, select', function () {
+  $form.on('input change', 'input:not([type=hidden]), textarea, select', function () {
+    $(this).removeAttr('aria-invalid').closest('.form-group').find('.dev-field-error').remove();
+    if (!$form.find('[aria-invalid="true"]').length) { $('#dev-form-error').hide().empty(); }
     if (!$('#dev-save-state').hasClass('is-error')) {
       $('#dev-save-state').removeClass('is-saved is-edit is-copy is-error').html('<i class="fa fa-pencil-square-o"></i> Ada perubahan belum disimpan');
     }
@@ -630,6 +799,8 @@
   $root.on('click', '#dev-history-next', function () { if (historyPage < historyPages) { loadPatientHistory(historyPage + 1); } });
   $root.on('click', '.dev-copy-history', function () { copyHistoryRecord($(this)); });
   $root.on('click', '.dev-call-queue', function () { callQueue($(this)); });
+  $root.on('click', '.dev-fktp-add', function () { runFktpAction($(this), 'antreantambah', 'Mengirim...'); });
+  $root.on('click', '.dev-fktp-retry-cancel', function () { runFktpAction($(this), 'antreanbatalulang', 'Mengulang...'); });
   $root.on('change', '.dev-allergy-input', toggleAllergyOtherFields);
 
   $root.on('click', '#dev-save-allergy', function () {
@@ -658,6 +829,11 @@
 
   $form.on('submit', function (event) {
     event.preventDefault();
+    if (!formWritable) {
+      notify('warning', 'Form ini sedang dalam mode lihat saja.');
+      return;
+    }
+    clearFormErrors();
     var $button = $form.find('[type=submit]');
     var session = patientSession;
     $('#dev-save-state').removeClass('is-saved is-edit is-copy is-error').html('<i class="fa fa-spinner fa-spin"></i> Menyimpan...');
@@ -671,6 +847,9 @@
       $form.find('.dev-copied-field').removeClass('dev-copied-field');
       $('#dev-form-mode').removeClass('is-edit is-copy is-error').addClass('is-saved').text('Tersimpan');
       $('#dev-save-state').removeClass('is-edit is-copy is-error').addClass('is-saved').html('<i class="fa fa-check-circle"></i> Tersimpan · ' + response.data.jam_rawat);
+      currentVisitStatus = response.data.visit_status || 'Berkas Dikirim';
+      setFormWritable(false, 'Berkas telah dikirim ke poli. Pilih Edit pada catatan tersimpan untuk melakukan koreksi.');
+      sendStatusUpdate($form.find('[name=no_rawat]').val(), currentVisitStatus);
       loadHistory();
       loadPatientHistory(historyPage);
       refreshList();
@@ -678,33 +857,28 @@
       if (session !== patientSession) { return; }
       $('#dev-save-state').removeClass('is-saved is-edit is-copy').addClass('is-error').html('<i class="fa fa-warning"></i> Belum tersimpan — periksa isian dan coba lagi');
       notify('danger', requestError(xhr, 'Pemeriksaan awal gagal disimpan.'));
+      showFormError(xhr, 'Pemeriksaan awal gagal disimpan.');
     }).always(function () {
       setButtonBusy($button, false);
+      if (!formWritable) { $button.prop('disabled', true); }
     });
   });
 
   $root.on('click', '.dev-edit-exam', function () {
     var button = $(this);
+    var record = button.closest('.dev-history-card');
+    if (['Belum', 'Berkas Dikirim'].indexOf(currentVisitStatus) === -1) {
+      notify('warning', 'Status kunjungan ini tidak mengizinkan koreksi pemeriksaan.');
+      return;
+    }
+    setFormWritable(true);
+    clearFormErrors();
     $('#dev-copy-origin').empty().hide();
     $form.find('.dev-copied-field').removeClass('dev-copied-field');
-    $('#dev-form-mode').removeClass('is-copy is-saved is-error').addClass('is-edit').text('Edit · ' + button.attr('data-time'));
+    $('#dev-form-mode').removeClass('is-copy is-saved is-error').addClass('is-edit').text('Edit · ' + record.attr('data-time'));
     $('#dev-save-state').removeClass('is-saved is-copy is-error').addClass('is-edit').html('<i class="fa fa-pencil"></i> Perubahan belum disimpan');
-    $form.find('[name=original_tgl_perawatan]').val(button.attr('data-date'));
-    $form.find('[name=original_jam_rawat]').val(button.attr('data-time'));
-    $form.find('[name=tensi]').val(button.attr('data-tensi'));
-    $form.find('[name=suhu_tubuh]').val(button.attr('data-suhu'));
-    $form.find('[name=nadi]').val(button.attr('data-nadi'));
-    $form.find('[name=respirasi]').val(button.attr('data-respirasi'));
-    $form.find('[name=spo2]').val(button.attr('data-spo2'));
-    $form.find('[name=gcs]').val(button.attr('data-gcs'));
-    $form.find('[name=kesadaran]').val(button.attr('data-kesadaran'));
-    $form.find('[name=tinggi]').val(button.attr('data-tinggi'));
-    $form.find('[name=berat]').val(button.attr('data-berat'));
-    $form.find('[name=lingkar_perut]').val(button.attr('data-lingkar'));
-    $form.find('[name=alergi]').val(button.attr('data-alergi'));
-    $form.find('[name=keluhan]').val(button.attr('data-keluhan'));
-    $form.find('[name=pemeriksaan]').val(button.attr('data-pemeriksaan'));
-    notify('info', 'Anda sedang mengubah catatan ' + button.attr('data-date') + ' ' + button.attr('data-time') + '.');
+    populateExamRecord(record);
+    notify('info', 'Anda sedang mengubah catatan ' + record.attr('data-date') + ' ' + record.attr('data-time') + '.');
     window.scrollTo(0, $form.offset().top - 20);
   });
 

@@ -16,7 +16,7 @@ function checkHistory($condition, $message)
 
 if ($argc === 1) {
     $responses = [];
-    foreach (['first', 'last', 'clamp', 'detail', 'empty', 'foreign', 'injection', 'denied_list', 'denied_detail', 'invalid', 'identity_umum', 'identity_bpjs', 'identity_nik', 'identity_missing', 'identity_disabled', 'identity_birth', 'identity_configured', 'identity_denied'] as $scenario) {
+    foreach (['first', 'last', 'clamp', 'detail', 'detail_belum', 'empty', 'foreign', 'injection', 'denied_list', 'denied_detail', 'invalid', 'identity_umum', 'identity_bpjs', 'identity_nik', 'identity_missing', 'identity_disabled', 'identity_birth', 'identity_configured', 'identity_denied'] as $scenario) {
         $process = proc_open([PHP_BINARY, __FILE__, $scenario], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         $output = stream_get_contents($pipes[1]);
         $errors = stream_get_contents($pipes[2]);
@@ -36,7 +36,9 @@ if ($argc === 1) {
     checkHistory($first['visits'][0]['no_rawat'] === '2026/09/12/000012', 'History must sort newest first');
     checkHistory(strpos($first['erm_url'], '/RM_A') !== false, 'ERM must use server-derived patient, not posted RM');
     $detail = $responses['detail']['body']['data'];
-    checkHistory(count($detail['records']) === 2 && !$detail['records'][0]['can_copy'] && $detail['records'][1]['can_copy'], 'Show both encounter types; only ralan is copyable');
+    checkHistory(count($detail['records']) === 2 && !$detail['records'][0]['can_copy'] && !$detail['records'][1]['can_copy'], 'Terminal active visit must expose history as read-only');
+    $detailBelum = $responses['detail_belum']['body']['data'];
+    checkHistory(!$detailBelum['records'][0]['can_copy'] && $detailBelum['records'][1]['can_copy'], 'Only ralan history is copyable while active visit is Belum');
     checkHistory($detail['records'][1]['keluhan'] === "Keluhan 'kutip' <b>literal</b>\nBaris dua", 'Clinical text must round-trip intact');
     checkHistory(count($detail['diagnoses']) === 1 && count($detail['procedures']) === 1, 'Clinical context must be returned');
     checkHistory(count($detail['medicines']) === 2, 'Medicines must include all prescriptions');
@@ -58,7 +60,7 @@ if ($argc === 1) {
     checkHistory($responses['identity_birth']['body']['data']['age'] === 'Belum tercatat', 'Invalid birth date must not create a misleading age');
     checkHistory($responses['identity_configured']['body']['data']['is_bpjs'], 'Configured payer code must be recognized');
     checkHistory($responses['identity_denied']['code'] === 403, 'Patient identity must enforce CAP');
-    echo "PASS: 18 endpoint scenarios; history, identity, BPJS routing, CAP, and no writes.\n";
+    echo "PASS: 19 endpoint scenarios; history, copy status gate, identity, BPJS routing, CAP, and no writes.\n";
     exit;
 }
 
@@ -112,6 +114,7 @@ if (strpos($scenario, 'identity_') === 0 && !in_array($scenario, ['identity_umum
 if (in_array($scenario, ['identity_nik', 'identity_missing'], true)) { $pdo->exec("UPDATE pasien SET no_peserta=''"); }
 if ($scenario === 'identity_missing') { $pdo->exec("UPDATE pasien SET no_ktp=''"); }
 if ($scenario === 'identity_birth') { $pdo->exec("UPDATE pasien SET tgl_lahir='0000-00-00'"); }
+if ($scenario === 'detail_belum') { $pdo->exec("UPDATE reg_periksa SET stts='Belum' WHERE no_rawat='2026/09/12/000012'"); }
 
 class HistoryTestAdmin extends \Plugins\Pemeriksaan_Ralan_Dev\Admin
 {
