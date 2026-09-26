@@ -40,6 +40,9 @@ class Admin extends AdminModule
       $this->consumerSecret_pcare = $this->settings->get('pcare.consumerSecret');
       $this->consumerUserKey_pcare = $this->settings->get('pcare.consumerUserKey');
       $this->api_url_pcare = $this->settings->get('pcare.PCareApiUrl');
+      if (!empty($this->api_url_pcare)) {
+          $this->api_url_pcare = rtrim($this->api_url_pcare, '/') . '/';
+      }
       $this->kd_pj_bpjs = $this->settings->get('jkn_mobile.kd_pj_bpjs');
     }
     
@@ -121,7 +124,10 @@ class Admin extends AdminModule
         
         // 6. Handle response
         if ($json === null) {
-            return ['status' => 'error', 'message' => 'Koneksi ke server BPJS PCare terputus'];
+            $curlErr = PcareService::getStatus();
+            $msg = 'Koneksi ke server BPJS PCare terputus';
+            if (!empty($curlErr)) $msg .= ' [' . $curlErr . ']';
+            return ['status' => 'error', 'message' => $msg];
         }
         
         $code = $json['metaData']['code'] ?? '5000';

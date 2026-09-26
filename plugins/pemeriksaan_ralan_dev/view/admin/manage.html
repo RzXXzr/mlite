@@ -1,0 +1,68 @@
+<div id="pemeriksaan_ralan_dev" class="pemeriksaan-dev" data-module="pemeriksaan_ralan_dev">
+  <div id="pemeriksaan-dev-notice" class="dev-notice" aria-live="polite" style="display:none;"></div>
+
+  <section class="dev-list-workspace">
+    <div class="dev-page-head">
+      <div>
+        <span class="dev-eyebrow">PEMERIKSAAN PARAMEDIS <b>DEV</b></span>
+        <h2>Antrean pemeriksaan awal</h2>
+        <p>Pilih pasien, lakukan panggilan, lalu catat tanda vital dan anamnesa awal.</p>
+      </div>
+      <div id="dev-ws-status" class="dev-connection is-pending"><span class="dev-connection-dot"></span><span>Menghubungkan anjungan...</span></div>
+    </div>
+
+    <div class="dev-filter-card">
+      <div class="dev-filter-title"><div><i class="fa fa-filter"></i><strong> Filter kunjungan</strong></div><button type="button" id="dev-reset-filter" class="btn btn-link btn-sm"><i class="fa fa-undo"></i> Reset</button></div>
+      <div class="row pemeriksaan-dev-filter">
+        <div class="col-sm-2 form-group"><label for="dev-date-start">Tanggal awal</label><input id="dev-date-start" class="form-control" type="date" value="{?=date('Y-m-d')?}"></div>
+        <div class="col-sm-2 form-group"><label for="dev-date-end">Tanggal akhir</label><input id="dev-date-end" class="form-control" type="date" value="{?=date('Y-m-d')?}"></div>
+        <div class="col-sm-3 form-group"><label for="dev-status">Status pemeriksaan</label><select id="dev-status" class="form-control"><option value="">Semua status</option><option value="belum">Belum diperiksa</option><option value="selesai">Sudah diperiksa</option></select></div>
+        <div class="col-sm-3 form-group"><label for="dev-patient-search">Cari pasien</label><div class="input-group"><span class="input-group-addon"><i class="fa fa-search"></i></span><input id="dev-patient-search" class="form-control" type="search" placeholder="Nama, RM, atau no. rawat"></div></div>
+        <div class="col-sm-2 form-group dev-filter-action"><button id="dev-refresh-list" class="btn btn-primary btn-block"><i class="fa fa-refresh"></i> Terapkan</button></div>
+      </div>
+    </div>
+
+    <div id="dev-list-container">
+      {include: ../plugins/pemeriksaan_ralan_dev/view/admin/display.html}
+    </div>
+  </section>
+
+  <section id="dev-exam-container" class="dev-exam-workspace" style="display:none;">
+    <div class="dev-exam-head">
+      <button type="button" class="btn btn-default dev-close-exam"><i class="fa fa-arrow-left"></i> Kembali ke antrean</button>
+      <div><span class="dev-eyebrow">FORM PEMERIKSAAN</span><h2>Pemeriksaan awal pasien</h2></div>
+      <span class="dev-workspace-hint"><i class="fa fa-columns"></i> Isi pemeriksaan sambil melihat riwayat</span>
+      <nav class="dev-mobile-jumps" aria-label="Bagian pemeriksaan"><a class="btn btn-default btn-sm" href="#dev-exam-form">Form</a><a class="btn btn-default btn-sm" href="#dev-patient-history">Riwayat pasien</a></nav>
+    </div>
+    <section class="dev-patient-overview" aria-label="Identitas dan kepesertaan pasien">
+    <div class="dev-patient-context">
+      <span class="dev-patient-avatar"><i class="fa fa-user"></i></span>
+      <div class="dev-patient-identity"><span>Pasien terpilih</span><strong id="dev-patient-name">-</strong><small id="dev-patient-rm"></small></div>
+      <div class="dev-patient-destination"><span>Poliklinik</span><strong id="dev-patient-poli">-</strong></div>
+    </div>
+    <dl class="dev-patient-facts">
+      <div><dt>Umur saat ini</dt><dd id="dev-patient-age">Memuat...</dd></div>
+      <div><dt>Tanggal lahir</dt><dd id="dev-patient-birth">Memuat...</dd></div>
+      <div><dt>Golongan darah</dt><dd id="dev-patient-blood">Memuat...</dd></div>
+      <div><dt>Penjamin kunjungan</dt><dd id="dev-patient-payer">Memuat...</dd></div>
+      <div><dt>Nomor kartu peserta</dt><dd id="dev-patient-card">Memuat...</dd></div>
+    </dl>
+    <div id="dev-patient-info-error" class="dev-info-error" role="status" style="display:none;"><span></span> <button type="button" id="dev-retry-patient-info" class="btn btn-default btn-sm">Muat ulang identitas</button></div>
+    <section id="dev-bpjs-panel" class="dev-bpjs-panel" aria-label="Kepesertaan BPJS" style="display:none;">
+      <div class="dev-bpjs-heading"><strong><i class="fa fa-id-card-o"></i> Kepesertaan BPJS</strong><span id="dev-bpjs-state" role="status">Belum diperiksa</span><button type="button" id="dev-refresh-bpjs" class="btn btn-default btn-sm" disabled><i class="fa fa-refresh"></i> Cek ulang</button></div>
+      <dl class="dev-patient-facts dev-bpjs-facts">
+        <div><dt>Provider / FKTP terdaftar</dt><dd id="dev-bpjs-provider">Belum diperiksa</dd><small id="dev-bpjs-provider-code"></small></div>
+        <div><dt>Jenis peserta</dt><dd id="dev-bpjs-type">Belum diperiksa</dd></div>
+        <div><dt>Status kepesertaan</dt><dd id="dev-bpjs-active">Belum diperiksa</dd></div>
+        <div><dt>Peserta PRB</dt><dd id="dev-bpjs-prb">Belum diperiksa</dd></div>
+        <div><dt>Peserta Prolanis</dt><dd id="dev-bpjs-prolanis">Belum diperiksa</dd></div>
+      </dl>
+      <p id="dev-bpjs-message" class="dev-bpjs-message" aria-live="polite"></p>
+    </section>
+    </section>
+    <div class="dev-exam-body">
+      {include: ../plugins/pemeriksaan_ralan_dev/view/admin/form.pemeriksaan.html}
+      {include: ../plugins/pemeriksaan_ralan_dev/view/admin/riwayat.pasien.html}
+    </div>
+  </section>
+</div>

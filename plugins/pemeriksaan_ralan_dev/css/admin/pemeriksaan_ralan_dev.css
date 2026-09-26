@@ -1,0 +1,296 @@
+.pemeriksaan-dev {
+  --dev-primary: #1976d2;
+  --dev-primary-dark: #125a9c;
+  --dev-success: #2d9960;
+  --dev-warning: #d67d25;
+  --dev-danger: #bf4545;
+  --dev-ink: #273444;
+  --dev-muted: #6b7785;
+  --dev-border: #e0e7ef;
+  color: var(--dev-ink);
+}
+
+.pemeriksaan-dev *, .pemeriksaan-dev *::before, .pemeriksaan-dev *::after { box-sizing: border-box; }
+.pemeriksaan-dev .dev-page-head, .pemeriksaan-dev .dev-exam-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 3px 0 18px; }
+.pemeriksaan-dev .dev-page-head h2, .pemeriksaan-dev .dev-exam-head h2 { margin: 0; color: var(--dev-ink); font-size: 25px; font-weight: 600; line-height: 1.2; }
+.pemeriksaan-dev .dev-page-head p { margin: 6px 0 0; color: var(--dev-muted); font-size: 13px; }
+.pemeriksaan-dev .dev-eyebrow { display: block; margin-bottom: 5px; color: var(--dev-primary); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.pemeriksaan-dev .dev-eyebrow b { margin-left: 4px; padding: 2px 5px; border-radius: 3px; background: #35aee2; color: #fff; letter-spacing: .03em; }
+
+.pemeriksaan-dev .dev-connection { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 8px; min-height: 34px; padding: 7px 12px; border: 1px solid var(--dev-border); border-radius: 18px; background: #fff; color: var(--dev-muted); font-size: 12px; font-weight: 600; }
+.pemeriksaan-dev .dev-connection-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ba8b6; box-shadow: 0 0 0 3px rgba(155,168,182,.16); }
+.pemeriksaan-dev .dev-connection.is-online { border-color: #bce4cc; background: #f3fbf6; color: #237748; }
+.pemeriksaan-dev .dev-connection.is-online .dev-connection-dot { background: var(--dev-success); box-shadow: 0 0 0 3px rgba(45,153,96,.16); }
+.pemeriksaan-dev .dev-connection.is-offline { border-color: #edcece; background: #fff7f7; color: #9d3e3e; }
+.pemeriksaan-dev .dev-connection.is-offline .dev-connection-dot { background: var(--dev-danger); box-shadow: 0 0 0 3px rgba(191,69,69,.16); }
+
+.pemeriksaan-dev .dev-filter-card, .pemeriksaan-dev .dev-queue-card, .pemeriksaan-dev #dev-exam-form, .pemeriksaan-dev .dev-history-section { border: 1px solid var(--dev-border); border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(39,52,68,.05); }
+.pemeriksaan-dev .dev-filter-card { padding: 15px 18px 3px; margin-bottom: 15px; }
+.pemeriksaan-dev .dev-filter-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: #526173; font-size: 12px; text-transform: uppercase; }
+.pemeriksaan-dev .dev-filter-title .btn-link { padding: 2px 4px; color: var(--dev-muted); font-size: 11px; text-transform: none; }
+.pemeriksaan-dev .pemeriksaan-dev-filter { margin-bottom: 0; }
+.pemeriksaan-dev .form-group label { color: #4d5b6b; font-size: 12px; font-weight: 600; }
+.pemeriksaan-dev .form-group label > span, .pemeriksaan-dev .dev-required { color: var(--dev-danger); }
+.pemeriksaan-dev .form-control, .pemeriksaan-dev .input-group-addon { height: 40px; border-color: #d6dfe8; box-shadow: none; }
+.pemeriksaan-dev textarea.form-control { height: auto; min-height: 100px; resize: vertical; }
+.pemeriksaan-dev .form-control:focus { border-color: #77afe1; box-shadow: 0 0 0 3px rgba(25,118,210,.10); }
+.pemeriksaan-dev .input-group-addon { min-width: 47px; background: #f7f9fb; color: var(--dev-muted); }
+.pemeriksaan-dev .dev-filter-action { padding-top: 25px; }
+.pemeriksaan-dev .dev-filter-action .btn { height: 40px; font-weight: 600; }
+.pemeriksaan-dev .btn { border-radius: 5px; font-weight: 600; }
+.pemeriksaan-dev .btn-primary { border-color: var(--dev-primary); background: var(--dev-primary); }
+.pemeriksaan-dev .btn-primary:hover, .pemeriksaan-dev .btn-primary:focus { border-color: var(--dev-primary-dark); background: var(--dev-primary-dark); }
+
+.pemeriksaan-dev .dev-summary-row { margin: 0 -6px 15px; }
+.pemeriksaan-dev .dev-summary-row > div { padding: 0 6px; }
+.pemeriksaan-dev .dev-summary-card { display: flex; align-items: center; min-height: 76px; padding: 13px 15px; border: 1px solid var(--dev-border); border-left: 4px solid #839db6; border-radius: 7px; background: #fff; }
+.pemeriksaan-dev .dev-summary-card.is-waiting { border-left-color: var(--dev-warning); }
+.pemeriksaan-dev .dev-summary-card.is-done { border-left-color: var(--dev-success); }
+.pemeriksaan-dev .dev-summary-icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; margin-right: 12px; border-radius: 50%; background: #edf3f8; color: #607d98; font-size: 17px; }
+.pemeriksaan-dev .is-waiting .dev-summary-icon { background: #fff4e7; color: var(--dev-warning); }
+.pemeriksaan-dev .is-done .dev-summary-icon { background: #eaf7ef; color: var(--dev-success); }
+.pemeriksaan-dev .dev-summary-card strong { display: block; font-size: 23px; line-height: 1; }
+.pemeriksaan-dev .dev-summary-card small { display: block; margin-top: 5px; color: var(--dev-muted); }
+
+.pemeriksaan-dev .dev-queue-card { overflow: hidden; }
+.pemeriksaan-dev .dev-queue-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 17px; border-bottom: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-queue-heading h3 { margin: 0; font-size: 15px; font-weight: 700; }
+.pemeriksaan-dev .dev-queue-heading p { margin: 3px 0 0; color: var(--dev-muted); font-size: 11px; }
+.pemeriksaan-dev .dev-queue-heading > small { color: var(--dev-muted); white-space: nowrap; }
+.pemeriksaan-dev .table-responsive { margin-bottom: 0; border: 0; }
+.pemeriksaan-dev .dev-patient-table { min-width: 900px; margin-bottom: 0; }
+.pemeriksaan-dev .dev-patient-table > thead > tr > th { padding: 10px 13px; border-bottom: 1px solid var(--dev-border); background: #f8fafc; color: #657282; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.pemeriksaan-dev .dev-patient-table > tbody > tr > td { padding: 11px 13px; border-top-color: #edf1f5; vertical-align: middle; }
+.pemeriksaan-dev .dev-patient-table > tbody > tr:hover { background: #f8fbfe; }
+.pemeriksaan-dev .dev-col-queue { width: 72px; }
+.pemeriksaan-dev .dev-queue-number { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 33px; padding: 0 7px; border-radius: 6px; background: #e9f3fc; color: var(--dev-primary-dark); font-size: 13px; font-weight: 700; }
+.pemeriksaan-dev .dev-patient-table td > strong { display: block; color: #344353; font-size: 12px; }
+.pemeriksaan-dev .dev-patient-table td > small { display: block; margin-top: 3px; color: var(--dev-muted); font-size: 10px; }
+.pemeriksaan-dev .dev-patient-name { color: var(--dev-ink) !important; font-size: 13px !important; }
+.pemeriksaan-dev .dev-time { color: var(--dev-muted); font-weight: 400; }
+.pemeriksaan-dev .dev-status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.pemeriksaan-dev .dev-status-badge.is-done { background: #e9f7ef; color: #267a4b; }
+.pemeriksaan-dev .dev-status-badge.is-waiting { background: #fff3e5; color: #a45b17; }
+.pemeriksaan-dev .dev-actions { white-space: nowrap; }
+.pemeriksaan-dev .dev-actions .btn { margin-left: 4px; padding: 6px 9px; font-size: 11px; }
+.pemeriksaan-dev .dev-btn-call { border: 1px solid #ccd6e0; background: #fff; color: #536273; }
+.pemeriksaan-dev .dev-btn-call:hover { border-color: #91a3b5; background: #f4f7fa; color: #344759; }
+.pemeriksaan-dev .dev-empty-state { padding: 34px 18px !important; color: var(--dev-muted); text-align: center; }
+.pemeriksaan-dev .dev-empty-state i, .pemeriksaan-dev .dev-empty-state strong, .pemeriksaan-dev .dev-empty-state span { display: block; }
+.pemeriksaan-dev .dev-empty-state i { margin-bottom: 8px; color: #a5b3c2; font-size: 25px; }
+.pemeriksaan-dev .dev-empty-state strong { margin-bottom: 3px; color: #4f5e6e; }
+
+.pemeriksaan-dev .dev-notice { position: fixed; top: 72px; right: 20px; z-index: 1050; width: calc(100% - 40px); max-width: 420px; margin: 0; border-radius: 6px; box-shadow: 0 8px 24px rgba(39,52,68,.18); }
+.pemeriksaan-dev .dev-exam-head { justify-content: flex-start; }
+.pemeriksaan-dev .dev-exam-head .dev-close-exam { margin-right: 5px; border-color: #d2dce5; background: #fff; color: #526173; }
+.pemeriksaan-dev .dev-exam-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; gap: 15px; }
+.pemeriksaan-dev #dev-exam-form { min-width: 0; overflow: visible; }
+.pemeriksaan-dev .dev-patient-context { display: flex; align-items: center; padding: 15px 17px; border-bottom: 1px solid var(--dev-border); background: #f8fbfe; }
+.pemeriksaan-dev .dev-patient-avatar { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 44px; height: 44px; margin-right: 11px; border-radius: 50%; background: #deedf9; color: var(--dev-primary); font-size: 18px; }
+.pemeriksaan-dev .dev-patient-identity { min-width: 0; }
+.pemeriksaan-dev .dev-patient-identity > span, .pemeriksaan-dev .dev-patient-destination > span { display: block; color: var(--dev-muted); font-size: 10px; text-transform: uppercase; }
+.pemeriksaan-dev .dev-patient-identity strong { display: block; overflow: hidden; margin-top: 2px; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.pemeriksaan-dev .dev-patient-identity small { display: block; margin-top: 2px; color: var(--dev-muted); }
+.pemeriksaan-dev .dev-patient-destination { margin-left: auto; padding-left: 16px; text-align: right; }
+.pemeriksaan-dev .dev-patient-destination strong { display: block; margin-top: 2px; }
+.pemeriksaan-dev .dev-allergy-alert { display: flex; gap: 10px; margin: 13px 17px 0; padding: 10px 11px; border: 1px solid #f0d2d2; border-radius: 6px; background: #fff7f7; color: #9e4141; font-size: 11px; }
+.pemeriksaan-dev .dev-allergy-alert strong, .pemeriksaan-dev .dev-allergy-alert span { display: block; }
+.pemeriksaan-dev .dev-allergy-alert strong { margin-bottom: 2px; }
+.pemeriksaan-dev .dev-allergy-icon { padding-top: 2px; font-size: 15px; }
+
+.pemeriksaan-dev .dev-form-section { padding: 17px; border-bottom: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-section-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.pemeriksaan-dev .dev-section-head > span { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 30px; height: 30px; border-radius: 6px; background: #eaf3fb; color: var(--dev-primary); }
+.pemeriksaan-dev .dev-section-head h3 { margin: 0; color: var(--dev-ink); font-size: 14px; font-weight: 700; }
+.pemeriksaan-dev .dev-section-head p { margin: 3px 0 0; color: var(--dev-muted); font-size: 11px; }
+.pemeriksaan-dev .dev-vital-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pemeriksaan-dev .dev-vital-grid .form-group { margin-bottom: 2px; }
+.pemeriksaan-dev .help-block { margin: 5px 0 0; color: #8995a3; font-size: 10px; }
+.pemeriksaan-dev .dev-allergy-section { background: #fcfdfe; }
+.pemeriksaan-dev .dev-form-actions { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 17px; background: #f7f9fb; }
+.pemeriksaan-dev .dev-form-actions > span { color: var(--dev-muted); font-size: 10px; }
+.pemeriksaan-dev .dev-form-actions .btn-lg { padding: 9px 14px; font-size: 13px; }
+
+.pemeriksaan-dev .dev-history-section { overflow: hidden; }
+.pemeriksaan-dev .dev-history-loading { padding: 28px 15px; border: 1px solid var(--dev-border); border-radius: 8px; background: #fff; color: var(--dev-muted); text-align: center; }
+.pemeriksaan-dev .dev-history-loading i { margin-right: 6px; color: var(--dev-primary); }
+.pemeriksaan-dev .dev-history-heading { padding: 14px; border-bottom: 1px solid var(--dev-border); background: #f8fafc; }
+.pemeriksaan-dev .dev-history-heading > div { display: flex; align-items: center; gap: 9px; }
+.pemeriksaan-dev .dev-history-icon { display: inline-flex; align-items: center; justify-content: center; width: 31px; height: 31px; border-radius: 50%; background: #eaf3fb; color: var(--dev-primary); }
+.pemeriksaan-dev .dev-history-heading h3 { margin: 0; font-size: 13px; font-weight: 700; }
+.pemeriksaan-dev .dev-history-heading p { margin: 3px 0 0; color: var(--dev-muted); font-size: 10px; }
+.pemeriksaan-dev .dev-history-list { padding: 10px; }
+.pemeriksaan-dev .dev-history-card { padding: 12px; border: 1px solid var(--dev-border); border-radius: 6px; }
+.pemeriksaan-dev .dev-history-card + .dev-history-card { margin-top: 9px; }
+.pemeriksaan-dev .dev-history-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pemeriksaan-dev .dev-history-card header strong, .pemeriksaan-dev .dev-history-card header small { display: block; }
+.pemeriksaan-dev .dev-history-card header strong { font-size: 11px; }
+.pemeriksaan-dev .dev-history-card header small { margin-top: 3px; color: var(--dev-muted); font-size: 10px; }
+.pemeriksaan-dev .dev-history-actions { white-space: nowrap; }
+.pemeriksaan-dev .dev-history-actions .btn { padding: 3px 6px; font-size: 10px; }
+.pemeriksaan-dev .dev-vital-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.pemeriksaan-dev .dev-vital-pills span { padding: 4px 6px; border-radius: 4px; background: #eef3f7; color: #526275; font-size: 9px; }
+.pemeriksaan-dev .dev-history-notes { margin: 10px -5px 0; padding-top: 9px; border-top: 1px dashed #dbe3eb; }
+.pemeriksaan-dev .dev-history-notes > div { padding: 0 5px; }
+.pemeriksaan-dev .dev-history-notes small { color: #84909d; font-size: 8px; font-weight: 700; }
+.pemeriksaan-dev .dev-history-notes p { margin: 3px 0 0; color: #455568; font-size: 10px; line-height: 1.45; }
+.pemeriksaan-dev .dev-history-empty { padding: 30px 15px; color: var(--dev-muted); text-align: center; }
+.pemeriksaan-dev .dev-history-empty i, .pemeriksaan-dev .dev-history-empty strong, .pemeriksaan-dev .dev-history-empty span { display: block; }
+.pemeriksaan-dev .dev-history-empty i { margin-bottom: 8px; color: #a6b4c2; font-size: 24px; }
+.pemeriksaan-dev .dev-history-empty strong { margin-bottom: 3px; color: #516172; font-size: 12px; }
+.pemeriksaan-dev .dev-history-empty span { font-size: 10px; }
+
+.prd-card { align-items: center; background: #fff; border: 1px solid #ddd; color: #333; display: flex; margin-bottom: 15px; min-height: 100px; padding: 20px; }
+.prd-card:hover, .prd-card:focus { border-color: #3c8dbc; text-decoration: none; }
+.prd-card .fa { color: #3c8dbc; font-size: 34px; margin-right: 16px; }
+.prd-card small { display: block; margin-top: 5px; }
+
+.pemeriksaan-dev .dev-exam-head { flex-wrap: wrap; }
+.pemeriksaan-dev .dev-longitudinal { min-width: 0; position: sticky; top: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 100px); border: 1px solid var(--dev-border); border-radius: 10px; background: #fff; overflow: hidden; }
+.pemeriksaan-dev .dev-longitudinal-head, .pemeriksaan-dev .dev-history-toolbar, .pemeriksaan-dev .dev-history-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.pemeriksaan-dev .dev-longitudinal-head h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.pemeriksaan-dev .dev-longitudinal-head p { margin: 6px 0 0; color: var(--dev-muted); }
+.pemeriksaan-dev .dev-history-help { margin: 16px 0; color: #526173; }
+.pemeriksaan-dev .dev-visit-card { border: 1px solid var(--dev-border); border-radius: 7px; margin-bottom: 12px; overflow: hidden; }
+.pemeriksaan-dev .dev-visit-toggle { display: block; width: 100%; padding: 15px; border: 0; background: #f7f9fc; color: var(--dev-ink); text-align: left; }
+.pemeriksaan-dev .dev-visit-toggle:hover, .pemeriksaan-dev .dev-visit-toggle:focus { background: #eaf3fb; }
+.pemeriksaan-dev .dev-visit-toggle strong, .pemeriksaan-dev .dev-visit-toggle span { display: block; }
+.pemeriksaan-dev .dev-visit-toggle span { margin-top: 5px; color: #526173; font-size: 13px; }
+.pemeriksaan-dev .dev-visit-detail { padding: 15px; border-top: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-visit-detail h4 { margin: 18px 0 9px; font-size: 14px; font-weight: 700; }
+.pemeriksaan-dev .dev-visit-detail h4:first-child { margin-top: 0; }
+.pemeriksaan-dev .dev-long-record { padding: 14px; border: 1px solid var(--dev-border); border-radius: 6px; margin-bottom: 12px; }
+.pemeriksaan-dev .dev-long-record header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.pemeriksaan-dev .dev-long-record .dev-vital-pills { margin: 12px 0; }
+.pemeriksaan-dev .dev-long-record .dev-vital-pills span { font-size: 12px; }
+.pemeriksaan-dev .dev-soap-notes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.pemeriksaan-dev .dev-soap-notes p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 5px 0 0; }
+.pemeriksaan-dev .dev-history-pagination { padding-top: 12px; border-top: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-copy-origin { padding: 12px 17px; background: #fff4de; color: #785114; border-bottom: 1px solid #efd7a6; white-space: pre-wrap; }
+.pemeriksaan-dev .dev-copied-field { border-color: #d99b32; background: #fffbf3; }
+
+/* Single-page examination workspace */
+.pemeriksaan-dev .dev-workspace-hint { margin-left: auto; color: var(--dev-muted); font-size: 12px; }
+.pemeriksaan-dev .dev-patient-overview { margin-bottom: 18px; border: 1px solid var(--dev-border); border-radius: 10px; background: #fff; overflow: hidden; }
+.pemeriksaan-dev .dev-patient-overview > .dev-patient-context { background: #fff; padding: 14px 18px; }
+.pemeriksaan-dev .dev-patient-facts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; padding: 14px 18px; margin: 0; }
+.pemeriksaan-dev .dev-patient-facts dt { margin-bottom: 5px; font-size: 11px; color: #6b7785; font-weight: 500; }
+.pemeriksaan-dev .dev-patient-facts dd { font-size: 13px; font-weight: 600; color: #344353; margin: 0; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-patient-facts small { display: block; margin-top: 4px; color: #718096; font-size: 11px; }
+.pemeriksaan-dev .dev-bpjs-panel { border-top: 1px solid #dce8f0; background: #f7fbff; }
+.pemeriksaan-dev .dev-bpjs-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 18px 0; }
+.pemeriksaan-dev .dev-bpjs-heading > strong { font-size: 12px; color: #356482; }
+.pemeriksaan-dev .dev-bpjs-heading > span { padding: 3px 8px; border-radius: 12px; font-size: 11px; background: #eaf0f6; color: #607386; }
+.pemeriksaan-dev .dev-bpjs-heading > span.is-success { background: #e4f3e9; color: #2e714c; }
+.pemeriksaan-dev .dev-bpjs-heading > span.is-error { background: #fff1dc; color: #8b5c19; }
+.pemeriksaan-dev .dev-bpjs-heading > button { margin-left: auto; font-size: 11px; }
+.pemeriksaan-dev .dev-bpjs-facts { grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); }
+.pemeriksaan-dev .dev-bpjs-message { padding: 0 18px 12px; margin: 0; color: #65778a; font-size: 11px; }
+.pemeriksaan-dev .dev-info-error { padding: 10px 18px; color: #9e6018; background: #fff8eb; font-size: 12px; }
+.pemeriksaan-dev .dev-patient-identity strong { white-space: normal; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-exam-body { gap: 20px; padding-bottom: 72px; }
+.pemeriksaan-dev .dev-form-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 18px 20px 10px; }
+.pemeriksaan-dev .dev-form-heading h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.pemeriksaan-dev .dev-draft-badge { border: 1px solid #dce5ef; border-radius: 20px; padding: 5px 10px; font-size: 11px; color: #54677c; background: #f5f8fc; }
+.pemeriksaan-dev .dev-form-section { padding: 18px 20px; }
+.pemeriksaan-dev .dev-section-head { margin-bottom: 16px; }
+.pemeriksaan-dev #dev-exam-form .form-group label { display: block; font-size: 13px; margin-bottom: 7px; }
+.pemeriksaan-dev #dev-exam-form .form-group label small { float: right; color: #718096; font-weight: 400; }
+.pemeriksaan-dev #dev-exam-form .form-control { border-radius: 6px; height: 42px; color: #273444; font-size: 14px; padding: 9px 11px; }
+.pemeriksaan-dev #dev-exam-form .form-control::placeholder { color: #8795a6; opacity: 1; font-size: 13px; }
+.pemeriksaan-dev .dev-input-unit { position: relative; }
+.pemeriksaan-dev .dev-input-unit input { width: 100%; padding-right: 54px !important; }
+.pemeriksaan-dev .dev-input-unit input[name=gcs] { padding-right: 11px !important; }
+.pemeriksaan-dev .dev-input-unit > span { position: absolute; right: 11px; top: 12px; font-size: 12px; color: #718096; pointer-events: none; }
+.pemeriksaan-dev .dev-consciousness { grid-column: 1 / -1; }
+.pemeriksaan-dev .dev-subsection-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; color: #718096; margin: 18px 0 12px; padding-top: 16px; border-top: 1px dashed var(--dev-border); }
+.pemeriksaan-dev .dev-anamnesis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pemeriksaan-dev .dev-anamnesis-grid .form-group { margin-bottom: 0; }
+.pemeriksaan-dev #dev-exam-form textarea.form-control { height: auto; min-height: 110px; line-height: 1.6; }
+.pemeriksaan-dev #dev-exam-form .help-block { color: #718096; font-size: 11px; }
+.pemeriksaan-dev .dev-allergy-alert { margin: 4px 20px 0; align-items: center; font-size: 12px; background: #fff8ef; color: #8a591e; border-color: #f1d7b0; }
+.pemeriksaan-dev .dev-allergy-alert > div { min-width: 0; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-allergy-alert .btn { margin-left: auto; flex: 0 0 auto; color: inherit; }
+.pemeriksaan-dev .dev-allergy-alert.is-clear { background: #f0f8f4; color: #316c4d; border-color: #d3e8dc; }
+.pemeriksaan-dev .dev-allergy-alert.is-loading { background: #f5f7fa; color: #657282; border-color: var(--dev-border); }
+.pemeriksaan-dev details > summary { cursor: pointer; }
+.pemeriksaan-dev .dev-allergy-section summary { font-size: 13px; font-weight: 600; color: #4d5b6b; }
+.pemeriksaan-dev .dev-allergy-section summary > span { margin-left: 8px; font-size: 11px; font-weight: 400; color: #718096; }
+.pemeriksaan-dev .dev-allergy-section .dev-section-content { padding-top: 16px; }
+.pemeriksaan-dev .dev-form-actions { position: sticky; bottom: 52px; z-index: 10; background: #fff; border-top: 1px solid var(--dev-border); border-radius: 0 0 8px 8px; box-shadow: 0 -5px 18px rgba(39,52,68,.05); padding: 13px 20px; }
+.pemeriksaan-dev .dev-form-actions > span { font-size: 12px; }
+.pemeriksaan-dev .dev-form-actions > button { min-height: 42px; white-space: nowrap; }
+.pemeriksaan-dev .dev-longitudinal-head { padding: 16px; flex: 0 0 auto; border-bottom: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-longitudinal-head .btn { font-size: 11px; }
+.pemeriksaan-dev .dev-history-scroll { min-height: 160px; overflow-y: auto; padding: 14px; scrollbar-gutter: stable; }
+.pemeriksaan-dev .dev-current-records { margin-bottom: 18px; }
+.pemeriksaan-dev .dev-current-records > summary { font-weight: 600; font-size: 13px; padding: 0 0 10px; color: #34495e; }
+.pemeriksaan-dev .dev-current-records > summary span { display: block; margin-top: 4px; font-weight: 400; font-size: 11px; color: #718096; }
+.pemeriksaan-dev .dev-current-records .dev-history-section { border: 0; box-shadow: none; border-radius: 0; }
+.pemeriksaan-dev .dev-current-records .dev-history-heading { display: none; }
+.pemeriksaan-dev .dev-current-records .dev-history-list { padding: 0; }
+.pemeriksaan-dev .dev-history-card header { flex-wrap: wrap; }
+.pemeriksaan-dev .dev-history-card header strong { font-size: 12px; }
+.pemeriksaan-dev .dev-history-card header small { font-size: 11px; }
+.pemeriksaan-dev .dev-history-notes small { font-size: 10px; }
+.pemeriksaan-dev .dev-history-notes p { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-vital-pills span { font-size: 11px; }
+.pemeriksaan-dev .dev-history-divider { margin: 12px 0; padding-top: 14px; border-top: 1px solid var(--dev-border); }
+.pemeriksaan-dev .dev-history-divider strong { font-size: 13px; }
+.pemeriksaan-dev .dev-history-divider span { display: block; font-size: 11px; color: #718096; margin-top: 4px; }
+.pemeriksaan-dev .dev-visit-toggle { padding: 12px 34px 12px 12px; position: relative; }
+.pemeriksaan-dev .dev-visit-toggle strong { font-size: 13px; }
+.pemeriksaan-dev .dev-visit-toggle span { font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-visit-chevron { position: absolute; right: 14px; top: 15px; transition: transform .15s ease; }
+.pemeriksaan-dev .dev-visit-toggle[aria-expanded=true] .dev-visit-chevron { transform: rotate(180deg); }
+.pemeriksaan-dev .dev-visit-toggle[aria-expanded=true] { background: #edf5fc; color: #125a9c; }
+.pemeriksaan-dev .dev-visit-detail { padding: 12px; }
+.pemeriksaan-dev .dev-long-record { padding: 12px; margin-bottom: 10px; }
+.pemeriksaan-dev .dev-long-record header strong { font-size: 12px; font-weight: 500; color: #526173; line-height: 1.6; }
+.pemeriksaan-dev .dev-long-record header .btn { font-size: 12px; padding: 7px 10px; }
+.pemeriksaan-dev .dev-soap-notes { font-size: 13px; }
+.pemeriksaan-dev .dev-soap-notes strong { color: #62748a; font-size: 11px; text-transform: uppercase; }
+.pemeriksaan-dev .dev-visit-detail ul { padding-left: 18px; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.pemeriksaan-dev .dev-history-pagination { flex: 0 0 auto; padding: 12px; gap: 6px; background: #f8fafc; }
+.pemeriksaan-dev .dev-history-pagination span { font-size: 11px; color: #62748a; }
+.pemeriksaan-dev .dev-copy-origin { margin: 4px 20px 10px; padding: 10px 12px; border: 1px solid #efd7a6; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+.pemeriksaan-dev .dev-mobile-jumps { display: none; }
+.pemeriksaan-dev summary:focus-visible, .pemeriksaan-dev button:focus-visible, .pemeriksaan-dev a:focus-visible { outline: 2px solid #1976d2; outline-offset: 3px; }
+
+@media (max-width: 991px) {
+  .pemeriksaan-dev .dev-patient-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pemeriksaan-dev .dev-exam-body { grid-template-columns: minmax(0, 1fr); }
+  .pemeriksaan-dev .dev-longitudinal { position: static; max-height: none; }
+  .pemeriksaan-dev .dev-history-scroll { max-height: 680px; }
+  .pemeriksaan-dev .dev-mobile-jumps { display: flex; gap: 8px; }
+  .pemeriksaan-dev .dev-workspace-hint { display: none; }
+  .pemeriksaan-dev .dev-vital-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+  .pemeriksaan-dev .dev-patient-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pemeriksaan-dev .dev-page-head, .pemeriksaan-dev .dev-exam-head { align-items: flex-start; flex-direction: column; }
+  .pemeriksaan-dev .dev-page-head h2, .pemeriksaan-dev .dev-exam-head h2 { font-size: 21px; }
+  .pemeriksaan-dev .dev-connection { width: 100%; }
+  .pemeriksaan-dev .dev-summary-row > div + div { margin-top: 8px; }
+  .pemeriksaan-dev .dev-filter-action { padding-top: 0; }
+  .pemeriksaan-dev .dev-queue-heading { align-items: flex-start; flex-direction: column; }
+  .pemeriksaan-dev .dev-vital-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pemeriksaan-dev .dev-anamnesis-grid { grid-template-columns: minmax(0, 1fr); }
+  .pemeriksaan-dev .dev-patient-context { flex-wrap: wrap; gap: 10px; }
+  .pemeriksaan-dev .dev-form-section { padding: 16px; }
+  .pemeriksaan-dev .dev-form-actions { bottom: 58px; }
+  .pemeriksaan-dev .dev-history-pagination .btn { font-size: 11px; }
+  .pemeriksaan-dev .dev-patient-context { align-items: flex-start; }
+  .pemeriksaan-dev .dev-patient-destination { display: block; text-align: left; padding-left: 0; margin-left: 0; }
+  .pemeriksaan-dev .dev-form-actions { align-items: stretch; flex-direction: column; }
+  .pemeriksaan-dev .dev-form-actions > div, .pemeriksaan-dev .dev-form-actions .btn { width: 100%; }
+  .pemeriksaan-dev .dev-form-actions .btn + .btn { margin-top: 7px; }
+  .pemeriksaan-dev .dev-soap-notes { grid-template-columns: minmax(0, 1fr); }
+  .pemeriksaan-dev .dev-history-toolbar { align-items: stretch; flex-direction: column; width: 100%; }
+  .pemeriksaan-dev .dev-notice { top: 12px; right: 12px; width: calc(100% - 24px); }
+}
+
+@media (max-width: 399px) {
+  .pemeriksaan-dev .dev-vital-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,0 +1,10 @@
+<div class="row">
+  {loop: $sub_modules}
+  <div class="col-md-6">
+    <a class="prd-card" href="{$value.url}">
+      <i class="fa fa-{$value.icon}"></i>
+      <span><strong>{$value.name}</strong><small>{$value.desc}</small></span>
+    </a>
+  </div>
+  {/loop}
+</div>

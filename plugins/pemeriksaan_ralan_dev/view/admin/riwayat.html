@@ -1,0 +1,16 @@
+<section class="dev-history-section">
+  <div class="dev-history-heading"><div><span class="dev-history-icon"><i class="fa fa-history"></i></span><div><h3>Riwayat pemeriksaan awal</h3><p>Catatan yang tersimpan pada kunjungan ini.</p></div></div></div>
+  {if: $records}
+  <div class="dev-history-list">
+    {loop: $records}
+    <article class="dev-history-card">
+      <header><div><strong>{$value.tgl_perawatan} · {$value.jam_rawat}</strong><small><i class="fa fa-user-circle"></i> {$value.nama}</small></div>{if: $value.can_edit}<div class="dev-history-actions"><button type="button" class="btn btn-default btn-sm dev-edit-exam" data-date="{$value.tgl_perawatan}" data-time="{$value.jam_rawat}" data-tensi="{$value.tensi}" data-suhu="{$value.suhu_tubuh}" data-nadi="{$value.nadi}" data-respirasi="{$value.respirasi}" data-spo2="{$value.spo2}" data-gcs="{$value.gcs}" data-kesadaran="{$value.kesadaran}" data-tinggi="{$value.tinggi}" data-berat="{$value.berat}" data-lingkar="{$value.lingkar_perut}" data-alergi="{$value.alergi}" data-keluhan="{$value.keluhan}" data-pemeriksaan="{$value.pemeriksaan}"><i class="fa fa-pencil"></i> Edit</button><button type="button" class="btn btn-link btn-sm text-danger dev-delete-exam" data-date="{$value.tgl_perawatan}" data-time="{$value.jam_rawat}"><i class="fa fa-trash"></i> Hapus</button></div>{/if}</header>
+      <div class="dev-vital-pills"><span><b>TD</b> {$value.tensi}</span><span><b>Suhu</b> {$value.suhu_tubuh}°C</span><span><b>Nadi</b> {$value.nadi}</span><span><b>RR</b> {$value.respirasi}</span><span><b>SpO2</b> {$value.spo2}%</span><span><b>GCS</b> {$value.gcs}</span></div>
+      <div class="row dev-history-notes"><div class="col-md-6"><small>KELUHAN / ANAMNESA</small><p>{$value.keluhan}</p></div><div class="col-md-6"><small>TEMUAN AWAL</small><p>{if: $value.pemeriksaan}{$value.pemeriksaan}{else}<em>Tidak ada catatan.</em>{/if}</p></div></div>
+    </article>
+    {/loop}
+  </div>
+  {else}
+  <div class="dev-history-empty"><i class="fa fa-file-text-o"></i><strong>Belum ada pemeriksaan tersimpan</strong><span>Catatan pertama akan muncul di sini setelah disimpan.</span></div>
+  {/if}
+</section>

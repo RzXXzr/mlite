@@ -27,6 +27,9 @@ class Admin extends AdminModule
     $this->consumerSecret = $this->settings->get('pcare.consumerSecret');
     $this->consumerUserKey = $this->settings->get('pcare.consumerUserKey');
     $this->api_url = $this->settings->get('pcare.PCareApiUrl');
+    if (!empty($this->api_url)) {
+        $this->api_url = rtrim($this->api_url, '/') . '/';
+    }
     $this->api_url_antrol = 'https://apijkn.bpjs-kesehatan.go.id/antreanfktp/';
     $this->api_url_icare = 'https://apijkn.bpjs-kesehatan.go.id/wsIHS/api/pcare/validate';
     if ($this->api_url !== null && strpos($this->api_url, 'dev') !== false) { 
@@ -732,12 +735,17 @@ class Admin extends AdminModule
               },
               "response": ' . $decompress . '}';
       } else {
+          $curlError = PcareService::getStatus();
+          $httpCode  = PcareService::getLastHttpCode();
+          $detail = 'ADA KESALAHAN ATAU SAMBUNGAN KE SERVER BPJS TERPUTUS.';
+          if ($curlError) $detail .= ' [CURL: ' . addslashes($curlError) . ']';
+          if ($httpCode)  $detail .= ' [HTTP: ' . $httpCode . ']';
           echo '{
               "metaData": {
                 "code": "5000",
                 "message": "ERROR"
               },
-              "response": "ADA KESALAHAN ATAU SAMBUNGAN KE SERVER BPJS TERPUTUS."}';
+              "response": "' . $detail . '"}';
       }
 
       exit();
