@@ -1,0 +1,7 @@
+-- Salin/jalankan sebagai SQL hanya setelah backup dan verifikasi SHOW COLUMNS pada database target.
+-- Diperlukan untuk instalasi lama yang enum reg_periksa.stts belum memuat Berkas Dikirim.
+ALTER TABLE `reg_periksa`
+  MODIFY `stts` enum(
+    'Belum','Sudah','Batal','Berkas Diterima','Berkas Dikirim',
+    'Dirujuk','Meninggal','Dirawat','Pulang Paksa'
+  ) DEFAULT NULL;
