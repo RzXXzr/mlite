@@ -136,6 +136,7 @@
                 </ul>                
               {/if}
             {/if}
+            {? \Systems\Lib\Event::call('rawat_jalan.antrol_button', [$value]) ?}
             {if: $responsivevoice == 'true'}<button type="button" name="button" class="btn btn-xs btn-primary panggil" data-nm_pasien="{?=strtolower($value.nm_pasien)?}" data-nm_poli="{?=strtolower($value.nm_poli)?}" data-no_reg="{?=strtolower($value.no_reg)?}"><i class="fa fa-bullhorn"></i><span class="hidden-xs hidden-sm"> Panggil</span></button>{/if}
           </td>
           <td class="edit" data-no_rawat="{$value.no_rawat}" style="white-space: nowrap;">{$value.nm_poli}</td>
@@ -629,6 +630,7 @@
   // $(".data-table-title").html('<h3 style="display:inline;float:left;margin-top:0;" class="hidden-xs">Total: ' + t + '</h3>');
   //event.stopPropagation();
 </script>
+{? \Systems\Lib\Event::call('rawat_jalan.antrol_scripts') ?}
 <script type="text/javascript">
    $(function () {
        $('.tanggal').datetimepicker({

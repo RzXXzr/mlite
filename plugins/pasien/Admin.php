@@ -73,10 +73,10 @@ class Admin extends AdminModule
       $keluarga = array('AYAH','IBU','ISTRI','SUAMI','SAUDARA','ANAK');
       if (isset($_POST['no_rkm_medis'])){
         $pasien = $this->db('pasien')->where('no_rkm_medis', $_POST['no_rkm_medis'])->oneArray();
-        $pasien['propinsi'] = $this->db('propinsi')->where('kd_prop', $pasien['kd_prop'])->oneArray();
-        $pasien['kabupaten'] = $this->db('kabupaten')->where('kd_kab', $pasien['kd_kab'])->oneArray();
-        $pasien['kecamatan'] = $this->db('kecamatan')->where('kd_kec', $pasien['kd_kec'])->oneArray();
-        $pasien['kelurahan'] = $this->db('kelurahan')->where('kd_kel', $pasien['kd_kel'])->oneArray();
+        $pasien['propinsi'] = $this->db('propinsi')->where('kd_prop', $pasien['kd_prop'])->oneArray() ?: ['nm_prop' => ''];
+        $pasien['kabupaten'] = $this->db('kabupaten')->where('kd_kab', $pasien['kd_kab'])->oneArray() ?: ['nm_kab' => ''];
+        $pasien['kecamatan'] = $this->db('kecamatan')->where('kd_kec', $pasien['kd_kec'])->oneArray() ?: ['nm_kec' => ''];
+        $pasien['kelurahan'] = $this->db('kelurahan')->where('kd_kel', $pasien['kd_kel'])->oneArray() ?: ['nm_kel' => ''];
         echo $this->draw('form.html', [
           'pasien' => $pasien,
           'penjab' => $penjab,
