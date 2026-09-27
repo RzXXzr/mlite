@@ -1,0 +1,51 @@
+<div class="btn-group btn-group-justified" style="margin-bottom:20px;">
+  {loop: $nav}
+  <a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>
+  {/loop}
+</div>
+<div class="row">
+  <div class="col-md-5">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">Simpan mapping dokter</h3></div>
+      <div class="panel-body">
+        <p class="help-block">Kode dokter harus sesuai mapping PCare yang digunakan pada request booking. Tidak ada panggilan keluar ke BPJS dari halaman ini.</p>
+        <form action="{$save_url}" method="POST">
+          <div class="form-group"><label>Dokter lokal mLITE</label>
+            <select class="form-control" name="kd_dokter" id="kd_dokter" required>
+              <option value="">Pilih dokter lokal</option>
+              {loop: $dokter}<option value="{$value.kd_dokter}">{$value.kd_dokter} — {$value.nm_dokter}</option>{/loop}
+            </select>
+          </div>
+          <div class="form-group"><label>Kode dokter PCare</label><input class="form-control" maxlength="30" name="kd_dokter_pcare" id="kd_dokter_pcare" required placeholder="Kode dari mapping BPJS"></div>
+          <div class="form-group"><label>Nama dokter PCare</label><input class="form-control" maxlength="100" name="nm_dokter_pcare" id="nm_dokter_pcare" required placeholder="Nama dokter pada PCare"></div>
+          <button class="btn btn-primary" type="submit"><i class="fa fa-save"></i> Simpan mapping</button>
+          <button class="btn btn-default" type="reset">Bersihkan</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="panel panel-info">
+      <div class="panel-heading"><h3 class="panel-title">Daftar mapping dokter</h3></div>
+      <div class="panel-body">
+        <form class="form-inline pull-right" method="GET" action="{$search_url}" style="margin-bottom:12px;">
+          <div class="input-group"><input name="q" class="form-control" value="{$query}" placeholder="Cari kode atau nama"><span class="input-group-btn"><button class="btn btn-default"><i class="fa fa-search"></i></button></span></div>
+        </form>
+        <p class="help-block">Klik <em>Ubah</em> untuk mengisi form dari baris yang dipilih. Maksimum 200 hasil ditampilkan.</p>
+        <div class="table-responsive">
+          <table class="table table-striped table-condensed"><thead><tr><th>Dokter lokal</th><th>Kode PCare</th><th>Nama PCare</th><th></th></tr></thead><tbody>
+          {if: $mappings}{loop: $mappings}<tr><td>{$value.kd_dokter}<br><small>{$value.nm_dokter}</small></td><td><code>{$value.kd_dokter_pcare}</code></td><td>{$value.nm_dokter_pcare}</td><td><button type="button" class="btn btn-xs btn-default mapping-edit" data-local="{$value.kd_dokter}" data-code="{$value.kd_dokter_pcare}" data-name="{$value.nm_dokter_pcare}">Ubah</button></td></tr>{/loop}{else}<tr><td colspan="4" class="text-center">Belum ada mapping.</td></tr>{/if}
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+$(document).on('click', '.mapping-edit', function () {
+  $('#kd_dokter').val($(this).data('local')).trigger('change');
+  $('#kd_dokter_pcare').val($(this).data('code'));
+  $('#nm_dokter_pcare').val($(this).data('name')).focus();
+  window.scrollTo(0, 0);
+});
+</script>

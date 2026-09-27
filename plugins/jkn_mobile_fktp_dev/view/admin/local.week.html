@@ -1,0 +1,128 @@
+<style>
+.jkn-local-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.jkn-local-nav a{flex:1;min-width:145px}
+.jkn-local-week .panel{margin-bottom:12px}.jkn-local-week .panel-body{padding:14px 16px}
+.jkn-local-week .alert{padding:10px 14px;margin-bottom:12px}
+.jkn-week-tools{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px}.jkn-week-tools .form-group{margin:0}
+.jkn-local-grid{table-layout:fixed;min-width:1120px;margin:0;font-size:12px}
+.jkn-local-grid th{background:#f5f5f5;text-align:center;padding:7px 6px;white-space:nowrap}
+.jkn-local-grid th:first-child{width:145px}.jkn-local-grid th:nth-child(2){width:76px}
+.jkn-local-grid td{vertical-align:top;padding:6px}.jkn-local-grid td:first-child{background:#fafafa;vertical-align:middle}
+.jkn-shift-label{display:inline-block;min-width:54px;padding:4px 7px;border-radius:4px;text-align:center;font-weight:bold}
+.jkn-shift-pagi{color:#31708f;background:#d9edf7}.jkn-shift-sore{color:#8a6d3b;background:#fcf8e3}
+.jkn-local-slot{border:1px solid #46b8da;border-radius:5px;background:#f0f9ff;padding:7px;min-height:148px}
+.jkn-local-slot strong{display:block;line-height:1.3;margin-bottom:3px}.jkn-local-slot code{font-size:11px}
+.jkn-local-slot select{font-size:11px;height:30px;padding:4px 6px;margin-bottom:5px}
+.jkn-quota{display:flex;align-items:center;gap:5px;margin-top:8px}.jkn-quota input{width:67px;height:30px;padding:4px 6px}
+.jkn-empty{color:#999;text-align:center;padding-top:16px}.jkn-closed{color:#8a6d3b;background:#fcf8e3;border-radius:4px;padding:6px;line-height:1.35}
+.jkn-local-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px}
+</style>
+
+<nav class="jkn-local-nav" aria-label="Menu JKN Dev">
+  {loop: $nav}<a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>{/loop}
+</nav>
+
+<div class="jkn-local-week">
+  <div class="alert alert-info">
+    <strong><i class="fa fa-database"></i> Jadwal lokal Mobile JKN — tanpa akses API BPJS.</strong>
+    Halaman ini menampilkan checklist yang sudah pernah disimpan dari Generate 1 Minggu atau referensi BPJS sebelumnya.
+    Dokter dan kapasitas dapat diganti langsung dari kandidat BPJS yang sudah tersimpan; halaman ini tidak mengambil ulang API BPJS.
+    Booking lama tetap pada dokter semula, sedangkan perubahan berlaku untuk booking berikutnya.
+  </div>
+
+  <div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-calendar"></i> Periode tujuh hari</h3></div>
+    <div class="panel-body">
+      <form method="GET" action="{$local_week.view_url}" class="jkn-week-tools">
+        <div class="form-group">
+          <label for="local-week-start">Mulai tanggal</label>
+          <input type="date" id="local-week-start" name="start" value="{$local_week.start_date}" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> Tampilkan</button>
+        <a href="{$local_week.previous_url}" class="btn btn-default"><i class="fa fa-chevron-left"></i> 7 hari sebelumnya</a>
+        <a href="{$local_week.today_url}" class="btn btn-default">Hari ini</a>
+        <a href="{$local_week.next_url}" class="btn btn-default">7 hari berikutnya <i class="fa fa-chevron-right"></i></a>
+      </form>
+      <p class="help-block" style="margin-bottom:0">Periode {$local_week.start_date} s.d. {$local_week.end_date}. Referensi terakhir: {$local_week.latest_fetched}; perubahan lokal terakhir: {$local_week.latest_saved}.</p>
+    </div>
+  </div>
+
+  <form method="POST" action="{$local_week.save_url}" id="local-capacity-form">
+    <input type="hidden" name="schedule_csrf" value="{$local_week.csrf}">
+    <input type="hidden" name="start_date" value="{$local_week.start_date}">
+    <input type="hidden" name="form_complete" value="1">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">Grid poli dan shift</h3></div>
+      <div class="panel-body" style="overflow-x:auto;padding:0">
+        <table class="table table-bordered jkn-local-grid">
+          <thead><tr><th>Poli</th><th>Shift</th>{loop: $local_week.days}<th>{$value.label}<br><small>{$value.short}</small></th>{/loop}</tr></thead>
+          <tbody>
+          {if: $local_week.rows}
+          {loop: $local_week.rows}
+          <tr>
+            <td><strong>{$value.kodepoli} · {$value.namapoli}</strong><br><small>Poli lokal: {$value.kd_poli}</small></td>
+            <td><span class="jkn-shift-label jkn-shift-{$value.shift}">{$value.shift_label}</span></td>
+            {loop: $value.cells}
+            <td>
+              {if: $value.has_schedule}
+              <div class="jkn-local-slot">
+                <label class="sr-only">Dokter pengganti</label>
+                <small>Kode: <code class="jkn-doctor-code">{$value.doctor_code}</code></small><br>
+                <small>Jam: <code class="jkn-practice">{$value.practice}</code></small>
+                <label class="jkn-quota">Kapasitas
+                  <input type="number" class="form-control" name="{$value.quota_name}" value="{$value.quota}" min="1" max="999" step="1" required>
+                </label>
+                <small><strong>Ganti dokter:</strong></small>
+                <select class="form-control jkn-doctor-select" name="{$value.assignment_name}" required>
+                  {loop: $value.doctor_options}
+                  <option value="{$value.id}" data-code="{$value.doctor_code}" data-practice="{$value.practice}" data-quota="{$value.quota}" {if: $value.selected}selected{/if}>{$value.doctor} · {$value.practice}</option>
+                  {/loop}
+                </select>
+              </div>
+              {else}
+                {if: $value.closed_reason}<div class="jkn-closed"><i class="fa fa-calendar-times-o"></i> Tutup/libur<br><small>{$value.closed_reason}</small></div>
+                {else}<div class="jkn-empty">{if: $value.has_data}Tidak aktif{else}Belum ada data lokal{/if}</div>{/if}
+              {/if}
+            </td>
+            {/loop}
+          </tr>
+          {/loop}
+          {else}
+          <tr><td colspan="9" class="text-center text-muted" style="padding:30px">
+            Belum ada jadwal aktif yang tersimpan pada periode ini. Gunakan Generate 1 Minggu untuk mengambil referensi BPJS dan menyimpan checklist.
+          </td></tr>
+          {/if}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="jkn-local-actions">
+      <button type="submit" class="btn btn-primary btn-lg" {if: !$local_week.rows}disabled{/if}><i class="fa fa-save"></i> Simpan Dokter &amp; Kapasitas</button>
+      <a href="{$local_week.generate_url}" class="btn btn-default btn-lg"><i class="fa fa-cloud-download"></i> Ambil / Atur Referensi BPJS</a>
+      <span class="text-muted">Pilih dokter pengganti pada tanggal/shift yang diinginkan. Hanya kandidat dari snapshot BPJS tersimpan yang dapat dipilih.</span>
+    </div>
+  </form>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('local-capacity-form');
+  if (!form) return;
+  var dirty = false;
+  form.addEventListener('change', function (event) {
+    var select = event.target.closest('.jkn-doctor-select');
+    if (!select) return;
+    var option = select.options[select.selectedIndex];
+    var slot = select.closest('.jkn-local-slot');
+    slot.querySelector('.jkn-doctor-code').textContent = option.getAttribute('data-code') || '';
+    slot.querySelector('.jkn-practice').textContent = option.getAttribute('data-practice') || '';
+    slot.querySelector('input[type="number"]').value = option.getAttribute('data-quota') || '1';
+  });
+  form.addEventListener('input', function () { dirty = true; });
+  form.addEventListener('submit', function () { dirty = false; });
+  window.addEventListener('beforeunload', function (event) {
+    if (!dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+}());
+</script>

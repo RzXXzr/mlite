@@ -1,0 +1,19 @@
+<div class="btn-group btn-group-justified" style="margin-bottom:20px;">
+  {loop: $nav}
+  <a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>
+  {/loop}
+</div>
+<div class="panel panel-default">
+  <div class="panel-heading"><a class="btn btn-xs btn-default pull-right" href="{$back_url}">&larr; Kembali ke log</a><h3 class="panel-title">Detail log #{$log.id}</h3></div>
+  <div class="panel-body">
+    <div class="alert alert-info">Tidak ada password, token, NIK, nomor kartu, atau body request yang disimpan pada audit ini.</div>
+    <table class="table table-bordered">
+      <tr><th>Waktu</th><td>{$log.created_at}</td></tr>
+      <tr><th>ID request</th><td><code>{$log.request_id}</code></td></tr>
+      <tr><th>Aksi / endpoint</th><td>{$log.action} — <code>{$log.method} {$log.endpoint}</code></td></tr>
+      <tr><th>No. rawat</th><td>{$log.no_rawat}</td></tr>
+      <tr><th>Hasil</th><td>{$log.outcome} (HTTP {$log.http_code}, metadata {$log.metadata_code})</td></tr>
+      <tr><th>Pesan</th><td>{$log.message}</td></tr>
+    </table>
+  </div>
+</div>

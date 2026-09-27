@@ -1,0 +1,70 @@
+<div class="btn-group btn-group-justified" style="margin-bottom:20px;">
+  {loop: $nav}
+  <a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>
+  {/loop}
+</div>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="pull-right"><a class="btn btn-xs btn-default" href="{$logs.manage_url}"><i class="fa fa-cog"></i> Konfigurasi</a></div>
+    <h3 class="panel-title">Log transaksi JKN Mobile FKTP Dev</h3>
+  </div>
+  <div class="panel-body">
+    <div class="alert alert-info">
+      Log hanya menyimpan ringkasan aman: tanpa password, token, NIK, nomor kartu, maupun body request.
+    </div>
+    <form method="GET" action="{$logs.filter_url}" class="form-inline">
+      <div class="form-group"><label>Tanggal</label><input type="date" class="form-control" name="date" value="{$logs.date}"></div>
+      <div class="form-group"><label>Aksi</label>
+        <select name="action" class="form-control">
+          <option value="">Semua</option>
+          <option value="auth"{if: $logs.action == 'auth'} selected{/if}>Auth</option>
+          <option value="patient"{if: $logs.action == 'patient'} selected{/if}>Peserta</option>
+          <option value="booking"{if: $logs.action == 'booking'} selected{/if}>Antrean</option>
+          <option value="status"{if: $logs.action == 'status'} selected{/if}>Status antrean</option>
+          <option value="participant_queue"{if: $logs.action == 'participant_queue'} selected{/if}>Sisa peserta</option>
+          <option value="cancel"{if: $logs.action == 'cancel'} selected{/if}>Batal antrean</option>
+          <option value="antrol_add"{if: $logs.action == 'antrol_add'} selected{/if}>BPJS Antrol Add</option>
+          <option value="antrol_panggil"{if: $logs.action == 'antrol_panggil'} selected{/if}>BPJS Antrol Panggil</option>
+          <option value="antrol_batal"{if: $logs.action == 'antrol_batal'} selected{/if}>BPJS Antrol Batal</option>
+          <option value="integrity_cleanup"{if: $logs.action == 'integrity_cleanup'} selected{/if}>Pembersihan data yatim</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Hasil</label>
+        <select name="outcome" class="form-control">
+          <option value="">Semua</option>
+          <option value="success"{if: $logs.outcome == 'success'} selected{/if}>Sukses</option>
+          <option value="rejected"{if: $logs.outcome == 'rejected'} selected{/if}>Ditolak</option>
+          <option value="error"{if: $logs.outcome == 'error'} selected{/if}>Error</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit"><i class="fa fa-filter"></i> Filter</button>
+    </form>
+    <hr>
+    <p><strong>{$logs.total}</strong> transaksi, halaman {$logs.page} dari {$logs.pages}.</p>
+    <div class="table-responsive">
+      <table class="table table-striped table-condensed">
+        <thead><tr><th>Waktu</th><th>Aksi</th><th>Endpoint</th><th>Rawat</th><th>Hasil</th><th>HTTP/meta</th><th>Pesan</th><th></th></tr></thead>
+        <tbody>
+        {if: $logs.list}
+        {loop: $logs.list}
+          <tr>
+            <td>{$value.created_at}</td><td>{$value.action}</td>
+            <td><code>{$value.method} {$value.endpoint}</code></td>
+            <td>{$value.no_rawat}</td>
+            <td>{if: $value.outcome == 'success'}<span class="label label-success">sukses</span>{elseif: $value.outcome == 'rejected'}<span class="label label-warning">ditolak</span>{else}<span class="label label-danger">error</span>{/if}</td>
+            <td>{$value.http_code}/{$value.metadata_code}</td><td>{$value.message}</td>
+            <td><a class="btn btn-xs btn-default" href="{$value.detail_url}">Detail</a></td>
+          </tr>
+        {/loop}
+        {else}
+          <tr><td colspan="8" class="text-center">Tidak ada log untuk filter ini.</td></tr>
+        {/if}
+        </tbody>
+      </table>
+    </div>
+    <ul class="pager">
+      <li class="{if: $logs.page <= 1}disabled{/if}"><a href="{$logs.previous_url}">&larr; Sebelumnya</a></li>
+      <li class="{if: $logs.page >= $logs.pages}disabled{/if}"><a href="{$logs.next_url}">Berikutnya &rarr;</a></li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,82 @@
+<style>
+.jkn-ref-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.jkn-ref-nav a{flex:1;min-width:145px}
+.jkn-reference{padding-bottom:12px}.jkn-reference .panel{margin-bottom:12px}.jkn-reference .panel-body{padding:14px 16px}
+.jkn-reference .alert{margin-bottom:12px;padding:10px 14px}.jkn-reference p{margin:0 0 10px}.jkn-reference .help-block{margin:8px 0 0}
+.jkn-reference .policy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.jkn-reference .policy-card{display:block;border:1px solid #ddd;border-radius:6px;padding:12px;font-weight:normal}
+.jkn-reference .blocked{background:#f3f4f6;color:#747b84}.jkn-reference table td{vertical-align:middle}
+.jkn-reference .select-slot{width:20px;height:20px}.jkn-reference .reference-table{min-width:850px}
+.jkn-reference .actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+</style>
+<nav class="jkn-ref-nav" aria-label="Menu JKN Dev">{loop: $nav}<a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>{/loop}</nav>
+<div class="jkn-reference">
+  <div class="alert alert-info"><strong>Aktivasi jadwal dari BPJS</strong><br>Ambil referensi, centang dokter/jam yang menerima Mobile JKN, lalu simpan ke tabel khusus Dev. Jadwal BPJS dan master mLITE tidak berubah. Untuk 7 hari gunakan <a href="{$reference.week_url}">Generate 1 Minggu</a>.</div>
+  {if: $reference.error}<div class="alert alert-danger" role="alert">{$reference.error}<br>Konfigurasi aktif tidak diubah.</div>{/if}
+  <div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title">1. Ambil referensi jadwal BPJS</h3></div>
+    <div class="panel-body">
+      <form method="POST" action="{$reference.fetch_url}" class="actions">
+        <input type="hidden" name="schedule_csrf" value="{$reference.csrf}">
+        <label for="reference-date">Tanggal pelayanan</label>
+        <input type="date" id="reference-date" name="date" value="{$reference.date}" min="{$reference.min_date}" max="{$reference.max_date}" required class="form-control" style="width:auto">
+        <input type="hidden" name="form_complete" value="1">
+        <button class="btn btn-info"><i class="fa fa-refresh"></i> Ambil / Perbarui Referensi BPJS</button>
+      </form>
+      <p class="help-block">Sumber: <code>{$reference.source}</code><br>Terakhir diambil: {$reference.fetched_at}. Pengambilan hanya membaca referensi; centang dan simpan untuk menerapkannya.</p>
+      <p class="text-muted">Snapshot formulir berlaku 30 menit. Checklist di tabel tetap aktif sampai admin mengubahnya. Kredensial memakai Consumer ID, Secret dan User Key Antrol pada <a href="{$reference.settings_url}">Pengaturan</a>, bukan token Postman.</p>
+    </div>
+  </div>
+  <form method="POST" action="{$reference.save_url}" id="bpjs-activation-form">
+    <input type="hidden" name="schedule_csrf" value="{$reference.csrf}">
+    <input type="hidden" name="date" value="{$reference.date}">
+    <input type="hidden" name="snapshot" value="{$reference.nonce}">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">2. Poli tujuan lokal</h3></div>
+      <div class="panel-body"><p>Pilih satu tujuan lokal per kode BPJS. Contoh: 001 → UMU, 002 → GIGI. Pilihan ini juga digunakan tanggal aktif lainnya; RUJ/RUJGG khusus rujukan dan tidak dapat diaktifkan.</p>
+        <div class="policy-grid">{loop: $reference.polis}<label class="policy-card {if: $value.blocked}blocked{/if}">
+          <input type="checkbox" name="allowed[]" value="{$value.kd_poli}" {if: $value.selected}checked{/if} {if: $value.blocked}disabled{/if}>
+          <strong>{$value.kd_poli} · {$value.nm_poli}</strong><br><small>BPJS {$value.kd_poli_pcare}{if: $value.blocked} — rujukan / tidak aktif{/if}</small>
+        </label>{/loop}</div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">3. Centang jadwal yang diterima — {$reference.date}</h3></div>
+      <div class="panel-body">
+        <p>Jam, dokter dan kapasitas berasal dari BPJS. Pilih satu dokter per poli/shift; jadwal beririsan ditolak. Pagi: mulai sebelum 12:00; sore: mulai 12:00 atau sesudahnya. Kuota lokal khusus booking Dev.</p>
+        {if: $reference.closures}<div class="alert alert-warning"><strong><i class="fa fa-calendar-times-o"></i> Tanggal/poli tanpa jadwal bukan error kredensial.</strong><ul style="margin:6px 0 0;padding-left:20px">{loop: $reference.closures}<li><strong>{$value.kodepoli}</strong>: {$value.reason}</li>{/loop}</ul></div>{/if}
+        {if: !$reference.can_save}<div class="alert alert-warning">Ambil/perbarui referensi untuk mengaktifkan tombol Simpan. Daftar tersimpan di bawah hanya untuk dilihat.</div>{/if}
+        <div class="table-responsive"><table class="table table-striped reference-table"><thead><tr><th>Aktif</th><th>Poli BPJS</th><th>Dokter BPJS</th><th>Mapping dokter lokal</th><th>Shift</th><th>Jam praktik</th><th>Kapasitas</th></tr></thead><tbody>
+        {if: $reference.rows}{loop: $reference.rows}<tr class="{if: $value.blocked}blocked{/if}">
+          <td><input type="checkbox" class="select-slot" name="selected[]" value="{$value.id}" aria-label="Aktifkan {$value.namadokter} {$value.jampraktek}" {if: $value.selected}checked{/if} {if: $value.blocked || !$reference.can_save}disabled{/if}></td>
+          <td><code>{$value.kodepoli}</code><br>{$value.namapoli}</td>
+          <td>{$value.namadokter}<br><code>{$value.kodedokter}</code></td>
+          <td>{$value.local_doctor}<br><small class="text-danger">{$value.reason}</small></td>
+          <td>{$value.shift}</td><td><code>{$value.jampraktek}</code></td><td>{$value.quota}</td>
+        </tr>{/loop}{else}<tr><td colspan="7">{if: $reference.has_snapshot}BPJS mengembalikan daftar jadwal kosong untuk tanggal ini. Menyimpan akan menutup penerimaan tanggal ini.{else}Belum ada referensi. Pilih tanggal lalu klik Ambil Referensi BPJS.{/if}</td></tr>{/if}
+        </tbody></table></div>
+        <div class="actions"><button type="submit" class="btn btn-primary" {if: !$reference.can_save}disabled{/if}><i class="fa fa-save"></i> Simpan checklist tanggal ini</button><span>Tidak dicentang = ditolak oleh endpoint Dev</span></div>
+        <p class="help-block">Tidak memilih jadwal apa pun akan menutup tanggal ini. Booking yang sudah ada tidak dibatalkan atau dipindahkan. Pilihan tanggal BPJS lainnya tetap disimpan.</p>
+      </div>
+    </div>
+    <input type="hidden" name="form_complete" value="1">
+  </form>
+  <div class="panel panel-info"><div class="panel-heading"><h3 class="panel-title">Jadwal aktif tersimpan untuk API — {$reference.date}</h3></div><div class="panel-body">
+    <div class="table-responsive"><table class="table table-striped"><thead><tr><th>Poli lokal</th><th>kodepoli</th><th>Dokter</th><th>kodedokter</th><th>jampraktek</th><th>Kuota</th></tr></thead><tbody>
+    {if: $reference.preview}{loop: $reference.preview}<tr><td>{$value.kd_poli} · {$value.nm_poli}</td><td>{$value.kd_poli_pcare}</td><td>{$value.nm_dokter}</td><td>{$value.kd_dokter_pcare}</td><td>{$value.jampraktek}</td><td>{$value.kuota}</td></tr>{/loop}{else}<tr><td colspan="6">Belum ada checklist aktif untuk tanggal ini, atau mapping lokal sudah berubah.</td></tr>{/if}
+    </tbody></table></div><p class="help-block">Gunakan kode/jam dari tabel ini di Postman. Daftar dokter di aplikasi BPJS tidak berubah oleh checkbox lokal.</p>
+  </div></div>
+  <div class="panel panel-default"><div class="panel-heading">Tanggal yang pernah disetujui</div><div class="panel-body">
+    {loop: $reference.dates}<a class="btn btn-default btn-sm" style="margin:4px" href="{$value.url}">{$value.date} · {$value.count} aktif · {$value.saved_at}</a>{/loop}
+  </div></div>
+</div>
+<script>
+(function(){
+  var form=document.getElementById('bpjs-activation-form'), dirty=false;
+  form.addEventListener('change',function(){dirty=true;});
+  form.addEventListener('submit',function(e){
+    if(!form.querySelector('[name="selected[]"]:checked')&&!window.confirm('Tutup penerimaan untuk tanggal ini? Booking lama tidak dibatalkan.')){e.preventDefault();return;}
+    dirty=false;
+  });
+  window.addEventListener('beforeunload',function(e){if(dirty){e.preventDefault();e.returnValue='';}});
+})();
+</script>

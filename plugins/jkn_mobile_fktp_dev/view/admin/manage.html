@@ -1,0 +1,243 @@
+<style>
+.jkn-manage{padding-bottom:12px}.jkn-manage .jkn-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.jkn-manage .jkn-nav a{flex:1;min-width:145px}.jkn-manage .panel{margin-bottom:12px}
+.jkn-manage .panel-body{padding:14px 16px}.jkn-manage .alert{padding:10px 14px;margin-bottom:12px}
+.jkn-manage .form-group{margin-bottom:12px}.jkn-manage .help-block{margin:6px 0 0}
+.jkn-manage .quick-links p{margin:0 0 8px}
+</style>
+<div class="jkn-manage">
+<div class="jkn-nav">
+  {loop: $nav}
+  <a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>
+  {/loop}
+</div>
+
+<!-- PCare Credential Status Alert -->
+{if: !$pcare_configured}
+<div class="alert alert-warning alert-dismissible fade in" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong><i class="fa fa-exclamation-triangle"></i> PCare Belum Dikonfigurasi</strong><br>
+  Modul JKN Mobile FKTP Dev membaca kredensial BPJS Antrol dari modul <strong>PCare</strong>. 
+  Pastikan modul PCare sudah diatur dan field <code>Cons ID</code>, <code>Secret Key</code>, dan <code>User Key Antrol</code> sudah diisi.
+  <a href="{$links.pcare}" class="btn btn-sm btn-warning" style="margin-top:8px;">
+    <i class="fa fa-cog"></i> Buka pengaturan PCare
+  </a>
+</div>
+{/if}
+
+{if: $pcare_configured}
+<div class="alert alert-info alert-dismissible fade in" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong><i class="fa fa-check-circle"></i> PCare Terkonfigurasi</strong><br>
+  Kredensial BPJS Antrol dibaca dari pengaturan PCare. Anda dapat mengubah URL Antrol di bawah jika diperlukan.
+  <ul style="margin-top:8px; margin-bottom:0;">
+    <li><strong>URL yang digunakan:</strong> <code>{$antrol_config.antrol_url}</code></li>
+    <li><strong>Consumer ID:</strong> <code>{if: $antrol_config.antrol_consumer_id}***{else}(tidak diisi){/if}</code></li>
+    <li><strong>User Key Antrol:</strong> <code>{if: $antrol_config.antrol_user_key}***{else}(tidak diisi){/if}</code></li>
+  </ul>
+</div>
+{/if}
+
+<div class="row">
+  <div class="col-md-8">
+    <form action="{$links.save}" method="POST">
+      
+      <!-- Section 1: Core Authentication -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><i class="fa fa-lock"></i> Autentikasi Mobile JKN</h3>
+        </div>
+        <div class="panel-body">
+          <p class="text-muted">Kredensial untuk aplikasi Mobile JKN mengakses endpoint dev ini.</p>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Username Mobile JKN <span class="text-danger">*</span></label>
+                <input required class="form-control" name="jkn_mobile_fktp_dev[username]" value="{$settings.username}">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Password Mobile JKN <span class="text-danger">*</span></label>
+                <input required type="password" class="form-control" name="jkn_mobile_fktp_dev[password]" value="{$settings.password}">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Token Secret (Kunci Enkripsi Token) <span class="text-danger">*</span></label>
+            <input required class="form-control" name="jkn_mobile_fktp_dev[token_secret]" value="{$settings.token_secret}" placeholder="Dibuat otomatis saat instalasi">
+            <p class="help-block"><i class="fa fa-info-circle"></i> Ubah untuk mencabut semua token yang sedang aktif. Aplikasi harus re-auth.</p>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>TTL Token (60–3600 detik)</label>
+                <input type="number" min="60" max="3600" class="form-control" name="jkn_mobile_fktp_dev[token_ttl_seconds]" value="{$settings.token_ttl_seconds}">
+                <p class="help-block">Durasi validitas token. Default: 300 detik (5 menit).</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Hari Booking di Depan (0–90)</label>
+                <input type="number" min="0" max="90" class="form-control" name="jkn_mobile_fktp_dev[booking_open_days]" value="{$settings.booking_open_days}">
+                <p class="help-block">Berapa hari ke depan pasien bisa booking. Default: 30 hari.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Antrean Format & General -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><i class="fa fa-list-ol"></i> Format Antrean & Informasi</h3>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Format Nomor Antrean</label>
+                <input class="form-control" name="jkn_mobile_fktp_dev[queue_format]" value="{$settings.queue_format}" placeholder="{kodepoli}-{nomor}">
+                <p class="help-block">Gunakan variabel: <code>{kodepoli}</code>, <code>{nomor}</code>. Contoh: <code>IGD-001</code></p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label>Kode Penjamin JKN</label>
+                <select class="form-control" name="jkn_mobile_fktp_dev[payer_code]">
+                  {loop: $settings.penjab}
+                    <option value="{$value.kd_pj}"{if: $settings.payer_code == $value.kd_pj} selected{/if}>{$value.png_jawab} ({$value.kd_pj})</option>
+                  {/loop}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Allowed Origin (CORS, Opsional)</label>
+            <input class="form-control" name="jkn_mobile_fktp_dev[allowed_origin]" value="{$settings.allowed_origin}" placeholder="https://example.go.id">
+            <p class="help-block">Domain yang diizinkan mengakses endpoint ini. Kosong berarti tidak mengirim header CORS.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Patient region contract -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><i class="fa fa-map-marker"></i> Wilayah Pasien Baru</h3>
+        </div>
+        <div class="panel-body">
+          <div class="alert alert-info" style="margin-bottom:0">
+            <strong><i class="fa fa-info-circle"></i> Mengikuti payload BPJS.</strong><br>
+            Provinsi, kabupaten/kota, kecamatan, dan kelurahan pasien diambil dari kode serta nama wilayah yang dikirim ke <code>POST /peserta</code>.
+            Sistem mencocokkannya secara tepat ke master wilayah mLITE. Data yang tidak ditemukan atau ambigu akan ditolak; tidak ada lagi wilayah default maupun fallback ke baris pertama.
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Notifikasi Keluar BPJS Antrol -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><i class="fa fa-send-o"></i> Sinkronisasi Keluar BPJS Antrol</h3>
+        </div>
+        <div class="panel-body">
+          <div class="alert alert-info">
+            <strong><i class="fa fa-info-circle"></i> Cara Kerja:</strong><br>
+            Saat fitur aktif, BPJS harus menerima <code>antrean/add</code> atau <code>antrean/batal</code> sebelum transaksi lokal disahkan.
+            HTTP gagal, respons rusak, atau metadata penolakan BPJS akan membatalkan perubahan lokal dan dicatat pada Log Transaksi.
+          </div>
+
+          <div class="form-group">
+            <label>URL Antrol BPJS (Override Opsional)</label>
+            <input class="form-control" name="jkn_mobile_fktp_dev[antrol_url]" value="{$settings.antrol_url}" placeholder="https://apijkn.bpjs-kesehatan.go.id/antreanfktp/">
+            <p class="help-block">
+              <strong>Kosongkan</strong> untuk auto-detect dari URL PCare. 
+              Jika PCare URL berisi <code>-dev</code>, akan gunakan endpoint dev BPJS; selain itu endpoint produksi.
+            </p>
+          </div>
+
+          <div class="alert alert-warning">
+            <strong><i class="fa fa-exclamation-triangle"></i> Kredensial Antrol dari PCare</strong><br>
+            Consumer ID, Secret, dan User Key Antrol dibaca dari pengaturan modul <strong>PCare</strong>.
+            {if: $pcare_configured}
+              ✓ PCare terkonfigurasi. Lihat ringkasan di atas.
+            {else}
+              ✗ PCare belum dikonfigurasi. Atur PCare terlebih dahulu.
+            {/if}
+          </div>
+
+          <div class="form-group">
+            <label style="font-size: 16px; font-weight: bold;">
+              <input type="checkbox" name="jkn_mobile_fktp_dev[antrol_enabled]" value="1" {if: $settings.antrol_enabled == '1'}checked{/if}>
+              <span class="text-primary">Aktifkan Notifikasi Keluar ke BPJS</span>
+            </label>
+            <div class="help-block">
+              <i class="fa fa-warning"></i> <strong>Penting:</strong> Hanya aktifkan jika:
+              <ul style="margin-top:8px;">
+                <li>PCare sudah dikonfigurasi dengan kredensial non-produksi BPJS (jika testing)</li>
+                <li>Atau kredensial produksi sudah verifikasi (jika production ready)</li>
+                <li>URL Antrol sudah dipastikan benar</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="form-group">
+        <button class="btn btn-primary btn-lg" type="submit">
+          <i class="fa fa-save"></i> Simpan Konfigurasi
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Right Sidebar: Status & Quick Links -->
+  <div class="col-md-4 quick-links">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-dashboard"></i> Status Integrasi</h3></div>
+      <div class="panel-body">
+        <div class="row text-center" style="margin-bottom:15px;">
+          <div class="col-xs-4">
+            <div style="font-size:28px;color:#337ab7;font-weight:bold;">{$stats.poli}</div>
+            <small class="text-muted">Poli Dipetakan</small>
+          </div>
+          <div class="col-xs-4">
+            <div style="font-size:28px;color:#337ab7;font-weight:bold;">{$stats.dokter}</div>
+            <small class="text-muted">Dokter Dipetakan</small>
+          </div>
+          <div class="col-xs-4">
+            <div style="font-size:28px;color:#337ab7;font-weight:bold;">{$stats.logs_today}</div>
+            <small class="text-muted">Request Hari Ini</small>
+          </div>
+        </div>
+        <hr>
+        <p><a class="btn btn-default btn-block btn-sm" href="{$links.poli}"><i class="fa fa-building-o"></i> Mapping Poli</a></p>
+        <p><a class="btn btn-default btn-block btn-sm" href="{$links.doctor}"><i class="fa fa-user-md"></i> Mapping Dokter</a></p>
+      </div>
+    </div>
+    <div class="panel panel-info">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-calendar"></i> Kelola Jadwal</h3></div>
+      <div class="panel-body">
+        <p><a class="btn btn-info btn-block" href="{$links.schedule}"><i class="fa fa-calendar-o"></i> Atur Jadwal Per Hari</a></p>
+        <p><a class="btn btn-info btn-block" href="{$links.week}"><i class="fa fa-calendar-check-o"></i> Generate 1 Minggu</a></p>
+        <div class="help-block" style="margin-top:12px;"><strong>Workflow:</strong>
+          <ol style="margin-top:6px;margin-bottom:0;padding-left:18px;">
+            <li>Pastikan PCare &amp; Antrol kredensial siap</li>
+            <li>Buka "Atur Jadwal Per Hari" atau "Generate 1 Minggu"</li>
+            <li>Ambil referensi BPJS dan pilih dokter/jam yang diterima</li>
+            <li>Simpan aktivasi, lalu uji di Postman atau Mobile JKN</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-bar-chart"></i> Monitoring</h3></div>
+      <div class="panel-body">
+        <p><a class="btn btn-default btn-block" href="{$links.logs}"><i class="fa fa-list"></i> Lihat Log Transaksi</a></p>
+        <p class="help-block">Pantau semua request ke endpoint dev, termasuk error notifikasi outbound ke BPJS.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

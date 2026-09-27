@@ -1,0 +1,119 @@
+<style>
+.jkn-online-nav {display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.jkn-online-nav a {flex:1;min-width:140px}
+.jkn-schedule .panel-heading {display:flex;align-items:center;justify-content:space-between;gap:12px}
+.jkn-schedule .policy-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:10px}
+.jkn-schedule .policy-card {border:1px solid #dce1e6;border-radius:6px;padding:14px;display:block;font-weight:normal;margin:0}
+.jkn-schedule .policy-card input {margin-right:8px}
+.jkn-schedule .policy-card.blocked {background:#f3f4f6;color:#707780}
+.jkn-schedule .shift-table {min-width:1100px}
+.jkn-schedule .shift-table td {vertical-align:top;min-width:110px}
+.jkn-schedule .shift-table .doctor {min-width:230px}
+.jkn-schedule .shift-table input,.jkn-schedule .shift-table select {width:100%}
+.jkn-schedule .shift-table .remove-cell {min-width:45px}
+.jkn-schedule .preview-tag {display:inline-block;padding:4px 8px;background:#e9f5fa;color:#205d77;border-radius:4px}
+</style>
+<nav class="jkn-online-nav" aria-label="Menu JKN Dev">
+  {loop: $nav}<a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>{/loop}
+</nav>
+<div class="jkn-schedule">
+  <div class="alert alert-info"><strong>Penerimaan Mobile JKN</strong><br>Pilih tujuan rawat jalan dan dokter yang bertugas. Jadwal ini mengatur penerimaan di mLITE; daftar dokter di aplikasi BPJS tidak berubah otomatis. Salin jam dan kode dokter sesuai referensi BPJS.</div>
+  {if: $schedule.error}<div class="alert alert-danger" role="alert">{$schedule.error} Form belum disimpan.</div>{/if}
+  {if: $schedule.revision == 0}<div class="alert alert-warning">Belum ada pengaturan penerimaan tersimpan. Booking baru ditutup sampai poli dan shift dipilih.</div>{/if}
+  <form method="POST" action="{$schedule.save_url}" id="online-schedule-form">
+    <input type="hidden" name="schedule_csrf" value="{$schedule.csrf}">
+    <input type="hidden" name="revision" value="{$schedule.revision}">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">1. Poli yang menerima pasien</h3><span class="text-muted">Satu tujuan lokal per kode BPJS</span></div>
+      <div class="panel-body">
+        <p>Untuk kode 001, pilih <strong>UMU</strong> bila tujuan pendaftarannya Poli Umum. RUJ/RUJGG terkunci untuk layanan rujukan. Poli yang tidak dicentang tidak menerima booking baru.</p>
+        <div class="policy-grid">
+        {loop: $schedule.polis}
+          <label class="policy-card {if: $value.blocked}blocked{/if}">
+            <input type="checkbox" name="allowed[]" value="{$value.kd_poli}" {if: $value.selected}checked{/if} {if: $value.blocked}disabled{/if}>
+            <strong>{$value.kd_poli} · {$value.nm_poli}</strong><br><small>BPJS {$value.kd_poli_pcare}{if: $value.blocked} — rujukan / tidak aktif{/if}</small>
+          </label>
+        {/loop}
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title">2. Dokter jaga pagi & sore</h3><button type="button" id="add-shift" class="btn btn-sm btn-info"><i class="fa fa-plus"></i> Tambah shift</button></div>
+      <div class="panel-body">
+        <p>Satu dokter untuk setiap poli/hari/shift. Hari tanpa baris shift berarti libur. Jam dan kuota diisi sesuai layanan yang diterima. Kuota dihitung khusus booking Dev, tidak termasuk antrean manual.</p>
+        <p class="text-muted"><strong>Tanggal khusus (opsional)</strong> menggantikan seluruh jadwal mingguan poli pada tanggal itu. Isi kedua shift bila tetap membuka pagi dan sore, atau pilih <strong>Tutup</strong> untuk libur sehari.</p>
+        <div class="table-responsive"><table class="table shift-table"><thead><tr><th>Poli lokal</th><th>Hari rutin</th><th>Tanggal khusus</th><th>Shift</th><th>Dokter lokal · kode BPJS</th><th>Mulai</th><th>Selesai</th><th>Kuota</th><th></th></tr></thead><tbody id="shift-rows"></tbody></table></div>
+        <p id="empty-shifts" class="text-muted">Belum ada shift. Tambahkan baris untuk membuka penerimaan.</p>
+        <noscript><div class="alert alert-danger">Aktifkan JavaScript untuk mengedit jadwal. Form tidak dapat disimpan tanpa editor.</div></noscript>
+        <button type="submit" class="btn btn-primary" id="save-schedule" disabled><i class="fa fa-save"></i> Simpan poli & jadwal</button>
+        <span class="text-muted">Revisi {$schedule.revision} · {$schedule.updated_at}</span>
+        <p class="help-block">Perubahan berlaku untuk request berikutnya. Booking yang sudah tersimpan tidak dipindahkan atau dibatalkan.</p>
+      </div>
+    </div>
+    <input type="hidden" name="form_complete" value="1">
+  </form>
+  <div class="panel panel-info">
+    <div class="panel-heading"><h3 class="panel-title">Pratinjau jadwal yang diterima API</h3></div>
+    <div class="panel-body">
+      <form method="GET" action="{$schedule.preview_url}" class="form-inline">
+        <input type="hidden" name="t" value="{$schedule.csrf}">
+        <label for="preview-date">Tanggal</label> <input type="date" id="preview-date" name="date" value="{$schedule.date}" class="form-control" required>
+        <button class="btn btn-default">Lihat tersimpan</button>
+      </form><hr>
+      <div class="table-responsive"><table class="table table-striped"><thead><tr><th>Poli tujuan</th><th>kodepoli</th><th>Shift</th><th>Dokter</th><th>kodedokter</th><th>jampraktek</th><th>Kuota</th></tr></thead><tbody>
+        {if: $schedule.preview}{loop: $schedule.preview}<tr><td>{$value.kd_poli} · {$value.nm_poli}</td><td><code>{$value.kd_poli_pcare}</code></td><td><span class="preview-tag">{$value.shift}</span></td><td>{$value.nm_dokter}</td><td><code>{$value.kd_dokter_pcare}</code></td><td><code>{$value.jampraktek}</code></td><td>{$value.kuota}</td></tr>{/loop}{else}<tr><td colspan="7">Tidak ada jadwal penerimaan untuk tanggal ini. Periksa poli, hari, dan mapping dokter aktif.</td></tr>{/if}
+      </tbody></table></div>
+      <p class="help-block">Gunakan tiga nilai kode/jam di atas pada Postman. Dokter lain yang tampil di BPJS tetapi tidak ditugaskan di sini akan ditolak, tanpa dialihkan ke dokter lain.</p>
+    </div>
+  </div>
+  <details class="panel panel-default"><summary class="panel-heading">Referensi jadwal master mLITE (baca saja)</summary><div class="panel-body table-responsive"><p>Ini jadwal lokal, bukan hasil sinkronisasi BPJS. Maksimal 500 baris.</p><table class="table table-condensed"><thead><tr><th>Hari</th><th>Poli</th><th>Dokter</th><th>Jam</th><th>Kuota master</th></tr></thead><tbody>{loop: $schedule.reference}<tr><td>{$value.hari_kerja}</td><td>{$value.kd_poli} · {$value.nm_poli}</td><td>{$value.nm_dokter}</td><td>{$value.jam_mulai}–{$value.jam_selesai}</td><td>{$value.kuota}</td></tr>{/loop}</tbody></table></div></details>
+</div>
+<template id="shift-template"><tr>
+  <td><select class="form-control" data-field="kd_poli" aria-label="Poli lokal" required><option value="">Pilih poli</option>{loop: $schedule.polis}{if: !$value.blocked}<option value="{$value.kd_poli}">{$value.kd_poli} · BPJS {$value.kd_poli_pcare}</option>{/if}{/loop}</select></td>
+  <td><select class="form-control" data-field="day" aria-label="Hari">{loop: $schedule.days}<option value="{$value}">{$value}</option>{/loop}</select></td>
+  <td><input type="date" class="form-control" data-field="date" aria-label="Tanggal khusus"></td>
+  <td><select class="form-control" data-field="shift" aria-label="Shift"><option value="pagi">Pagi</option><option value="sore">Sore</option><option value="tutup">Tutup</option></select></td>
+  <td class="doctor"><select class="form-control" data-field="kd_dokter" aria-label="Dokter" required><option value="">Pilih dokter</option>{loop: $schedule.doctors}{if: $value.status == '1'}<option value="{$value.kd_dokter}">{$value.nm_dokter} · {$value.kd_dokter_pcare}</option>{/if}{/loop}</select></td>
+  <td><input type="time" class="form-control" data-field="start" aria-label="Jam mulai" required></td>
+  <td><input type="time" class="form-control" data-field="end" aria-label="Jam selesai" required></td>
+  <td><input type="number" class="form-control" data-field="quota" aria-label="Kuota" min="1" max="999" required></td>
+  <td class="remove-cell"><button type="button" class="btn btn-default remove-shift" title="Hapus baris shift" aria-label="Hapus baris shift"><i class="fa fa-trash"></i></button></td>
+</tr></template>
+<script type="application/json" id="schedule-initial">{$schedule_rules_json}</script>
+<script>
+(function () {
+  var form = document.getElementById('online-schedule-form');
+  var rows = document.getElementById('shift-rows');
+  var index = 0;
+  function sync(row) {
+    var closed = row.querySelector('[data-field="shift"]').value === 'tutup';
+    ['kd_dokter', 'start', 'end', 'quota'].forEach(function (field) {
+      var el = row.querySelector('[data-field="' + field + '"]'); el.required = !closed; el.disabled = closed;
+    });
+    var date = row.querySelector('[data-field="date"]'); date.required = closed;
+    row.querySelector('[data-field="day"]').disabled = !!date.value;
+    document.getElementById('empty-shifts').hidden = rows.children.length > 0;
+  }
+  function add(data) {
+    if (rows.children.length >= 80) { window.alert('Maksimal 80 baris jadwal.'); return; }
+    var fragment = document.getElementById('shift-template').content.cloneNode(true);
+    var row = fragment.querySelector('tr');
+    row.querySelectorAll('[data-field]').forEach(function (el) {
+      var field = el.getAttribute('data-field'); el.name = 'rules[' + index + '][' + field + ']';
+      if (data[field] !== undefined && data[field] !== null) { el.value = String(data[field]); }
+    });
+    index++; rows.appendChild(fragment); sync(row);
+  }
+  var initial = JSON.parse(document.getElementById('schedule-initial').textContent);
+  initial.forEach(add);
+  document.getElementById('add-shift').addEventListener('click', function () { add({day:'SENIN',shift:'pagi'}); });
+  rows.addEventListener('change', function (e) { sync(e.target.closest('tr')); });
+  rows.addEventListener('click', function (e) { if (e.target.closest('.remove-shift')) { e.target.closest('tr').remove(); document.getElementById('empty-shifts').hidden = rows.children.length > 0; } });
+  document.getElementById('save-schedule').disabled = false;
+  var dirty = false;
+  form.addEventListener('change', function () { dirty = true; });
+  form.addEventListener('click', function (e) { if (e.target.closest('#add-shift,.remove-shift')) { dirty = true; } });
+  form.addEventListener('submit', function () { dirty = false; });
+  window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>

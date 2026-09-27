@@ -1,0 +1,1519 @@
+{
+  "info": {
+    "name": "JKN Mobile FKTP Dev — UAT Lengkap",
+    "description": "Suite UAT aman untuk /jknmobilefktpdev. Base endpoint sudah diisi. POST yang dapat membuat pasien/antrean atau membatalkan antrean dilindungi variabel allowWrite=YES_DEV_ONLY.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://mlite.klinikarrohman.com"
+    },
+    {
+      "key": "basePath",
+      "value": "/jknmobilefktpdev"
+    },
+    {
+      "key": "username",
+      "value": "pengujian"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "kodepoli",
+      "value": "GANTI_SESUAI_MAPPING"
+    },
+    {
+      "key": "kodedokter",
+      "value": "GANTI_SESUAI_MAPPING"
+    },
+    {
+      "key": "jampraktek",
+      "value": "08:00-12:00"
+    },
+    {
+      "key": "bookingDays",
+      "value": "2"
+    },
+    {
+      "key": "kodeprop",
+      "value": "33"
+    },
+    {
+      "key": "namaprop",
+      "value": "Jawa Tengah"
+    },
+    {
+      "key": "kodedati2",
+      "value": "GANTI_KODE_BPJS"
+    },
+    {
+      "key": "namadati2",
+      "value": "GANTI_SESUAI_MASTER_MLITE"
+    },
+    {
+      "key": "kodekec",
+      "value": "GANTI_KODE_BPJS"
+    },
+    {
+      "key": "namakec",
+      "value": "GANTI_SESUAI_MASTER_MLITE"
+    },
+    {
+      "key": "kodekel",
+      "value": "GANTI_KODE_BPJS"
+    },
+    {
+      "key": "namakel",
+      "value": "GANTI_SESUAI_MASTER_MLITE"
+    },
+    {
+      "key": "nomorkartu",
+      "value": ""
+    },
+    {
+      "key": "nik",
+      "value": ""
+    },
+    {
+      "key": "nomorkk",
+      "value": ""
+    },
+    {
+      "key": "norm",
+      "value": ""
+    },
+    {
+      "key": "nomorkartuUnknown",
+      "value": ""
+    },
+    {
+      "key": "allowWrite",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function dateAt(offset) { const d = new Date(); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); }",
+          "function digits(length, salt) { return (String(Date.now()) + String(Math.floor(Math.random()*1000000)) + salt).replace(/\\D/g, '').slice(-length).padStart(length, '0'); }",
+          "if (!pm.collectionVariables.get('runId')) { pm.collectionVariables.set('runId', String(Date.now())); }",
+          "if (!pm.collectionVariables.get('nomorkartu')) { pm.collectionVariables.set('nomorkartu', '9' + digits(12, '1')); }",
+          "if (!pm.collectionVariables.get('nomorkartuUnknown')) { pm.collectionVariables.set('nomorkartuUnknown', '8' + digits(12, '2')); }",
+          "if (!pm.collectionVariables.get('nik')) { pm.collectionVariables.set('nik', '3' + digits(15, '3')); }",
+          "if (!pm.collectionVariables.get('nomorkk')) { pm.collectionVariables.set('nomorkk', '3' + digits(15, '4')); }",
+          "pm.collectionVariables.set('tanggal', dateAt(Number(pm.collectionVariables.get('bookingDays') || 2)));",
+          "pm.collectionVariables.set('tanggalPast', dateAt(-1));",
+          "pm.collectionVariables.set('tanggalBeyond', dateAt(Number(pm.collectionVariables.get('bookingDays') || 2) + 1));",
+          "try { const body = JSON.parse(pm.request.body && pm.request.body.raw || ''); const fields = ['kodeprop','namaprop','kodedati2','namadati2','kodekec','namakec','kodekel','namakel']; fields.forEach(function(field){ if (Object.prototype.hasOwnProperty.call(body, field)) { body[field] = pm.variables.get(field); } }); pm.request.body.update(JSON.stringify(body, null, 2)); } catch (e) { /* pertahankan body rusak untuk skenario negatif JSON */ }"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 — Baca sebelum UAT",
+      "description": "1) Isi password, kodepoli, kodedokter, jampraktek sesuai mapping/jadwal aktif. 2) Jalankan folder berurutan. 3) Untuk request yang menulis data, set allowWrite=YES_DEV_ONLY. 4) Jalankan hanya ke dev.",
+      "item": [
+        {
+          "name": "Cek kontrak endpoint (GET /auth tanpa kredensial)",
+          "description": "Verifikasi base endpoint dan autentikasi; aman, tidak mengubah data.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}{{basePath}}/auth"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 — Auth & proteksi akses",
+      "item": [
+        {
+          "name": "Auth sukses — simpan token",
+          "description": "Jalankan dahulu. Password diisi pada Collection Variables.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });",
+                  "pm.test('token diterima', function () { pm.expect(body.response.token).to.be.a('string').and.not.empty; });",
+                      "pm.collectionVariables.set('token', body.response.token);",
+                      "if (pm.environment && pm.environment.name) { pm.environment.set('token', body.response.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-password",
+                "value": "{{password}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/auth"
+          }
+        },
+        {
+          "name": "Auth password salah",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-password",
+                "value": "SALAH-{{runId}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/auth"
+          }
+        },
+        {
+          "name": "Auth tanpa header",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}{{basePath}}/auth"
+          }
+        },
+        {
+          "name": "Auth metode salah (POST)",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 405', function () { pm.response.to.have.status(405); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}{{basePath}}/auth"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — Guard protokol dan JSON",
+      "item": [
+        {
+          "name": "Tanpa token ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/status/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Token palsu ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "palsu"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/status/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Username tidak cocok ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "salah"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/status/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Booking metode salah (GET)",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 405', function () { pm.response.to.have.status(405); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean"
+          }
+        },
+        {
+          "name": "Batal metode salah (POST)",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 405', function () { pm.response.to.have.status(405); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/batal",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "JSON rusak ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{bukan-json",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — Validasi pasien (aman; tidak membuat data)",
+      "item": [
+        {
+          "name": "Nomor kartu bukan 13 digit",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"123\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "NIK bukan 16 digit",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"123\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "RW kosong — bug false logic",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "RT kosong — bug false logic",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Jenis kelamin tidak valid",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"X\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Tanggal lahir masa depan",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"2099-01-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 — Alur sukses pasien (MENULIS DATA)",
+      "description": "Set allowWrite=YES_DEV_ONLY. Gunakan data kartu/NIK test yang belum pernah ada. Request pertama membuat pasien; request kedua memastikan duplikasi ditolak.",
+      "item": [
+        {
+          "name": "Daftar pasien baru — capture norm",
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('allowWrite') !== 'YES_DEV_ONLY') {",
+                  "  throw new Error('Pengaman aktif: set collection variable allowWrite=YES_DEV_ONLY hanya untuk instance dev sebelum mengirim request yang mengubah data.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });",
+                  "pm.test('norm diterima', function () { pm.expect(body.response.norm).to.match(/^\\d+$/); });",
+                  "pm.collectionVariables.set('norm', body.response.norm);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Duplikasi pasien ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/peserta",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nomorkk\": \"{{nomorkk}}\",\n  \"nama\": \"PASIEN UAT {{runId}}\",\n  \"jeniskelamin\": \"L\",\n  \"tanggallahir\": \"1985-03-01\",\n  \"alamat\": \"Alamat UAT\",\n  \"kodeprop\": \"33\",\n  \"namaprop\": \"Jawa Tengah\",\n  \"kodedati2\": \"3320\",\n  \"namadati2\": \"Kabupaten UAT\",\n  \"kodekec\": \"001\",\n  \"namakec\": \"Kecamatan UAT\",\n  \"kodekel\": \"0001\",\n  \"namakel\": \"Kelurahan UAT\",\n  \"rw\": \"001\",\n  \"rt\": \"001\",\n  \"nohp\": \"081234567890\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 — Validasi booking paling fatal (aman)",
+      "item": [
+        {
+          "name": "Pasien belum terdaftar",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 202', function () { pm.response.to.have.status(202); });",
+                  "pm.test('metadata.code 202', function () { pm.expect(body).to.have.nested.property('metadata.code', 202); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartuUnknown}}\",\n  \"nik\": \"3999999999999999\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Tanggal periksa masa lalu",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggalPast}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Tanggal melewati batas konfigurasi",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggalBeyond}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Jam praktek format salah",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"8-12\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Kode dokter format salah",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"<script>\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Norm tidak cocok",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 — Alur booking sukses (MENULIS DATA)",
+      "description": "Prasyarat: folder 01 dan 04 sukses; isi kodepoli/kodedokter/jampraktek dari mapping poli-dokter dan jadwal aktif pada tanggal uji.",
+      "item": [
+        {
+          "name": "Ambil antrean sukses / booking ulang setelah batal",
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('allowWrite') !== 'YES_DEV_ONLY') {",
+                  "  throw new Error('Pengaman aktif: set collection variable allowWrite=YES_DEV_ONLY hanya untuk instance dev sebelum mengirim request yang mengubah data.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });",
+                  "pm.test('nomor antrean tersedia', function () { pm.expect(body.response.nomorantrean).to.be.a('string'); });",
+                  "pm.collectionVariables.set('nomorantrean', body.response.nomorantrean);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Duplikasi booking ditolak",
+          "description": "Aman; harus selalu ditolak setelah booking sukses.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"nik\": \"{{nik}}\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"{{norm}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 — Baca antrean sesudah booking",
+      "item": [
+        {
+          "name": "Status antrean poli",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/status/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Sisa antrean peserta",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/sisapeserta/{{nomorkartu}}/{{kodepoli}}/{{tanggal}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 — Pembatalan & proteksi pengulangan (MENULIS DATA)",
+      "description": "Pembatalan mengubah status pendaftaran. Jalankan hanya antrean hasil folder 06.",
+      "item": [
+        {
+          "name": "Batal antrean sukses (PUT)",
+          "description": "",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('allowWrite') !== 'YES_DEV_ONLY') {",
+                  "  throw new Error('Pengaman aktif: set collection variable allowWrite=YES_DEV_ONLY hanya untuk instance dev sebelum mengirim request yang mengubah data.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/batal",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keterangan\": \"UAT pembatalan dev\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Peserta tidak lagi punya antrean aktif",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/sisapeserta/{{nomorkartu}}/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Pembatalan berulang ditolak",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('metadata.code 201', function () { pm.expect(body).to.have.nested.property('metadata.code', 201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/batal",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"{{nomorkartu}}\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keterangan\": \"ulang\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 — Skenario kuota / race condition (manual terisolasi)",
+      "description": "JANGAN jalankan pada jadwal pelayanan nyata. Buat slot dev khusus dengan kuota 1 dan dua pasien uji berbeda; gunakan Collection Runner paralel/dua Postman. Harapannya hanya satu request sukses, lainnya HTTP 422; tidak boleh ada overbooking.",
+      "item": [
+        {
+          "name": "Cek status slot sebelum uji kuota",
+          "description": "",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let body = {}; try { body = pm.response.json(); } catch (e) {}",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('metadata.code 200', function () { pm.expect(body).to.have.nested.property('metadata.code', 200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean/status/{{kodepoli}}/{{tanggal}}"
+          }
+        },
+        {
+          "name": "Template booking pasien kedua",
+          "description": "Kirim bersamaan dengan request booking pasien pertama ke slot kuota 1. Jangan gunakan data produksi.",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('allowWrite') !== 'YES_DEV_ONLY') {",
+                  "  throw new Error('Pengaman aktif: set collection variable allowWrite=YES_DEV_ONLY hanya untuk instance dev sebelum mengirim request yang mengubah data.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-username",
+                "value": "{{username}}"
+              },
+              {
+                "key": "x-token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}{{basePath}}/antrean",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomorkartu\": \"GANTI_13_DIGIT_PASIEN_2\",\n  \"nik\": \"GANTI_16_DIGIT_PASIEN_2\",\n  \"nohp\": \"081234567890\",\n  \"kodepoli\": \"{{kodepoli}}\",\n  \"tanggalperiksa\": \"{{tanggal}}\",\n  \"keluhan\": \"Uji integrasi dev\",\n  \"kodedokter\": \"{{kodedokter}}\",\n  \"jampraktek\": \"{{jampraktek}}\",\n  \"norm\": \"GANTI_NORM_PASIEN_2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

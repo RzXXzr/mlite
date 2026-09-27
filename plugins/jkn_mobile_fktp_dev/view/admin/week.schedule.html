@@ -1,0 +1,248 @@
+<style>
+.jkn-week-grid{table-layout:fixed;min-width:920px;font-size:13px}
+.jkn-week-grid th{background:#f5f5f5;text-align:center;white-space:nowrap;padding:6px 8px;min-width:130px}
+.jkn-week-grid th:first-child{width:90px;min-width:90px}
+.jkn-week-grid td{vertical-align:top;padding:5px 6px}
+.jkn-week-grid td:first-child{background:#f9f9f9;font-weight:bold;text-align:center;vertical-align:middle}
+.jkn-slot{border:1px solid #ddd;border-radius:4px;padding:4px 7px;margin-bottom:4px;background:#fff}
+.jkn-slot.eligible{border-color:#46b8da;background:#f0f9ff}
+.jkn-slot.blocked{opacity:.55;background:#f5f5f5}
+.jkn-slot label{display:block;font-weight:normal;margin:0;cursor:pointer;line-height:1.4}
+.jkn-slot .badge{background:#e8950c;color:#fff;font-size:11px}
+.jkn-shift-group{margin-bottom:7px}.jkn-shift-group:last-child{margin-bottom:0}
+.jkn-shift-title{display:flex;align-items:center;gap:5px;margin:0 0 4px;padding:3px 6px;border-radius:3px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.03em}
+.jkn-shift-group[data-shift="pagi"] .jkn-shift-title{color:#31708f;background:#d9edf7}
+.jkn-shift-group[data-shift="sore"] .jkn-shift-title{color:#8a6d3b;background:#fcf8e3}
+.jkn-shift-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:9px 12px;border-bottom:1px solid #ddd;background:#fafafa}
+.jkn-shift-toolbar .btn.active{color:#fff;background:#4b535e;border-color:#414852;box-shadow:none}
+.jkn-week-grid.shift-pagi .jkn-shift-group[data-shift="sore"],.jkn-week-grid.shift-sore .jkn-shift-group[data-shift="pagi"]{display:none}
+.jkn-day-err{color:#a94442;font-size:11px;line-height:1.3}
+.jkn-ref-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.jkn-ref-nav a{flex:1;min-width:145px}
+.jkn-week-page .panel{margin-bottom:12px}.jkn-week-page .panel-body{padding:14px 16px}
+.jkn-week-page .alert{padding:10px 14px;margin-bottom:12px}.jkn-week-page .form-group{margin-bottom:12px}
+</style>
+
+<div class="jkn-week-page"><nav class="jkn-ref-nav">
+  {loop: $nav}
+  <a href="{$value.url}" class="btn {if: $value.active}btn-primary{else}btn-default{/if}"><i class="fa fa-{$value.icon}"></i> {$value.label}</a>
+  {/loop}
+</nav>
+
+{if: $week.results}
+<!-- ========== STATE 3: HASIL SIMPAN ========== -->
+<div class="alert alert-success"><strong><i class="fa fa-check-circle"></i> Jadwal berhasil diproses.</strong> Sumber: <code>{$week.source}</code></div>
+<div class="panel panel-default">
+  <div class="panel-heading"><h3 class="panel-title">Hasil penyimpanan jadwal</h3></div>
+  <div class="panel-body">
+    <table class="table table-striped">
+      <thead><tr><th>Tanggal</th><th>Status</th><th>Keterangan</th><th>Jadwal aktif</th></tr></thead>
+      <tbody>
+      {loop: $week.results}
+      <tr class="{if: $value.status == 'ok'}success{/if}{if: $value.status == 'error'}danger{/if}">
+        <td><strong>{$value.date}</strong></td>
+        <td>
+          {if: $value.status == 'ok'}<span class="label label-success">Berhasil</span>{/if}
+          {if: $value.status == 'error'}<span class="label label-danger">Gagal</span>{/if}
+        </td>
+        <td>{$value.message}</td>
+        <td>{$value.count}</td>
+      </tr>
+      {/loop}
+      </tbody>
+    </table>
+    <a href="{$week.cancel_url}" class="btn btn-default"><i class="fa fa-calendar"></i> Cek jadwal per tanggal</a>
+    <a href="{$week.week_url}" class="btn btn-primary"><i class="fa fa-refresh"></i> Generate minggu lain</a>
+  </div>
+</div>
+
+{else}
+{if: $week.grid}
+<!-- ========== STATE 2: GRID PILIH SLOT ========== -->
+<div class="alert alert-success">
+  <strong><i class="fa fa-table"></i> Referensi BPJS dimuat — pilih dokter dan jam yang diterima.</strong>
+  Checklist menampilkan pilihan yang saat ini tersimpan. Centang hanya dokter/jam yang akan menerima pendaftaran online, lalu klik Simpan.
+  <br><small>Sumber: <code>{$week.source}</code></small>
+</div>
+
+<form method="POST" action="{$week.save_url}">
+  <input type="hidden" name="schedule_csrf" value="{$week.csrf}">
+  <input type="hidden" name="form_complete" value="1">
+  {loop: $week.allowed}
+  <input type="hidden" name="allowed[]" value="{$value}">
+  {/loop}
+
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">
+        <i class="fa fa-calendar-o"></i> Jadwal dokter per poli &mdash; mulai {$week.start_date}
+        <span class="pull-right" style="font-weight:normal;font-size:13px;">
+          <a href="#" onclick="jknWeekClear();return false;" class="btn btn-xs btn-default">Hapus semua pilihan</a>
+        </span>
+      </h3>
+    </div>
+    <div class="jkn-shift-toolbar" role="group" aria-label="Filter shift jadwal">
+      <strong><i class="fa fa-filter"></i> Tampilkan shift:</strong>
+      <button type="button" class="btn btn-xs btn-default active" data-jkn-shift="semua" aria-pressed="true">Semua</button>
+      <button type="button" class="btn btn-xs btn-default" data-jkn-shift="pagi" aria-pressed="false"><i class="fa fa-sun-o"></i> Pagi</button>
+      <button type="button" class="btn btn-xs btn-default" data-jkn-shift="sore" aria-pressed="false"><i class="fa fa-moon-o"></i> Sore</button>
+      <small class="text-muted">Pagi dimulai sebelum 12:00; sore mulai 12:00 atau sesudahnya. Maksimal satu dokter per poli/shift.</small>
+    </div>
+    <div class="panel-body" style="overflow-x:auto;padding:0;">
+      <table class="table table-bordered jkn-week-grid" style="margin:0;">
+        <thead>
+          <tr>
+            <th>POLI</th>
+            {loop: $week.days}
+            <th {if: $value.error}style="color:#a94442"{/if}{if: $value.skip}style="color:#aaa"{/if}>
+              {$value.label}<br><small>{$value.short}</small>
+              {if: $value.skip}<br><small>(skip)</small>{/if}
+            </th>
+            {/loop}
+          </tr>
+        </thead>
+        <tbody>
+          {loop: $week.rows}
+          <tr>
+            <td>
+              <strong>{$value.kd_poli}</strong><br>
+              <small>{$value.nm_poli}</small>
+              {if: !$value.in_allowed}<br><small class="text-muted">tidak dipilih</small>{/if}
+            </td>
+            {loop: $value.cells}
+            <td>
+              {if: $value.skip}
+                <small class="text-muted">—</small>
+              {else}
+                {if: $value.error}
+                  <small class="jkn-day-err">{$value.error}</small>
+                {else}
+                  {if: $value.closed_reason}
+                    <small class="text-muted"><i class="fa fa-calendar-times-o"></i> Tutup/libur<br>{$value.closed_reason}</small>
+                  {else}
+                    {if: $value.slots}
+                    {loop: $value.slots}
+                    <div class="jkn-shift-group" data-shift="{$value.shift}">
+                    {if: $value.show_shift_header}
+                    <div class="jkn-shift-title">
+                      {if: $value.shift == 'pagi'}<i class="fa fa-sun-o"></i> Pagi{/if}
+                      {if: $value.shift == 'sore'}<i class="fa fa-moon-o"></i> Sore{/if}
+                    </div>
+                    {/if}
+                    <div class="jkn-slot {if: $value.eligible}eligible{/if}{if: $value.blocked} blocked{/if}">
+                      <label>
+                        <input type="checkbox"
+                          name="{$value.input_name}"
+                          value="{$value.id}"
+                          data-choice-group="{$value.choice_group}"
+                          {if: $value.eligible}data-elig="1"{/if}
+                          {if: $value.selected}checked{/if}
+                          {if: $value.blocked}disabled{/if}>
+                        {$value.namadokter}<br>
+                        <code style="font-size:11px">{$value.jampraktek}</code>
+                        <span class="badge">{$value.quota}</span>
+                      </label>
+                    </div>
+                    </div>
+                    {/loop}
+                    {else}<small class="text-muted">—</small>{/if}
+                  {/if}
+                {/if}
+              {/if}
+            </td>
+            {/loop}
+          </tr>
+          {/loop}
+          {if: !$week.rows}
+          <tr><td colspan="8" class="text-center text-muted" style="padding:20px;">
+            Tidak ada data jadwal BPJS untuk periode ini. Periksa kredensial dan koneksi Antrol.
+          </td></tr>
+          {/if}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {if: !$week.can_save}<div class="alert alert-danger">Referensi 7 hari belum lengkap. Muat ulang; penyimpanan dinonaktifkan agar tabel tidak berisi minggu parsial.</div>{/if}
+  <div style="margin-top:12px;">
+    <button type="submit" class="btn btn-primary btn-lg" {if: !$week.can_save}disabled{/if}><i class="fa fa-save"></i> Simpan Checklist 7 Hari</button>
+    <a href="{$week.week_url}" class="btn btn-default btn-lg"><i class="fa fa-arrow-left"></i> Pilih Tanggal Lain</a>
+  </div>
+</form>
+
+{else}
+<!-- ========== STATE 1: FORM PILIH TANGGAL & POLI ========== -->
+<div class="alert alert-info">
+  <strong><i class="fa fa-calendar-check-o"></i> Generate Jadwal 1 Minggu</strong><br>
+  Pilih tanggal mulai dan poli yang diterima. Sistem mengambil referensi dokter dan jam dari BPJS,
+  lalu menampilkan grid untuk dikonfirmasi sebelum disimpan.
+  <br><small>Sumber Antrol: <code>{$week.source}</code></small>
+</div>
+<div class="panel panel-default">
+  <div class="panel-heading"><h3 class="panel-title">Konfigurasi jadwal minggu</h3></div>
+  <div class="panel-body">
+    <form method="POST" action="{$week.load_url}">
+      <input type="hidden" name="schedule_csrf" value="{$week.csrf}">
+      <input type="hidden" name="form_complete" value="1">
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="week-start-date">Mulai (hari ini atau lebih)</label>
+            <input type="date" id="week-start-date" name="start_date" value="{$week.start_date}" min="{$week.start_date}" max="{$week.max_start}" required class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Poli yang diterima Mobile JKN</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+        {loop: $week.polis}
+          <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #ddd;border-radius:4px;font-weight:normal;cursor:{if: $value.blocked}default{else}pointer{/if};min-width:160px;{if: $value.blocked}background:#f5f5f5;color:#888{else}background:#f0f9ff{/if}">
+            <input type="checkbox" name="allowed[]" value="{$value.kd_poli}" {if: $value.selected}checked{/if} {if: $value.blocked}disabled{/if}>
+            <span><strong>{$value.kd_poli}</strong>&nbsp;{$value.nm_poli}{if: $value.blocked}<br><small>rujukan/nonaktif</small>{/if}</span>
+          </label>
+        {/loop}
+        </div>
+      </div>
+      <div class="alert alert-warning" style="font-size:13px;">
+        <i class="fa fa-info-circle"></i>
+        Klik <strong>Muat Referensi</strong> untuk mengambil data dari BPJS dan melihat grid jadwal.
+        Tidak ada yang tersimpan sampai Anda klik "Simpan Checklist 7 Hari" di langkah berikutnya.
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg"><i class="fa fa-download"></i> Muat Referensi &amp; Lihat Grid</button>
+      <a href="{$week.cancel_url}" class="btn btn-default">Batal</a>
+    </form>
+  </div>
+</div>
+{/if}
+{/if}
+</div>
+
+<script>
+function jknWeekClear() {
+  document.querySelectorAll('.jkn-week-grid input[type=checkbox][data-elig]').forEach(function(cb){cb.checked=false;});
+}
+(function () {
+  var grid = document.querySelector('.jkn-week-grid');
+  if (!grid) return;
+  document.querySelectorAll('[data-jkn-shift]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var shift = button.getAttribute('data-jkn-shift');
+      grid.classList.remove('shift-pagi', 'shift-sore');
+      if (shift === 'pagi' || shift === 'sore') grid.classList.add('shift-' + shift);
+      document.querySelectorAll('[data-jkn-shift]').forEach(function (item) {
+        var active = item === button;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
+  });
+  grid.addEventListener('change', function (event) {
+    var checkbox = event.target;
+    if (!checkbox.matches('input[type=checkbox][data-choice-group]') || !checkbox.checked) return;
+    var group = checkbox.getAttribute('data-choice-group');
+    grid.querySelectorAll('input[type=checkbox][data-choice-group="' + group + '"]').forEach(function (other) {
+      if (other !== checkbox) other.checked = false;
+    });
+  });
+}());
+</script>
